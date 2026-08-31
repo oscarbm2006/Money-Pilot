@@ -369,6 +369,7 @@ const I = {
   clipboard: p => <Ico {...p} path="M9 3h6a1 1 0 011 1v1H8V4a1 1 0 011-1z M6 5h12a2 2 0 012 2v13a2 2 0 01-2 2H6a2 2 0 01-2-2V7a2 2 0 012-2z M9 12l2 2 4-4" />,
   briefcase: p => <Ico {...p} path="M3 7h18v13H3z M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2" />,
   download: p => <Ico {...p} path="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2" />,
+  compass: p => <Ico {...p} path="M12 22a10 10 0 100-20 10 10 0 000 20z M16 8l-2 6-6 2 2-6z" />,
 };
 
 /* ============================================================
@@ -2587,7 +2588,7 @@ function HowItWorksSection(){
   const steps=[
     ["01","Tu radiografía","Diagnóstico interactivo","Entenderás ingresos, gastos, ahorro, colchón y deuda sin enfrentarte a un formulario interminable.",I.chartLine],
     ["02","Tu perfil","Test adaptativo","Tus respuestas se adaptan a ti y conectan el riesgo con tus objetivos y horizonte.",I.target],
-    ["03","Tu mapa","Estrategia y simuladores","Convertirás los datos en decisiones: objetivos, escenarios y acciones que puedas ejecutar.",I.target]
+    ["03","Tu mapa","Estrategia y simuladores","Convertirás los datos en decisiones: objetivos, escenarios y acciones que puedas ejecutar.",I.compass]
   ];
   return <section className="mt-16 sm:mt-20">
     {/* UX: anticipa el recorrido para reducir incertidumbre y aumentar intención de completar el diagnóstico. */}
