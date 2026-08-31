@@ -1531,15 +1531,23 @@ function FeedbackModal({ onClose }){
 function AuthModal({ onClose, onAuthSuccess, signUp, signIn }){
   const [modo,setModo]=useState("registro");
   const [email,setEmail]=useState("");
+  const [emailConfirm,setEmailConfirm]=useState("");
   const [password,setPassword]=useState("");
   const [verPassword,setVerPassword]=useState(false);
   const [loading,setLoading]=useState(false);
   const [error,setError]=useState(null);
   const [avisoConfirmacion,setAvisoConfirmacion]=useState(false);
 
+  const emailsNoCoinciden = modo==="registro" && emailConfirm.length>0 && email.trim().toLowerCase()!==emailConfirm.trim().toLowerCase();
+
   const submit=async(e)=>{
     e.preventDefault();
-    setError(null); setLoading(true);
+    setError(null);
+    if(modo==="registro" && email.trim().toLowerCase()!==emailConfirm.trim().toLowerCase()){
+      setError("Los dos emails no coinciden. Revísalos antes de continuar.");
+      return;
+    }
+    setLoading(true);
     try{
       if(modo==="registro"){
         const { data, error } = await signUp(email,password);
@@ -1560,8 +1568,8 @@ function AuthModal({ onClose, onAuthSuccess, signUp, signIn }){
         {avisoConfirmacion ? (
           <div className="text-center py-4">
             <I.check size={28} color={C.salu} className="mx-auto mb-3"/>
-            <p className="text-sm font-bold" style={{color:C.ink}}>Revisa tu correo</p>
-            <p className="text-sm mt-1" style={{color:C.muted}}>Te hemos enviado un enlace para confirmar tu cuenta. Vuelve aquí después para iniciar sesión.</p>
+            <p className="text-sm font-bold" style={{color:C.ink}}>¡Cuenta creada!</p>
+            <p className="text-sm mt-1" style={{color:C.muted}}>Ya puedes iniciar sesión con tu email y contraseña. Guarda bien tus datos: si el email tiene un error, no podrás recuperar tu cuenta más adelante.</p>
             <button onClick={onClose} className="mt-5 px-4 py-2 rounded-lg text-sm font-bold" style={{backgroundColor:C.navy,color:C.white}}>Entendido</button>
           </div>
         ) : (
@@ -1579,6 +1587,16 @@ function AuthModal({ onClose, onAuthSuccess, signUp, signIn }){
                 <input type="email" required value={email} onChange={e=>setEmail(e.target.value)}
                   className="w-full rounded-lg px-3 py-2 text-sm border outline-none" style={{borderColor:C.border,color:C.ink,backgroundColor:C.paper}}/>
               </div>
+              {modo==="registro" && (
+                <div>
+                  <label className="block text-xs font-bold mb-1" style={{color:C.ink}}>Repite tu email</label>
+                  <input type="email" required value={emailConfirm} onChange={e=>setEmailConfirm(e.target.value)}
+                    onPaste={e=>e.preventDefault()}
+                    className="w-full rounded-lg px-3 py-2 text-sm border outline-none" style={{borderColor:emailsNoCoinciden?C.crit:C.border,color:C.ink,backgroundColor:C.paper}}/>
+                  {emailsNoCoinciden && <p className="text-xs mt-1" style={{color:C.critText}}>Los emails no coinciden.</p>}
+                  <p className="text-xs mt-1" style={{color:C.mutedLight}}>No dejamos pegar aquí para asegurarnos de que lo escribes bien: como no enviamos email de confirmación, es la única forma de comprobar que no hay un error.</p>
+                </div>
+              )}
               <div>
                 <label className="block text-xs font-bold mb-1" style={{color:C.ink}}>Contraseña</label>
                 <div className="relative">
@@ -1592,11 +1610,11 @@ function AuthModal({ onClose, onAuthSuccess, signUp, signIn }){
               </div>
               {modo==="registro" && <PrivacyNotice/>}
               {error && <div className="text-xs rounded-lg px-3 py-2" style={{backgroundColor:"rgba(239,68,68,0.08)",color:C.critText}}>{error}</div>}
-              <button type="submit" disabled={loading} className="w-full py-2.5 rounded-lg text-sm font-bold disabled:opacity-60" style={{backgroundColor:C.navy,color:C.white}}>
+              <button type="submit" disabled={loading || emailsNoCoinciden} className="w-full py-2.5 rounded-lg text-sm font-bold disabled:opacity-60" style={{backgroundColor:C.navy,color:C.white}}>
                 {loading ? "Un momento…" : (modo==="registro" ? "Crear cuenta" : "Entrar")}
               </button>
             </form>
-            <button onClick={()=>{setModo(modo==="registro"?"login":"registro"); setError(null);}} className="w-full text-center text-xs font-bold mt-4" style={{color:C.muted}}>
+            <button onClick={()=>{setModo(modo==="registro"?"login":"registro"); setError(null); setEmailConfirm("");}} className="w-full text-center text-xs font-bold mt-4" style={{color:C.muted}}>
               {modo==="registro" ? "¿Ya tienes cuenta? Inicia sesión" : "¿No tienes cuenta? Regístrate"}
             </button>
           </>
