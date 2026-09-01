@@ -1527,6 +1527,26 @@ function traducirErrorAuth(mensaje){
   if(/rate limit/i.test(m)) return "Demasiados intentos. Espera un momento e inténtalo de nuevo.";
   return "No se pudo completar la operación. Inténtalo de nuevo.";
 }
+function EvidenciaModal({ tarjeta, onClose }){
+  const Icon=tarjeta.icon;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4" style={{backgroundColor:"rgba(5,8,16,0.7)"}} onClick={onClose}>
+      <div onClick={e=>e.stopPropagation()} className="w-full max-w-xl rounded-2xl overflow-hidden flex flex-col" style={{backgroundColor:C.surface,maxHeight:"85vh"}}>
+        <div className="flex items-start justify-between gap-3 px-5 sm:px-6 pt-5 sm:pt-6 pb-4 shrink-0" style={{borderBottom:"1px solid "+C.border}}>
+          <div className="flex items-center gap-3.5 min-w-0">
+            <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style={{backgroundColor:"rgba(79,70,229,.12)"}}><Icon size={20} color={C.sand}/></div>
+            <h3 className="font-serif text-lg sm:text-xl font-bold" style={{color:C.ink}}>{tarjeta.titulo}</h3>
+          </div>
+          <button onClick={onClose} aria-label="Cerrar" className="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center hover:bg-black/5" style={{color:C.muted}}><I.x size={18}/></button>
+        </div>
+        <div className="px-5 sm:px-6 py-5 overflow-y-auto">
+          <p className="text-sm leading-relaxed" style={{color:C.muted}}>{tarjeta.texto}</p>
+          <p className="text-[11px] leading-relaxed mt-4" style={{color:C.mutedLight}}>{tarjeta.fuente}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
 function FeedbackModal({ onClose }){
   const FORM_URL="https://docs.google.com/forms/d/e/1FAIpQLSdZ4VFZ4YlVkvARja94yGosvInko1zfN7RAH916SXlssPZh-g/viewform?usp=header&embedded=true";
   return (
@@ -1596,7 +1616,7 @@ function AuthModal({ onClose, onAuthSuccess, signUp, signIn }){
           <>
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-serif text-xl font-bold" style={{color:C.ink}}>{modo==="registro"?"Crear cuenta":"Iniciar sesión"}</h2>
-              <button onClick={onClose} style={{color:C.muted}}><I.x size={18}/></button>
+              <button onClick={onClose} aria-label="Cerrar" style={{color:C.muted}}><I.x size={18}/></button>
             </div>
             <p className="text-sm mb-4" style={{color:C.muted}}>
               {modo==="registro" ? "Guarda tu progreso en la nube y accede desde cualquier dispositivo." : "Bienvenido de nuevo."}
@@ -2646,12 +2666,12 @@ function HeroSection({onStart}){
     {icon:I.chartLine,titulo:"El coste de esperar (Multiplicar tu patrimonio)",texto:"Esperar a \"cobrar más\" para empezar a organizarte e invertir es la trampa financiera más cara. La evidencia demuestra que quienes empiezan a apartar dinero en sus primeros 5 a 10 años de carrera laboral acumulan entre 3 y 4 veces más patrimonio neto al llegar a la madurez que quienes esperan a los 35 o 40 años, aunque estos últimos ganen más dinero. Retrasar el ahorro una década obliga a triplicar el esfuerzo mensual de por vida para comprar una casa o asegurar tu futuro. Pon el tiempo a tu favor: cada año que ganas ahora te ahorrará una década de esfuerzo después.",fuente:"FUENTE: Universidad de Stanford y Wharton School (Dra. Annamaria Lusardi y Dra. Olivia Mitchell, NBER)."},
     {icon:I.target,titulo:"Vencer tu cerebro y ahorrar sin sufrir",texto:"Ahorrar para una casa o para tu nivel de vida futuro no tiene por qué hundir tu calidad de vida actual. Nuestro cerebro sufre de \"sesgo del presente\" y prefiere gastar hoy, pero la ciencia económica encontró la solución: automatizar que una parte de tus futuras subidas de sueldo o dinero extra vaya directamente al ahorro antes de que te acostumbres a gastarlo. Este método demostró multiplicar la tasa de ahorro de un 3,5% a un altísimo 13,6% en menos de 4 años, sin que los participantes sintieran ninguna pérdida en su día a día. Sistematiza tus finanzas: multiplica tu capital sin sentir que te sacrificas.",fuente:"FUENTE: Universidad de Chicago (Premio Nobel Richard Thaler y Shlomo Benartzi)."}
   ];
-  return <section className="relative py-14 sm:py-20">
+  return <section className="relative pt-0 pb-14 sm:pb-20">
     <div className="absolute inset-0 pointer-events-none" style={{background:"radial-gradient(70% 55% at 50% 0%, rgba(79,70,229,.09), transparent 72%)"}}/>
     <div className="relative z-10 max-w-6xl mx-auto w-full px-4 sm:px-6">
       {/* UX: hero narrativo + experimento financiero antes de solicitar cualquier dato. */}
-      <div className="grid lg:grid-cols-[1fr_.9fr] gap-10 lg:gap-14 items-center min-h-[68vh]">
-        <div><div className="text-xs font-bold uppercase mb-4" style={{color:C.sand,letterSpacing:".16em"}}>Pon orden en tu dinero</div><h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl font-bold leading-[1.02]" style={{color:C.ink}}>¿Sientes que tu dinero se te escapa <span style={{color:C.sand}}>y no sabes por qué?</span></h1><p className="text-base sm:text-lg mt-6 max-w-xl leading-relaxed" style={{color:C.muted}}>No llegar a fin de mes, no saber en qué se va el sueldo o sentir que la deuda nunca baja es más común de lo que parece. Aquí puedes ver tu situación con claridad y recibir un plan sencillo para empezar a ordenarla, sin tecnicismos y sin que nadie te juzgue.</p><div className="flex flex-wrap items-center gap-4 mt-8"><button onClick={onStart} className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl text-sm font-bold transition-transform hover:scale-[1.03]" style={{backgroundColor:C.sand,color:C.white}}>Ver mi situación financiera <I.arrowRight size={16}/></button><button onClick={()=>document.getElementById("evidencia")?.scrollIntoView({behavior:"smooth",block:"start"})} className="inline-flex items-center gap-2 px-5 py-3.5 rounded-xl text-sm font-bold transition-colors hover:bg-black/5" style={{color:C.ink,border:"1.5px solid rgba(79,70,229,.35)"}}>Por qué importa la salud financiera</button></div><div className="flex flex-wrap gap-4 mt-5 text-xs" style={{color:C.mutedLight}}><span className="inline-flex items-center gap-1.5"><I.checkCircle size={14} color={C.salu}/> Sin registro, gratis y en minutos</span><span className="inline-flex items-center gap-1.5"><I.chartLine size={14} color={C.exc}/> Resultados al momento</span></div></div>
+      <div className="grid lg:grid-cols-[1fr_.9fr] gap-10 lg:gap-14 items-start lg:items-center">
+        <div><div className="text-xs font-bold uppercase mb-4" style={{color:C.sand,letterSpacing:".16em"}}>Pon orden en tu dinero</div><h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl font-bold leading-[1.02]" style={{color:C.ink}}>Tu salud financiera puesta a prueba: <span style={{color:C.sand}}>¿sientes que el dinero se te escapa y no sabes por qué?</span></h1><p className="text-base sm:text-lg mt-6 max-w-xl leading-relaxed" style={{color:C.muted}}>No llegar a fin de mes, no saber en qué se va el sueldo o sentir que la deuda nunca baja es más común de lo que parece. Aquí puedes ver tu situación con claridad y recibir un plan sencillo para empezar a ordenarla, sin tecnicismos y sin que nadie te juzgue.</p><div className="flex flex-wrap items-center gap-4 mt-8"><button onClick={onStart} className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl text-sm font-bold transition-transform hover:scale-[1.03]" style={{backgroundColor:C.sand,color:C.white}}>Ver mi situación financiera <I.arrowRight size={16}/></button><button onClick={()=>document.getElementById("evidencia")?.scrollIntoView({behavior:"smooth",block:"start"})} className="inline-flex items-center gap-2 px-5 py-3.5 rounded-xl text-sm font-bold transition-colors hover:bg-black/5" style={{color:C.ink,border:"1.5px solid rgba(79,70,229,.35)"}}>Por qué importa la salud financiera</button></div><div className="flex flex-wrap gap-4 mt-5 text-xs" style={{color:C.mutedLight}}><span className="inline-flex items-center gap-1.5"><I.checkCircle size={14} color={C.salu}/> Sin registro, gratis y en minutos</span><span className="inline-flex items-center gap-1.5"><I.chartLine size={14} color={C.exc}/> Resultados al momento</span></div></div>
         <PoderAdquisitivoSection/>
       </div>
       <HowItWorksSection/>
@@ -2663,26 +2683,22 @@ function HeroSection({onStart}){
         </div>
         <div className="grid md:grid-cols-2 gap-5">
           {tarjetasCientificas.map((t,i)=>{
-            const abierta=expandedIndex===i;
             const Icon=t.icon;
             return (
-              <Card key={t.titulo} className={"p-5 sm:p-6 cursor-pointer transition-shadow"+(t.titulo==="Vencer tu cerebro y ahorrar sin sufrir"?" md:col-span-2 md:max-w-2xl md:mx-auto w-full":"")} style={{borderColor:abierta?C.sand:C.border}} onClick={()=>setExpandedIndex(abierta?null:i)}>
+              <Card key={t.titulo} className={"p-5 sm:p-6 cursor-pointer transition-shadow"+(t.titulo==="Vencer tu cerebro y ahorrar sin sufrir"?" md:col-span-2 md:max-w-2xl md:mx-auto w-full":"")} style={{borderColor:C.border}} onClick={()=>setExpandedIndex(i)}>
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3.5 min-w-0">
                     <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style={{backgroundColor:"rgba(79,70,229,.12)"}}><Icon size={20} color={C.sand}/></div>
                     <h3 className="font-serif text-lg sm:text-xl font-bold" style={{color:C.ink}}>{t.titulo}</h3>
                   </div>
-                  <div className="shrink-0 mt-1 transition-transform duration-300" style={{transform:abierta?"rotate(180deg)":"rotate(0deg)",color:C.sand}}><I.chevronDown size={18}/></div>
-                </div>
-                <div style={{ maxHeight: abierta ? '800px' : '0px', overflow: 'hidden', transition: 'max-height 400ms ease' }}>
-                    <p className="text-sm leading-relaxed mt-4" style={{color:C.muted}}>{t.texto}</p>
-                    <p className="text-[11px] leading-relaxed mt-4" style={{color:C.mutedLight}}>{t.fuente}</p>
+                  <div className="shrink-0 mt-1" style={{color:C.sand}}><I.chevronDown size={18} style={{transform:"rotate(-90deg)"}}/></div>
                 </div>
               </Card>
             );
           })}
         </div>
       </section>
+      {expandedIndex!==null && <EvidenciaModal tarjeta={tarjetasCientificas[expandedIndex]} onClose={()=>setExpandedIndex(null)}/>}
       <div className="mt-16 sm:mt-20 rounded-3xl p-7 sm:p-10 text-center relative overflow-hidden" style={{background:"linear-gradient(135deg, #111827 0%, #1f2937 55%, #312e81 100%)",boxShadow:"0 24px 70px -35px rgba(49,46,129,.55)"}}>
         <div className="absolute -top-24 -right-20 w-64 h-64 rounded-full pointer-events-none" style={{background:"radial-gradient(circle, rgba(79,70,229,.22), transparent 65%)"}}/>
         <div className="relative z-10 max-w-2xl mx-auto"><div className="text-[10px] uppercase font-bold" style={{color:C.sand,letterSpacing:".16em"}}>Ahora te toca a ti</div><h2 className="font-serif text-3xl sm:text-4xl font-bold mt-2" style={{color:C.white}}>Da el primer paso. No hace falta que lo tengas todo claro.</h2><div className="mt-4 rounded-2xl px-5 py-4 text-left" style={{backgroundColor:"#ffffff",border:"1px solid rgba(255,255,255,.25)",boxShadow:"0 10px 30px -22px rgba(0,0,0,.45)"}}>
@@ -3250,7 +3266,6 @@ function App(){
   const [showAuthModal,setShowAuthModal]=useState(false);
   const [showExportMenu,setShowExportMenu]=useState(false);
   const [showFeedbackModal,setShowFeedbackModal]=useState(false);
-  const [showIntroNotice,setShowIntroNotice]=useState(true);
   const [showFooterNotice,setShowFooterNotice]=useState(true);
   const { toast, show:showToast } = useToast();
   const [hydrated,setHydrated]=useState(false);
@@ -3371,7 +3386,7 @@ function App(){
                   <button onClick={()=>setShowAuthModal(true)} className="text-xs font-bold px-3 py-1.5 rounded-lg" style={{backgroundColor:C.sand,color:C.navy}}>Guardar</button>
                 ))}
                 <button onClick={()=>setShowFeedbackModal(true)} className="inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1.5 rounded-lg hover:bg-white/10 whitespace-nowrap" style={{color:C.sand}} title="Evaluar página"><I.clipboard size={14}/>Evaluar</button>
-                <button onClick={reiniciar} className="inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1.5 rounded-lg hover:bg-white/10 nav-link-muted" title="Borra tus datos guardados y vuelve a empezar"><I.trash size={13}/></button>
+                <button onClick={reiniciar} aria-label="Borrar datos y empezar de nuevo" className="inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1.5 rounded-lg hover:bg-white/10 nav-link-muted" title="Borra tus datos guardados y vuelve a empezar"><I.trash size={13}/></button>
               </div>
             </div>
             <div className="md:hidden flex gap-1 overflow-x-auto pb-2 -mx-1 px-1">
@@ -3384,15 +3399,6 @@ function App(){
         <main className="relative z-10">
           {vistaActual==='inicio' && (
             <div key="inicio" className="fade-switch-enter">
-              <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-6">
-                {showIntroNotice && (
-                  <div className="rounded-xl px-4 py-3 flex items-start gap-2.5" style={{backgroundColor:"rgba(79,70,229,.10)",border:"1px solid rgba(79,70,229,.25)"}}>
-                    <I.info size={16} color={C.sand} className="shrink-0 mt-0.5"/>
-                    <p className="text-xs sm:text-[13px] leading-relaxed flex-1" style={{color:C.ink}}>Puedes evaluar esta página de forma <b>anónima</b> en cualquier momento desde el menú superior; te lo recordaremos también al final. ¡Gracias por tu opinión!</p>
-                    <button onClick={()=>setShowIntroNotice(false)} aria-label="Cerrar aviso" className="shrink-0 w-6 h-6 rounded-lg flex items-center justify-center hover:bg-black/5" style={{color:C.muted}}><I.x size={14}/></button>
-                  </div>
-                )}
-              </div>
               <HeroSection onStart={()=>setVistaActual('diagnostico')}/>
               <ConfianzaPrivacidad/>
             </div>
