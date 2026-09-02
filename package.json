@@ -1,0 +1,11 @@
+{
+  "name": "moneypilot-blog-generator",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "node generate-blog.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.4"
+  }
+}
