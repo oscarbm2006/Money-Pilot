@@ -6729,12 +6729,13 @@ function mdToHtml(md) {
   let enLista = false;
   for (let raw of lineas) {
     const linea = raw.trim();
-    if (linea.startsWith('## ')) {
+    const encabezado = linea.match(/^#{1,6}\s*(.+)$/);
+    if (encabezado) {
       if (enLista) {
         html += '</ul>';
         enLista = false;
       }
-      html += `<h2>${escHtml(linea.slice(3))}</h2>`;
+      html += `<h2>${escHtml(encabezado[1])}</h2>`;
     } else if (linea.startsWith('- ')) {
       if (!enLista) {
         html += '<ul>';
