@@ -781,15 +781,8 @@ function calcularPerfilMultidimensional(respuestas, datos = {}) {
   const factoresFinancierosDuros = [factorFlujo, factorEmergencia, factorDeuda].filter(v => v != null);
   const capacidadFactores = [qEstabilidad, qConcentracion, qPatrimonio, coberturaObjetivo == null ? null : coberturaObjetivo < 0.25 ? 1 : coberturaObjetivo < 0.50 ? 2 : coberturaObjetivo < 0.75 ? 3 : 4, qLiquidezDetalle, qColchonAlternativo];
   const capacidadEncuesta = media(capacidadFactores);
-  /*
-   * FIX (antes: Math.min estricto): un único factor financiero débil (p.ej.
-   * fondo de emergencia bajo) ya no fuerza por sí solo la capacidad al
-   * mínimo. Ahora se pondera: el peor factor pesa el doble que el resto,
-   * de modo que sigue penalizando puntos débiles reales sin bloquear todo
-   * el perfil cuando el resto de la situación financiera es sólida.
-   */
-  const capacidadDura = factoresFinancierosDuros.length ? (factoresFinancierosDuros.reduce((a, b) => a + b, 0) + Math.min(...factoresFinancierosDuros)) / (factoresFinancierosDuros.length + 1) : null;
-  const capacidadRiesgo = a100(capacidadDura == null ? capacidadEncuesta : capacidadEncuesta == null ? capacidadDura : (capacidadEncuesta + capacidadDura) / 2);
+  const capacidadDura = factoresFinancierosDuros.length ? Math.min(...factoresFinancierosDuros) : null;
+  const capacidadRiesgo = a100(capacidadDura == null ? capacidadEncuesta : Math.min(capacidadEncuesta == null ? capacidadDura : capacidadEncuesta, capacidadDura));
 
   /* Liquidez ya NO incorpora matemáticamente el horizonte. Son dimensiones distintas. */
   const liquidez = a100(qLiquidez);
@@ -6742,7 +6735,7 @@ function mdToHtml(md) {
         html += '</ul>';
         enLista = false;
       }
-      html += `<h2>${escHtml(encabezado[1])}</h2>`;
+      html += `<h2 style="font-size:1.35rem;font-weight:800;margin:28px 0 12px;color:inherit;">${escHtml(encabezado[1])}</h2>`;
     } else if (linea.startsWith('- ')) {
       if (!enLista) {
         html += '<ul>';
@@ -6870,20 +6863,7 @@ function Blog({
         setSlugAbierto(null);
       },
       className: "font-bold underline"
-    }, "diagnóstico gratuito de MoneyPilot"), " arriba en el menú."), /*#__PURE__*/React.createElement("div", {
-      className: "mt-4 p-5 rounded-2xl text-sm",
-      style: {
-        backgroundColor: C.paper,
-        border: "1px solid " + C.border,
-        color: C.ink
-      }
-    }, "¿Quieres aprender más? Puedes encontrar ", /*#__PURE__*/React.createElement("a", {
-      href: "/recursos-y-libros.html",
-      className: "font-bold underline",
-      style: {
-        color: C.sand
-      }
-    }, "aquí algunos libros seleccionados"), " para empezar desde 0 y aprender a administrar tu propio dinero."));
+    }, "diagnóstico gratuito de MoneyPilot"), " arriba en el menú."));
   }
   return /*#__PURE__*/React.createElement("div", {
     className: "max-w-4xl mx-auto px-4 sm:px-6 py-12"
@@ -7233,15 +7213,6 @@ function App() {
       behavior: "auto"
     });
   }, [vistaActual]);
-  /* MoneyPilot Immersive: visual-only bridge.
-     It exposes the active screen to the independent WebGL layer.
-     No business state, calculations or Supabase data are modified. */
-  useEffect(() => {
-    document.documentElement.dataset.mpView = vistaActual;
-    window.dispatchEvent(new CustomEvent("moneypilot:viewchange", {
-      detail: { view: vistaActual }
-    }));
-  }, [vistaActual]);
 
   // Altura real del iframe de "Prueba nuestras calculadoras", recibida por
   // postMessage desde dentro del propio iframe (ver enviarAltura() en
@@ -7491,10 +7462,7 @@ function App() {
       color: C.sand,
       borderBottom: "2px solid " + C.sand
     } : {}
-  }, label)), /*#__PURE__*/React.createElement("a", {
-    href: "/recursos-y-libros.html",
-    className: "px-3 py-2 rounded-lg transition-colors hover:bg-white/10 nav-link-muted"
-  }, "Recursos"), /*#__PURE__*/React.createElement("button", {
+  }, label)), /*#__PURE__*/React.createElement("button", {
     onClick: () => setVistaActual("calculadoras"),
     className: "shrink-0 inline-flex items-center gap-1.5 text-sm font-bold px-4 py-2.5 rounded-xl",
     style: {
@@ -7545,13 +7513,7 @@ function App() {
     } : {
       backgroundColor: "rgba(255,255,255,.04)"
     }
-  }, label)), /*#__PURE__*/React.createElement("a", {
-    href: "/recursos-y-libros.html",
-    className: "whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-bold nav-link-muted",
-    style: {
-      backgroundColor: "rgba(255,255,255,.04)"
-    }
-  }, "Recursos"), /*#__PURE__*/React.createElement("button", {
+  }, label)), /*#__PURE__*/React.createElement("button", {
     onClick: () => setVistaActual("calculadoras"),
     className: "shrink-0 inline-flex items-center gap-1.5 text-sm font-bold px-4 py-2.5 rounded-xl",
     style: {
@@ -7826,13 +7788,7 @@ function App() {
     style: {
       color: C.mutedLight
     }
-  }, "Blog"), /*#__PURE__*/React.createElement("a", {
-    href: "/recursos-y-libros.html",
-    className: "hover:underline",
-    style: {
-      color: C.mutedLight
-    }
-  }, "Recursos"), /*#__PURE__*/React.createElement("button", {
+  }, "Blog"), /*#__PURE__*/React.createElement("button", {
     onClick: () => setVistaActual('privacidad'),
     className: "hover:underline",
     style: {
