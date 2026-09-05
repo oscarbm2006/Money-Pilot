@@ -7478,7 +7478,10 @@ function App() {
       color: C.sand,
       borderBottom: "2px solid " + C.sand
     } : {}
-  }, label)), /*#__PURE__*/React.createElement("button", {
+  }, label)), /*#__PURE__*/React.createElement("a", {
+    href: "/recursos-y-libros.html",
+    className: "px-3 py-2 rounded-lg transition-colors hover:bg-white/10 nav-link-muted"
+  }, "Recursos"), /*#__PURE__*/React.createElement("button", {
     onClick: () => setVistaActual("calculadoras"),
     className: "shrink-0 inline-flex items-center gap-1.5 text-sm font-bold px-4 py-2.5 rounded-xl",
     style: {
@@ -7529,7 +7532,13 @@ function App() {
     } : {
       backgroundColor: "rgba(255,255,255,.04)"
     }
-  }, label)), /*#__PURE__*/React.createElement("button", {
+  }, label)), /*#__PURE__*/React.createElement("a", {
+    href: "/recursos-y-libros.html",
+    className: "whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-bold nav-link-muted",
+    style: {
+      backgroundColor: "rgba(255,255,255,.04)"
+    }
+  }, "Recursos"), /*#__PURE__*/React.createElement("button", {
     onClick: () => setVistaActual("calculadoras"),
     className: "shrink-0 inline-flex items-center gap-1.5 text-sm font-bold px-4 py-2.5 rounded-xl",
     style: {
@@ -7804,7 +7813,13 @@ function App() {
     style: {
       color: C.mutedLight
     }
-  }, "Blog"), /*#__PURE__*/React.createElement("button", {
+  }, "Blog"), /*#__PURE__*/React.createElement("a", {
+    href: "/recursos-y-libros.html",
+    className: "hover:underline",
+    style: {
+      color: C.mutedLight
+    }
+  }, "Recursos"), /*#__PURE__*/React.createElement("button", {
     onClick: () => setVistaActual('privacidad'),
     className: "hover:underline",
     style: {

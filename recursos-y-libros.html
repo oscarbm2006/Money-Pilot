@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Recursos y Lecturas | MoneyPilot</title>
+<meta name="description" content="Libros y herramientas seleccionados para acompañar tu diagnóstico de MoneyPilot: psicología del dinero, ahorro, inversión pasiva, salida de deudas e independencia financiera.">
+<style>
+  /* ============================================================
+     SISTEMA DE DISEÑO — compartido con MoneyPilot (Archivo Maestro)
+     ============================================================ */
+  :root{
+    --bg:#f5f6fa;
+    --surface:#ffffff;
+    --primary:#4f46e5;
+    --primary-dark:#3730a3;
+    --primary-soft:#eef0ff;
+    --navy:#312e81;
+    --green:#0d9268;
+    --green-soft:#e6f7f1;
+    --blue:#0ea5e9;
+    --blue-soft:#e8f6fd;
+    --amber:#b45309;
+    --amber-soft:#fdf1e0;
+    --violet:#9333ea;
+    --violet-soft:#f3e8fd;
+    --text:#3f3d56;
+    --text-strong:#1e1e2e;
+    --muted:#6b7280;
+    --border:#e8e8f0;
+    --shadow-soft: 0 1px 3px rgba(30,30,46,0.05), 0 8px 24px rgba(30,30,46,0.05);
+    --shadow-soft-hover: 0 10px 28px -8px rgba(30,30,46,0.22);
+    --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --font-serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, Cambria, serif;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    font-family:var(--font-sans);
+    background:
+      radial-gradient(1100px 700px at 18% -10%, rgba(126,134,158,0.9) 0%, rgba(70,75,92,0.55) 38%, transparent 70%),
+      radial-gradient(900px 600px at 100% 30%, rgba(79,70,229,0.16), transparent 60%),
+      radial-gradient(800px 600px at 0% 100%, rgba(14,165,233,0.10), transparent 60%),
+      linear-gradient(160deg, #454b59 0%, #333844 55%, #23262f 100%);
+    background-color:#282b34;
+    color:var(--text);
+    line-height:1.55;
+    position:relative;
+  }
+
+  body::before{
+    content:"";
+    position:fixed;
+    inset:0;
+    pointer-events:none;
+    z-index:0;
+    opacity:0.5;
+    background-image:
+      repeating-linear-gradient(30deg, rgba(255,255,255,0.05) 0px, rgba(255,255,255,0.05) 1px, transparent 1px, transparent 96px),
+      repeating-linear-gradient(-30deg, rgba(255,255,255,0.05) 0px, rgba(255,255,255,0.05) 1px, transparent 1px, transparent 96px),
+      repeating-linear-gradient(90deg, rgba(255,255,255,0.03) 0px, rgba(255,255,255,0.03) 1px, transparent 1px, transparent 96px);
+    mask-image:radial-gradient(120% 100% at 50% 0%, #000 0%, rgba(0,0,0,0.5) 55%, transparent 90%);
+    -webkit-mask-image:radial-gradient(120% 100% at 50% 0%, #000 0%, rgba(0,0,0,0.5) 55%, transparent 90%);
+  }
+
+  .bg-blob{ position:fixed; border-radius:9999px; filter:blur(120px); pointer-events:none; z-index:0; will-change:transform; }
+  .blob-a{ width:520px; height:520px; top:-180px; left:-160px; background:var(--primary); opacity:0.28; animation:blobFloatA 26s ease-in-out infinite; }
+  .blob-b{ width:440px; height:440px; bottom:-160px; right:-140px; background:var(--blue); opacity:0.18; animation:blobFloatB 30s ease-in-out infinite; }
+  .blob-c{ width:380px; height:380px; top:40%; right:-160px; background:var(--green); opacity:0.10; animation:blobFloatC 28s ease-in-out infinite; }
+  @keyframes blobFloatA { 0%,100% { transform: translate(0,0) scale(1); } 33% { transform: translate(60px,-40px) scale(1.12); } 66% { transform: translate(-40px,30px) scale(0.92); } }
+  @keyframes blobFloatB { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(-70px,50px) scale(1.15); } }
+  @keyframes blobFloatC { 0%,100% { transform: translate(0,0) scale(1); } 40% { transform: translate(40px,40px) scale(1.05); } 75% { transform: translate(-30px,-30px) scale(0.95); } }
+
+  .topbar, .resources-section{ position:relative; z-index:1; }
+
+  .topbar{
+    background:rgba(15,17,25,0.35);
+    backdrop-filter:blur(14px) saturate(140%);
+    -webkit-backdrop-filter:blur(14px) saturate(140%);
+    border-bottom:1px solid rgba(255,255,255,0.08);
+    padding:14px 16px;
+  }
+  .topbar-inner{ max-width:1200px; margin:0 auto; display:flex; align-items:center; gap:10px; }
+  .topbar-badge{ width:28px; height:28px; border-radius:9999px; background:var(--primary); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .topbar-brand{ font-family:var(--font-serif); font-weight:700; font-size:0.98rem; color:#fff; text-decoration:none; }
+  .topbar-nav{ margin-left:auto; display:flex; gap:4px; }
+  .topbar-nav a{ font-size:0.8rem; font-weight:700; color:#9aa1b3; text-decoration:none; padding:6px 10px; border-radius:8px; transition:background .2s ease, color .2s ease; }
+  .topbar-nav a:hover{ background:rgba(255,255,255,0.08); color:#fff; }
+
+  button:focus-visible, input:focus-visible, a:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; border-radius: 4px; }
+
+  @keyframes staggerIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+  .stagger-item { animation: staggerIn 420ms cubic-bezier(0.16,1,0.3,1) both; }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration:.01ms !important; animation-iteration-count:1 !important; scroll-behavior:auto !important; } }
+
+  .resources-section{ max-width:1160px; margin:0 auto; padding:56px 20px 90px; }
+
+  /* ---- Hero ---- */
+  .page-header{ text-align:center; max-width:660px; margin:0 auto 34px; }
+  .page-header .eyebrow{ font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.16em; color:#a5b4fc; margin-bottom:12px; }
+  .page-header h1{
+    font-family:var(--font-serif);
+    font-size:clamp(2rem, 5vw, 3rem);
+    margin:0 0 14px;
+    font-weight:700;
+    color:#f1f2fa;
+    text-shadow:0 2px 10px rgba(0,0,0,0.4);
+    letter-spacing:-0.01em;
+  }
+  .page-header h1 em{ font-style:italic; color:#a5b4fc; }
+  .page-header p{ color:#cbd0dc; margin:0; font-size:1.05rem; max-width:520px; margin:0 auto; }
+
+  /* ---- Ruta de lectura: la hero se convierte en un mapa de 5 paradas ---- */
+  .reading-path{
+    display:flex;
+    justify-content:center;
+    gap:0;
+    max-width:920px;
+    margin:40px auto 8px;
+    position:relative;
+  }
+  .path-stop{
+    flex:1;
+    text-align:center;
+    padding:0 6px;
+    position:relative;
+  }
+  .path-stop .dot{
+    width:34px; height:34px;
+    margin:0 auto 10px;
+    border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--font-serif);
+    font-weight:700;
+    font-size:0.95rem;
+    color:#fff;
+    background:var(--stop-color);
+    box-shadow:0 0 0 4px rgba(255,255,255,0.06), 0 6px 18px -4px var(--stop-color);
+    position:relative;
+    z-index:1;
+  }
+  .path-stop::before{
+    content:"";
+    position:absolute;
+    top:17px;
+    left:-50%;
+    width:100%;
+    height:1px;
+    background:rgba(255,255,255,0.16);
+    z-index:0;
+  }
+  .path-stop:first-child::before{ display:none; }
+  .path-stop .label{ font-size:0.74rem; color:#c3c7d6; font-weight:600; line-height:1.3; }
+  @media (max-width:700px){
+    .reading-path{ display:none; }
+  }
+
+  .block-intro{
+    display:block;
+    position:relative;
+    padding:1.3rem 1.6rem 1.35rem;
+    border:1px solid var(--border);
+    border-left:5px solid var(--accent);
+    border-radius:0.9rem;
+    background:rgba(255,255,255,.96);
+    box-shadow:var(--shadow-soft);
+    margin-bottom:26px;
+  }
+  .block-kicker{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:6px;
+  }
+  .block-number{
+    font-family:var(--font-serif);
+    font-size:0.82rem;
+    font-weight:700;
+    color:var(--accent);
+    background:var(--accent-soft);
+    border-radius:8px;
+    padding:2px 9px;
+  }
+  .block-title{ font-family:var(--font-serif); font-size:1.55rem; font-weight:700; color:var(--text-strong); margin:0; letter-spacing:-0.01em; }
+  .block-subtitle{ color:var(--muted); margin:0 0 12px; font-size:0.95rem; max-width:760px; }
+  .block-profile{
+    display:inline-flex;
+    align-items:flex-start;
+    gap:8px;
+    background:var(--accent-soft);
+    color:var(--accent);
+    font-size:0.85rem;
+    padding:8px 14px;
+    border-radius:10px;
+    max-width:100%;
+    font-weight:500;
+  }
+  .block-profile b{ font-weight:700; white-space:nowrap; }
+  section.block{ margin-bottom:52px; }
+
+  .grid{ display:grid; gap:22px; }
+  .grid-3{grid-template-columns:repeat(3,1fr);}
+  .grid-2{grid-template-columns:repeat(2,1fr);}
+  .grid-1col{grid-template-columns:1fr;}
+
+  /* ---- Tarjetas de libro: lomo de color + cubierta tipográfica ---- */
+  .card{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-top:6px solid var(--accent);
+    border-radius:16px;
+    padding:26px 24px 24px;
+    box-shadow:var(--shadow-soft);
+    display:flex;
+    flex-direction:column;
+    transition:transform .25s ease, box-shadow .25s ease;
+    position:relative;
+  }
+  .card:hover{ transform:translateY(-6px); box-shadow:var(--shadow-soft-hover); }
+
+  .tag{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    background:var(--accent-soft);
+    color:var(--accent);
+    font-size:0.72rem;
+    font-weight:700;
+    padding:4px 12px;
+    border-radius:20px;
+    margin-bottom:16px;
+    align-self:flex-start;
+  }
+
+  .card h3{ font-family:var(--font-serif); margin:0 0 4px; font-size:1.18rem; font-weight:700; color:var(--text-strong); line-height:1.3; }
+  .card .author{ font-size:0.85rem; color:var(--muted); margin-bottom:14px; }
+  .card p.summary{ font-size:0.92rem; color:var(--muted); flex-grow:1; margin-bottom:22px; }
+
+  .btn-amazon, .btn-alta, .btn-plantillas{
+    display:inline-flex; align-items:center; justify-content:center; gap:7px;
+    text-align:center; text-decoration:none; font-weight:700; font-size:0.88rem;
+    padding:11px 18px; border-radius:10px;
+    transition:transform .2s ease, background .2s ease, box-shadow .2s ease;
+  }
+  .btn-amazon{ background:var(--accent); color:#fff; align-self:flex-start; }
+  .btn-amazon:hover{ transform:scale(1.03); filter:brightness(0.92); }
+  .btn-amazon svg{ flex-shrink:0; }
+
+  .btn-alta{ background:var(--navy); color:#fff; }
+  .btn-alta:hover{ transform:scale(1.03); background:#241f6b; }
+
+  /* ---- Tarjeta destacada: Trade Republic ---- */
+  .featured-card{
+    background:linear-gradient(155deg,#181545 0%,#2a2568 55%,#312e81 100%);
+    color:#fff;
+    border-radius:20px;
+    padding:40px 44px;
+    box-shadow:var(--shadow-soft);
+    position:relative;
+    overflow:hidden;
+  }
+  .featured-card::after{
+    content:"";
+    position:absolute;
+    top:-80px; right:-80px;
+    width:260px; height:260px;
+    border-radius:50%;
+    background:radial-gradient(circle, rgba(129,140,248,0.35), transparent 70%);
+  }
+  .featured-top{ display:flex; align-items:center; justify-content:space-between; gap:20px; flex-wrap:wrap; position:relative; z-index:1; }
+  .featured-content{ flex:1; min-width:260px; }
+  .featured-content .tag{ background:rgba(255,255,255,0.14); color:#c7d2fe; }
+  .featured-content h3{ font-family:var(--font-serif); font-size:1.7rem; font-weight:700; margin:10px 0 12px; color:#fff; letter-spacing:-0.01em; }
+  .featured-content p{ color:#c7d2fe; max-width:540px; margin-bottom:0; font-size:0.97rem; }
+
+  .featured-perks{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:14px;
+    margin:28px 0 30px;
+    position:relative;
+    z-index:1;
+  }
+  .perk{
+    background:rgba(255,255,255,0.07);
+    border:1px solid rgba(255,255,255,0.12);
+    border-radius:12px;
+    padding:14px 14px 15px;
+  }
+  .perk .perk-value{ font-family:var(--font-serif); font-size:1.3rem; font-weight:700; color:#fff; margin-bottom:2px; }
+  .perk .perk-label{ font-size:0.76rem; color:#b9bfe6; }
+
+  .featured-note{
+    font-size:0.78rem;
+    color:#9aa1d9;
+    margin-top:16px;
+    position:relative;
+    z-index:1;
+  }
+
+  .btn-plantillas{
+    background:var(--primary);
+    color:#fff;
+    padding:15px 30px;
+    font-size:0.98rem;
+    white-space:nowrap;
+    box-shadow:0 0 24px -6px rgba(79,70,229,0.6);
+    position:relative;
+    z-index:1;
+  }
+  .btn-plantillas:hover{ transform:scale(1.03); background:#fff; color:var(--navy); }
+
+  .back-link{ display:block; text-align:center; margin-top:8px; }
+  .back-link a{ color:#9aa1b3; font-size:0.85rem; text-decoration:none; }
+  .back-link a:hover{ color:#fff; }
+
+  @media (max-width:900px){
+    .grid-3{grid-template-columns:repeat(2,1fr);}
+    .grid-2{grid-template-columns:1fr;}
+    .featured-perks{grid-template-columns:repeat(2,1fr);}
+  }
+  @media (max-width:560px){
+    .grid-3{grid-template-columns:1fr;}
+    .featured-card{padding:30px 24px;}
+    .featured-top{text-align:center; justify-content:center;}
+    .featured-content p{margin:0 auto;}
+    .featured-perks{grid-template-columns:repeat(2,1fr);}
+    .topbar-nav{display:none;}
+  }
+</style>
+</head>
+<body>
+
+<div class="bg-blob blob-a"></div>
+<div class="bg-blob blob-b"></div>
+<div class="bg-blob blob-c"></div>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="topbar-badge">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9M13 17V5M8 17v-3"/></svg>
+    </div>
+    <a href="https://money-pilot-seven-orpin.vercel.app/" class="topbar-brand">MoneyPilot</a>
+    <nav class="topbar-nav">
+      <a href="https://money-pilot-seven-orpin.vercel.app/">Diagnóstico</a>
+      <a href="https://money-pilot-seven-orpin.vercel.app/">Simulador</a>
+      <a href="#">Recursos</a>
+    </nav>
+  </div>
+</div>
+
+<section class="resources-section">
+
+  <div class="page-header">
+    <div class="eyebrow">Recursos seleccionados</div>
+    <h1>Lecturas para acompañar<br><em>tu diagnóstico</em></h1>
+    <p>Después de ver tu diagnóstico en MoneyPilot, estos libros te ayudan a entender el porqué, poner en orden tus cuentas y dar el siguiente paso, según dónde estés ahora.</p>
+  </div>
+
+  <div class="reading-path">
+    <div class="path-stop" style="--stop-color:#4f46e5"><div class="dot">1</div><div class="label">Mentalidad</div></div>
+    <div class="path-stop" style="--stop-color:#0ea5e9"><div class="dot">2</div><div class="label">Fundamentos</div></div>
+    <div class="path-stop" style="--stop-color:#0d9268"><div class="dot">3</div><div class="label">Inversión</div></div>
+    <div class="path-stop" style="--stop-color:#b45309"><div class="dot">4</div><div class="label">Deudas</div></div>
+    <div class="path-stop" style="--stop-color:#9333ea"><div class="dot">5</div><div class="label">Independencia</div></div>
+  </div>
+
+  <!-- BLOQUE 1: PSICOLOGÍA FINANCIERA -->
+  <section class="block" style="--accent:#4f46e5; --accent-soft:#eef0ff;">
+    <div class="block-intro">
+      <div class="block-kicker"><span class="block-number">01</span><h2 class="block-title">Psicología financiera y comportamiento</h2></div>
+      <p class="block-subtitle">Muchas decisiones de dinero no son racionales: son emocionales. Antes de hablar de números, vale la pena entender por qué gastamos, ahorramos o evitamos mirar nuestras cuentas.</p>
+      <div class="block-profile"><b>Para ti si:</b> sientes que el dinero se te escapa sin saber muy bien cómo, o te cuesta mantener la constancia.</div>
+    </div>
+    <div class="grid grid-3">
+
+      <div class="card stagger-item">
+        <span class="tag">Mentalidad</span>
+        <h3>La psicología del dinero</h3>
+        <div class="author">Morgan Housel</div>
+        <p class="summary">Explica cómo nuestras emociones, no las matemáticas, deciden la mayoría de lo que hacemos con el dinero. Un clásico para entenderte mejor a ti mismo.</p>
+        <a href="https://amzn.to/4dfM7cm" class="btn-amazon" target="_blank" rel="noopener sponsored">Ver en Amazon <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
+      </div>
+
+      <div class="card stagger-item" style="animation-delay:60ms">
+        <span class="tag">Hábitos</span>
+        <h3>Hábitos atómicos</h3>
+        <div class="author">James Clear</div>
+        <p class="summary">Un método sencillo para crear hábitos pequeños que se mantienen en el tiempo. Justo lo que hace falta para que un plan de ahorro no se quede en buenas intenciones.</p>
+        <a href="https://amzn.to/46yxcGt" class="btn-amazon" target="_blank" rel="noopener sponsored">Ver en Amazon <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
+      </div>
+
+      <div class="card stagger-item" style="animation-delay:120ms">
+        <span class="tag">Sesgos</span>
+        <h3>Nudge (Un pequeño empujón)</h3>
+        <div class="author">Richard H. Thaler y Cass R. Sunstein</div>
+        <p class="summary">Pequeños cambios en cómo organizas tu dinero pueden empujarte a tomar mejores decisiones, sin necesidad de fuerza de voluntad extra.</p>
+        <a href="https://amzn.to/4yg12LT" class="btn-amazon" target="_blank" rel="noopener sponsored">Ver en Amazon <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- BLOQUE 2: FUNDAMENTOS Y AHORRO -->
+  <section class="block" style="--accent:#0ea5e9; --accent-soft:#e8f6fd;">
+    <div class="block-intro">
+      <div class="block-kicker"><span class="block-number">02</span><h2 class="block-title">Fundamentos de educación financiera y ahorro</h2></div>
+      <p class="block-subtitle">Ideas simples y palabras claras para poner en orden lo que ganas y lo que gastas.</p>
+      <div class="block-profile"><b>Para ti si:</b> estás empezando con esto del dinero o quieres ordenar tus cuentas desde cero.</div>
+    </div>
+    <div class="grid grid-3">
+
+      <div class="card stagger-item">
+        <span class="tag">Iniciación</span>
+        <h3>El hombre más rico de Babilonia</h3>
+        <div class="author">George S. Clason</div>
+        <p class="summary">A través de historias en la antigua Babilonia, enseña ideas de ahorro que nunca pasan de moda. Perfecto si estás empezando desde cero.</p>
+        <a href="https://amzn.to/4zRdoLS" class="btn-amazon" target="_blank" rel="noopener sponsored">Ver en Amazon <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
+      </div>
+
+      <div class="card stagger-item" style="animation-delay:60ms">
+        <span class="tag">Consumo consciente</span>
+        <h3>Ten peor coche que tu vecino</h3>
+        <div class="author">Luis Pita</div>
+        <p class="summary">Con humor, desmonta la trampa de gastar para aparentar. Un buen empujón si quieres dejar de compararte y empezar a ahorrar de verdad.</p>
+        <a href="https://amzn.to/4x0cPN8" class="btn-amazon" target="_blank" rel="noopener sponsored">Ver en Amazon <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
+      </div>
+
+      <div class="card stagger-item" style="animation-delay:120ms">
+        <span class="tag">Educación financiera</span>
+        <h3>Padre rico, padre pobre</h3>
+        <div class="author">Robert T. Kiyosaki</div>
+        <p class="summary">Compara dos formas muy distintas de pensar sobre el trabajo, el dinero y los activos. Puede cambiar cómo ves tus propios ingresos.</p>
+        <a href="https://amzn.to/3TbO3Mh" class="btn-amazon" target="_blank" rel="noopener sponsored">Ver en Amazon <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- BLOQUE 3: INVERSIÓN PASIVA -->
+  <section class="block" style="--accent:#0d9268; --accent-soft:#e6f7f1;">
+    <div class="block-intro">
+      <div class="block-kicker"><span class="block-number">03</span><h2 class="block-title">Inversión pasiva, indexación y largo plazo</h2></div>
+      <p class="block-subtitle">Cuando el simulador de interés compuesto te muestra cómo crece el dinero a largo plazo, el siguiente paso natural es entender cómo invertirlo bien.</p>
+      <div class="block-profile"><b>Para ti si:</b> ya tienes tu fondo de emergencia y quieres invertir tu ahorro mensual sin tener que estudiar empresa por empresa.</div>
+    </div>
+    <div class="grid grid-3">
+
+      <div class="card stagger-item">
+        <span class="tag">Gestión pasiva</span>
+        <h3>El pequeño libro para invertir con sentido común</h3>
+        <div class="author">John C. Bogle</div>
+        <p class="summary">El fundador de Vanguard, una de las mayores gestoras de fondos del mundo, explica con datos por qué los fondos indexados de bajo coste ganan a largo plazo. La base de invertir sin complicarte.</p>
+        <a href="https://amzn.to/4zR95Aa" class="btn-amazon" target="_blank" rel="noopener sponsored">Ver en Amazon <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
+      </div>
+
+      <div class="card stagger-item" style="animation-delay:60ms">
+        <span class="tag">Inversión en español</span>
+        <h3>El camino del inversor</h3>
+        <div class="author">Javier del Valle y Fernando Ruiz de Velasco</div>
+        <p class="summary">Una guía en español para montar una cartera indexada y global, pensada para quien empieza a invertir pensando en el largo plazo.</p>
+        <a href="https://amzn.to/4x12lNG" class="btn-amazon" target="_blank" rel="noopener sponsored">Ver en Amazon <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
+      </div>
+
+      <div class="card stagger-item" style="animation-delay:120ms">
+        <span class="tag">Inversión en valor</span>
+        <h3>El inversor inteligente</h3>
+        <div class="author">Benjamin Graham</div>
+        <p class="summary">El libro de referencia de la inversión en valor, el que marcó a Warren Buffett. Enseña a invertir con cabeza fría, no con nervios.</p>
+        <a href="https://amzn.to/4cXklkP" class="btn-amazon" target="_blank" rel="noopener sponsored">Ver en Amazon <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- BLOQUE 4: SALIDA DE DEUDAS -->
+  <section class="block" style="--accent:#b45309; --accent-soft:#fdf1e0;">
+    <div class="block-intro">
+      <div class="block-kicker"><span class="block-number">04</span><h2 class="block-title">Salida de deudas y gestión del presupuesto</h2></div>
+      <p class="block-subtitle">Los métodos Bola de nieve y Avalancha del simulador funcionan mejor con un poco de disciplina extra. Estas lecturas ayudan a llevar el plan hasta el final.</p>
+      <div class="block-profile"><b>Para ti si:</b> ves en tu diagnóstico que tienes muchos préstamos o tarjetas y necesitas un plan de choque ya.</div>
+    </div>
+    <div class="grid grid-2">
+
+      <div class="card stagger-item">
+        <span class="tag">Plan de choque</span>
+        <h3>La transformación total de su dinero</h3>
+        <div class="author">Dave Ramsey</div>
+        <p class="summary">Siete pasos, sin rodeos, para salir de deudas y empezar a construir patrimonio desde cero. El clásico americano del "plan de choque".</p>
+        <a href="https://amzn.to/3V7NLqf" class="btn-amazon" target="_blank" rel="noopener sponsored">Ver en Amazon <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
+      </div>
+
+      <div class="card stagger-item" style="animation-delay:60ms">
+        <span class="tag">Presupuesto</span>
+        <h3>Administración del dinero</h3>
+        <div class="author">Scott Wright</div>
+        <p class="summary">Una guía práctica para hacer presupuestos, vivir con menos estrés, salir de la deuda y reparar tu crédito paso a paso.</p>
+        <a href="https://amzn.to/4cYqOvP" class="btn-amazon" target="_blank" rel="noopener sponsored">Ver en Amazon <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- BLOQUE 5: INDEPENDENCIA FINANCIERA / FIRE -->
+  <section class="block" style="--accent:#9333ea; --accent-soft:#f3e8fd;">
+    <div class="block-intro">
+      <div class="block-kicker"><span class="block-number">05</span><h2 class="block-title">Independencia financiera y planificación de vida</h2></div>
+      <p class="block-subtitle">Cuando el simulador te enseña cómo se ve tu dinero dentro de 20 o 30 años, es normal empezar a pensar en objetivos más grandes: jubilarte antes, tomarte un año sabático o trabajar con menos presión.</p>
+      <div class="block-profile"><b>Para ti si:</b> ahorras más de un 20-30% de lo que ganas y quieres que tu dinero trabaje para darte tiempo y libertad.</div>
+    </div>
+    <div class="grid grid-1col" style="max-width:380px;">
+
+      <div class="card stagger-item">
+        <span class="tag">FIRE</span>
+        <h3>Independízate de papá Estado</h3>
+        <div class="author">Carlos Galán</div>
+        <p class="summary">La referencia en español del movimiento FIRE: cómo diseñar un plan de ahorro e inversión que te acerque a la independencia financiera.</p>
+        <a href="https://amzn.to/4yhGSRJ" class="btn-amazon" target="_blank" rel="noopener sponsored">Ver en Amazon <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- BLOQUE 6: TRADE REPUBLIC -->
+  <section class="block">
+    <div class="featured-card">
+      <div class="featured-top">
+        <div class="featured-content">
+          <span class="tag">Promoción temporal · solo nuevos usuarios</span>
+          <h3>Interés asegurado sobre tu efectivo con Trade Republic</h3>
+          <p>Abre tu cuenta con nuestro enlace y llévate un interés asegurado durante los primeros meses. Solo para quienes se registran como nuevos usuarios a través de esta invitación.</p>
+        </div>
+        <a href="https://refnocode.trade.re/26037sv4" class="btn-plantillas" target="_blank" rel="noopener sponsored">Unirme a Trade Republic</a>
+      </div>
+
+      <div class="featured-perks">
+        <div class="perk"><div class="perk-value">3% TAE</div><div class="perk-label">asegurado, promoción temporal</div></div>
+        <div class="perk"><div class="perk-value">100.000 €</div><div class="perk-label">protegidos por el FGD alemán</div></div>
+        <div class="perk"><div class="perk-value">0 €</div><div class="perk-label">comisión de mantenimiento</div></div>
+        <div class="perk"><div class="perk-value">1%</div><div class="perk-label">Saveback en compras con tarjeta</div></div>
+      </div>
+
+      <p class="featured-note">Promoción temporal y sujeta a cambios, aplicable solo a quienes se registran como nuevos usuarios a través de este enlace. Revisa siempre las condiciones vigentes en la app antes de darte de alta.</p>
+    </div>
+  </section>
+
+  <div class="back-link">
+    <a href="https://money-pilot-seven-orpin.vercel.app/">← Volver a MoneyPilot</a>
+  </div>
+
+</section>
+
+</body>
+</html>
