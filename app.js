@@ -781,8 +781,15 @@ function calcularPerfilMultidimensional(respuestas, datos = {}) {
   const factoresFinancierosDuros = [factorFlujo, factorEmergencia, factorDeuda].filter(v => v != null);
   const capacidadFactores = [qEstabilidad, qConcentracion, qPatrimonio, coberturaObjetivo == null ? null : coberturaObjetivo < 0.25 ? 1 : coberturaObjetivo < 0.50 ? 2 : coberturaObjetivo < 0.75 ? 3 : 4, qLiquidezDetalle, qColchonAlternativo];
   const capacidadEncuesta = media(capacidadFactores);
-  const capacidadDura = factoresFinancierosDuros.length ? Math.min(...factoresFinancierosDuros) : null;
-  const capacidadRiesgo = a100(capacidadDura == null ? capacidadEncuesta : Math.min(capacidadEncuesta == null ? capacidadDura : capacidadEncuesta, capacidadDura));
+  /*
+   * FIX (antes: Math.min estricto): un único factor financiero débil (p.ej.
+   * fondo de emergencia bajo) ya no fuerza por sí solo la capacidad al
+   * mínimo. Ahora se pondera: el peor factor pesa el doble que el resto,
+   * de modo que sigue penalizando puntos débiles reales sin bloquear todo
+   * el perfil cuando el resto de la situación financiera es sólida.
+   */
+  const capacidadDura = factoresFinancierosDuros.length ? (factoresFinancierosDuros.reduce((a, b) => a + b, 0) + Math.min(...factoresFinancierosDuros)) / (factoresFinancierosDuros.length + 1) : null;
+  const capacidadRiesgo = a100(capacidadDura == null ? capacidadEncuesta : capacidadEncuesta == null ? capacidadDura : (capacidadEncuesta + capacidadDura) / 2);
 
   /* Liquidez ya NO incorpora matemáticamente el horizonte. Son dimensiones distintas. */
   const liquidez = a100(qLiquidez);
@@ -7212,6 +7219,15 @@ function App() {
       left: 0,
       behavior: "auto"
     });
+  }, [vistaActual]);
+  /* MoneyPilot Immersive: visual-only bridge.
+     It exposes the active screen to the independent WebGL layer.
+     No business state, calculations or Supabase data are modified. */
+  useEffect(() => {
+    document.documentElement.dataset.mpView = vistaActual;
+    window.dispatchEvent(new CustomEvent("moneypilot:viewchange", {
+      detail: { view: vistaActual }
+    }));
   }, [vistaActual]);
 
   // Altura real del iframe de "Prueba nuestras calculadoras", recibida por
