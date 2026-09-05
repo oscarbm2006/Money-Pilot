@@ -2404,6 +2404,24 @@ function AuthModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [avisoConfirmacion, setAvisoConfirmacion] = useState(false);
+  const [loadingGoogle, setLoadingGoogle] = useState(false);
+  const loginConGoogle = async () => {
+    setError(null);
+    setLoadingGoogle(true);
+    const {
+      error
+    } = await supa.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: window.location.origin
+      }
+    });
+    if (error) {
+      setError(traducirErrorAuth(error.message));
+      setLoadingGoogle(false);
+    }
+    // Si no hay error, el navegador redirige a Google automáticamente
+  };
   const emailsNoCoinciden = modo === "registro" && emailConfirm.length > 0 && email.trim().toLowerCase() !== emailConfirm.trim().toLowerCase();
   const submit = async e => {
     e.preventDefault();
@@ -2496,7 +2514,50 @@ function AuthModal({
     style: {
       color: C.muted
     }
-  }, modo === "registro" ? "Guarda tu progreso en la nube y accede desde cualquier dispositivo." : "Bienvenido de nuevo."), /*#__PURE__*/React.createElement("form", {
+  }, modo === "registro" ? "Guarda tu progreso en la nube y accede desde cualquier dispositivo." : "Bienvenido de nuevo."), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: loginConGoogle,
+    disabled: loadingGoogle,
+    className: "w-full flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-sm font-bold border transition-colors hover:bg-black/5 mb-3",
+    style: {
+      borderColor: C.border,
+      color: C.ink,
+      backgroundColor: C.white
+    }
+  }, /*#__PURE__*/React.createElement("svg", {
+    width: "18",
+    height: "18",
+    viewBox: "0 0 48 48"
+  }, /*#__PURE__*/React.createElement("path", {
+    fill: "#FFC107",
+    d: "M43.6 20.5H42V20H24v8h11.3c-1.6 4.7-6.1 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.1 8 3.1l5.7-5.7C34.6 6.1 29.6 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-3.5z"
+  }), /*#__PURE__*/React.createElement("path", {
+    fill: "#FF3D00",
+    d: "M6.3 14.7l6.6 4.8C14.6 15.9 18.9 13 24 13c3.1 0 5.9 1.1 8 3.1l5.7-5.7C34.6 6.1 29.6 4 24 4 16.3 4 9.6 8.3 6.3 14.7z"
+  }), /*#__PURE__*/React.createElement("path", {
+    fill: "#4CAF50",
+    d: "M24 44c5.5 0 10.4-1.9 14.3-5.1l-6.6-5.6C29.6 35.4 27 36.3 24 36.3c-5.2 0-9.6-3.3-11.2-8l-6.6 5.1C9.5 39.6 16.2 44 24 44z"
+  }), /*#__PURE__*/React.createElement("path", {
+    fill: "#1976D2",
+    d: "M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.2 4.3-4.1 5.7l6.6 5.6C40.9 36.6 44 30.9 44 24c0-1.3-.1-2.7-.4-3.5z"
+  })), loadingGoogle ? "Redirigiendo…" : "Continuar con Google"), /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-3 mb-3"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex-1 h-px",
+    style: {
+      backgroundColor: C.border
+    }
+  }), /*#__PURE__*/React.createElement("span", {
+    className: "text-xs",
+    style: {
+      color: C.muted
+    }
+  }, "o con tu email"), /*#__PURE__*/React.createElement("div", {
+    className: "flex-1 h-px",
+    style: {
+      backgroundColor: C.border
+    }
+  })), /*#__PURE__*/React.createElement("form", {
     onSubmit: submit,
     className: "space-y-3"
   }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
@@ -5490,7 +5551,6 @@ function ConfianzaPrivacidad() {
   }, "Puedes completar el diagnóstico con tranquilidad: la información se mantiene local y solo se sincroniza con la nube si eliges crear una cuenta."))));
 }
 function PrivacyNotice() {
-  const [open, setOpen] = useState(false);
   return /*#__PURE__*/React.createElement("div", {
     className: "rounded-xl px-4 py-3 text-xs",
     style: {
@@ -5498,35 +5558,25 @@ function PrivacyNotice() {
       border: "1px solid rgba(16,185,129,0.18)"
     }
   }, /*#__PURE__*/React.createElement("div", {
-    className: "flex items-start gap-2.5"
+    className: "flex items-center gap-2.5"
   }, /*#__PURE__*/React.createElement(I.shieldCheck, {
     size: 16,
     color: C.salu,
-    className: "mt-0.5 shrink-0"
-  }), /*#__PURE__*/React.createElement("div", {
+    className: "shrink-0"
+  }), /*#__PURE__*/React.createElement("p", {
     className: "leading-relaxed",
     style: {
       color: C.ink
     }
-  }, /*#__PURE__*/React.createElement("p", null, "Al crear una cuenta, tus datos dejan de guardarse solo en este dispositivo (localStorage) y también se sincronizan de forma segura con nuestra base de datos en la nube (Supabase), para que puedas acceder desde cualquier dispositivo. No los compartimos con terceros ni los usamos con fines publicitarios."), /*#__PURE__*/React.createElement("button", {
-    type: "button",
-    onClick: () => setOpen(o => !o),
-    className: "inline-flex items-center gap-1 mt-2 font-bold",
+  }, "Tus datos se guardan de forma segura. ", /*#__PURE__*/React.createElement("a", {
+    href: "/privacidad.html",
+    target: "_blank",
+    rel: "noopener",
+    className: "font-bold underline",
     style: {
       color: C.salu
     }
-  }, "Más información", /*#__PURE__*/React.createElement(I.chevronDown, {
-    size: 12,
-    style: {
-      transform: open ? "rotate(180deg)" : "none",
-      transition: "transform .15s"
-    }
-  })), open && /*#__PURE__*/React.createElement("div", {
-    className: "mt-2",
-    style: {
-      color: C.muted
-    }
-  }, "Guardamos tus respuestas del diagnóstico, tu perfil de riesgo y tus objetivos para que puedas continuar donde lo dejaste y, si tienes cuenta, retomarlo desde otro dispositivo. Puedes eliminar tu cuenta y los datos asociados a ella cuando quieras desde los ajustes de tu perfil."))));
+  }, "Ver política de privacidad"))));
 }
 function GastosTabs({
   datos,
