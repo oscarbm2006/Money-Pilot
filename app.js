@@ -6870,7 +6870,20 @@ function Blog({
         setSlugAbierto(null);
       },
       className: "font-bold underline"
-    }, "diagnóstico gratuito de MoneyPilot"), " arriba en el menú."));
+    }, "diagnóstico gratuito de MoneyPilot"), " arriba en el menú."), /*#__PURE__*/React.createElement("div", {
+      className: "mt-4 p-5 rounded-2xl text-sm",
+      style: {
+        backgroundColor: C.paper,
+        border: "1px solid " + C.border,
+        color: C.ink
+      }
+    }, "¿Quieres aprender más? Puedes encontrar ", /*#__PURE__*/React.createElement("a", {
+      href: "/recursos-y-libros.html",
+      className: "font-bold underline",
+      style: {
+        color: C.sand
+      }
+    }, "aquí algunos libros seleccionados"), " para empezar desde 0 y aprender a administrar tu propio dinero."));
   }
   return /*#__PURE__*/React.createElement("div", {
     className: "max-w-4xl mx-auto px-4 sm:px-6 py-12"
