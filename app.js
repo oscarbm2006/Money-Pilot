@@ -5506,10 +5506,10 @@ function HeroSection({
   }, /*#__PURE__*/React.createElement("div", {
     className: "grid lg:grid-cols-[1fr_.9fr] gap-10 lg:gap-14 items-start lg:items-center"
   }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
-    className: "text-xs font-bold uppercase mb-4",
+    className: "text-sm font-bold uppercase mb-4",
     style: {
       color: C.sand,
-      letterSpacing: ".16em"
+      letterSpacing: ".14em"
     }
   }, "Pon tu dinero en orden"), /*#__PURE__*/React.createElement("h1", {
     className: "font-serif text-4xl sm:text-5xl lg:text-6xl font-bold leading-[1.02]",
