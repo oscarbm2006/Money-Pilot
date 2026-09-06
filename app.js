@@ -5495,7 +5495,7 @@ function HeroSection({
     fuente: "FUENTE: Universidad de Chicago (Premio Nobel Richard Thaler y Shlomo Benartzi)."
   }];
   return /*#__PURE__*/React.createElement("section", {
-    className: "relative pt-10 sm:pt-14 pb-14 sm:pb-20"
+    className: "relative pt-16 sm:pt-20 pb-14 sm:pb-20"
   }, /*#__PURE__*/React.createElement("div", {
     className: "absolute inset-0 pointer-events-none",
     style: {
