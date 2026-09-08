@@ -85,7 +85,7 @@ Extensión: alrededor de 300 a 400 palabras. Incluye un primer párrafo resumen 
       return res.status(502).json({ error: 'Error al generar el contenido con Gemini', detalle: geminiData });
     }
 
-    const contenido = geminiData?.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('\n') || '';
+    let contenido = geminiData?.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('\n') || '';
     if (!contenido.trim()) {
       return res.status(502).json({ error: 'Gemini no devolvió contenido' });
     }
@@ -100,6 +100,9 @@ Extensión: alrededor de 300 a 400 palabras. Incluye un primer párrafo resumen 
     
     if (primeraLinea.startsWith('# ')) {
       title = primeraLinea.replace(/^#\s*/, '').slice(0, 120);
+      
+      // NUEVA LÍNEA: Borramos el H1 del contenido para que no se duplique en la web
+      contenido = contenido.replace(primeraLinea, '').trim();
     }
 
     const slugBase = slugify(title) || slugify(tema) || `inversion-${Date.now()}`;
