@@ -26,18 +26,21 @@ module.exports = async function handler(req, res) {
 
   const esTesis = tipo === 'tesis';
 
-  // NUEVAS INSTRUCCIONES: MODO PERSUASIVO Y GANCHO (COPYWRITING)
+  // HEMOS RESTAURADO EL TONO PROFESIONAL Y PROHIBIDO EL SENSACIONALISMO
   const prompt = esTesis
-    ? `Escribe un "gancho" persuasivo y atrapante para una tesis de inversión sobre: "${tema}". 
-El objetivo es captar la atención del lector destacando el mayor potencial, el catalizador más importante o el dato más rompedor. 
-Escribe en español, tono profesional pero generando mucha curiosidad (copywriting financiero). 
-Termina SIEMPRE el texto con una frase que invite a la acción, como por ejemplo: "Haz clic aquí para leer la tesis completa y descubrir los riesgos ocultos". 
-Hazlo muy conciso y directo, máximo 150 a 200 palabras.`
-    : `Escribe un avance periodístico (teaser) muy atractivo sobre esta noticia de bolsa: "${tema}". 
-Destaca lo más urgente, cómo impacta al mercado y por qué el inversor debería prestar atención ahora mismo. Genera intriga.
-Escribe en español, tono periodístico persuasivo y rápido. 
-Termina SIEMPRE con un llamado a la acción claro, por ejemplo: "Lee el reporte completo para saber cómo posicionarte". 
-Hazlo muy conciso, máximo 150 a 200 palabras.`;
+    ? `Escribe un Resumen Ejecutivo profesional y detallado para una tesis de inversión sobre: "${tema}".
+Estructura el texto con subtítulos usando "## ". Debes incluir obligatoriamente las siguientes secciones:
+- ## Contexto macroeconómico y catalizadores
+- ## Oportunidades y posicionamiento estratégico
+- ## Riesgos a considerar
+
+El tono debe ser de análisis financiero institucional: serio, objetivo y riguroso. PROHIBIDO usar lenguaje publicitario, sensacionalista, clickbait o frases de urgencia (no uses "la oportunidad oculta", "entra ahora", ni hagas preguntas al lector).
+Extensión: alrededor de 400 palabras. 
+Al final, añade de forma discreta una línea que diga: "El análisis completo, los modelos de valoración y la investigación detallada se desarrollan en el documento extendido de la tesis."`
+    : `Escribe un artículo de noticias de bolsa sobre: "${tema}".
+Basado en información reciente. Estructura con subtítulos "## " y listas "- ".
+Escribe en español. El tono debe ser periodístico financiero, serio y objetivo (estilo Bloomberg o Reuters). PROHIBIDO usar clickbait o sensacionalismo.
+Extensión: alrededor de 300 a 400 palabras. Incluye un primer párrafo resumen con lo más importante.`;
 
   try {
     const geminiRes = await fetch(
@@ -64,7 +67,7 @@ Hazlo muy conciso, máximo 150 a 200 palabras.`;
     }
 
     const primeraLinea = contenido.split('\n').find(l => l.trim().length > 0) || tema;
-    const title = primeraLinea.replace(/^#+\s*/, '').slice(0, 120) || `${esTesis ? 'Tesis de inversión' : 'Noticia'}: ${tema}`;
+    const title = primeraLinea.replace(/^#+\s*/, '').slice(0, 120) || `${esTesis ? 'Resumen de Tesis' : 'Noticia'}: ${tema}`;
     const slugBase = slugify(title) || slugify(tema) || `inversion-${Date.now()}`;
     const slug = `${slugBase}-${Date.now().toString().slice(-5)}`;
     const excerpt = contenido.replace(/^#+\s*/gm, '').replace(/\n+/g, ' ').slice(0, 160);
