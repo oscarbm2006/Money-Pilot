@@ -26,21 +26,20 @@ module.exports = async function handler(req, res) {
 
   const esTesis = tipo === 'tesis';
 
+  // NUEVAS INSTRUCCIONES: MODO PERSUASIVO Y GANCHO (COPYWRITING)
   const prompt = esTesis
-    ? `Escribe una tesis de inversión detallada y bien fundamentada sobre: "${tema}".
-Usa datos actuales y recientes (precio, métricas financieras clave, catalizadores, riesgos).
-Estructura el texto con subtítulos usando "## " al inicio de cada línea de subtítulo (por ejemplo "## Contexto y catalizadores").
-Usa listas con "- " cuando enumeres puntos. No uses markdown de negrita excepto "**palabra**" si de verdad hace falta.
-Incluye al final un apartado "## Riesgos a considerar".
-No des consejos personalizados de compra/venta, preséntalo como análisis informativo.
-Escribe en español, tono profesional pero claro, unas 500-700 palabras.`
-    : `Escribe un artículo de noticias de bolsa sobre: "${tema}".
-Basado en la información más reciente disponible. Estructura con subtítulos "## " y listas "- " donde aporte claridad.
-Escribe en español, tono periodístico claro, unas 400-600 palabras.
-Incluye un primer párrafo resumen de lo más importante.`;
+    ? `Escribe un "gancho" persuasivo y atrapante para una tesis de inversión sobre: "${tema}". 
+El objetivo es captar la atención del lector destacando el mayor potencial, el catalizador más importante o el dato más rompedor. 
+Escribe en español, tono profesional pero generando mucha curiosidad (copywriting financiero). 
+Termina SIEMPRE el texto con una frase que invite a la acción, como por ejemplo: "Haz clic aquí para leer la tesis completa y descubrir los riesgos ocultos". 
+Hazlo muy conciso y directo, máximo 150 a 200 palabras.`
+    : `Escribe un avance periodístico (teaser) muy atractivo sobre esta noticia de bolsa: "${tema}". 
+Destaca lo más urgente, cómo impacta al mercado y por qué el inversor debería prestar atención ahora mismo. Genera intriga.
+Escribe en español, tono periodístico persuasivo y rápido. 
+Termina SIEMPRE con un llamado a la acción claro, por ejemplo: "Lee el reporte completo para saber cómo posicionarte". 
+Hazlo muy conciso, máximo 150 a 200 palabras.`;
 
   try {
-    // CAMBIO AL MODELO 3.6-FLASH QUE PIDE GOOGLE
     const geminiRes = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
       {
