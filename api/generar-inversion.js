@@ -53,8 +53,9 @@ Escribe en español, tono periodístico claro, unas 400-600 palabras.
 Incluye un primer párrafo resumen de lo más importante.`;
 
   try {
+    // AQUÍ ESTÁ EL CAMBIO CLAVE: Usamos gemini-2.5-flash que tienes gratis
     const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
