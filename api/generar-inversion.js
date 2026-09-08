@@ -26,18 +26,20 @@ module.exports = async function handler(req, res) {
 
   const esTesis = tipo === 'tesis';
 
-  // HEMOS RESTAURADO EL TONO PROFESIONAL Y PROHIBIDO EL SENSACIONALISMO
+  // Le pedimos a la IA que siempre empiece con un Título Principal (# )
   const prompt = esTesis
     ? `Escribe un Resumen Ejecutivo profesional y detallado para una tesis de inversión sobre: "${tema}".
-Estructura el texto con subtítulos usando "## ". Debes incluir obligatoriamente las siguientes secciones:
+Comienza SIEMPRE el texto con un título principal usando un solo "#" (ejemplo: "# Análisis de inversión: ${tema}").
+Luego, estructura el resto del texto con subtítulos usando "## ". Debes incluir obligatoriamente las siguientes secciones:
 - ## Contexto macroeconómico y catalizadores
 - ## Oportunidades y posicionamiento estratégico
 - ## Riesgos a considerar
 
-El tono debe ser de análisis financiero institucional: serio, objetivo y riguroso. PROHIBIDO usar lenguaje publicitario, sensacionalista, clickbait o frases de urgencia (no uses "la oportunidad oculta", "entra ahora", ni hagas preguntas al lector).
+El tono debe ser de análisis financiero institucional: serio, objetivo y riguroso. PROHIBIDO usar lenguaje publicitario, sensacionalista, clickbait o frases de urgencia.
 Extensión: alrededor de 400 palabras. 
 Al final, añade de forma discreta una línea que diga: "El análisis completo, los modelos de valoración y la investigación detallada se desarrollan en el documento extendido de la tesis."`
     : `Escribe un artículo de noticias de bolsa sobre: "${tema}".
+Comienza SIEMPRE el texto con un título principal usando un solo "#".
 Basado en información reciente. Estructura con subtítulos "## " y listas "- ".
 Escribe en español. El tono debe ser periodístico financiero, serio y objetivo (estilo Bloomberg o Reuters). PROHIBIDO usar clickbait o sensacionalismo.
 Extensión: alrededor de 300 a 400 palabras. Incluye un primer párrafo resumen con lo más importante.`;
@@ -66,8 +68,19 @@ Extensión: alrededor de 300 a 400 palabras. Incluye un primer párrafo resumen 
       return res.status(502).json({ error: 'Gemini no devolvió contenido' });
     }
 
-    const primeraLinea = contenido.split('\n').find(l => l.trim().length > 0) || tema;
-    const title = primeraLinea.replace(/^#+\s*/, '').slice(0, 120) || `${esTesis ? 'Resumen de Tesis' : 'Noticia'}: ${tema}`;
+    // LÓGICA DE TÍTULO CORREGIDA
+    // Buscamos la primera línea. Si es un título principal (# ), lo usamos. Si no, generamos uno limpio por defecto.
+    const lineas = contenido.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+    const primeraLinea = lineas[0] || '';
+    
+    // Título por defecto en caso de que la IA se olvide del H1
+    let title = `${esTesis ? 'Tesis de inversión' : 'Noticia'}: ${tema}`;
+    
+    // Si la IA hizo caso y puso un "# ", lo extraemos limpio
+    if (primeraLinea.startsWith('# ')) {
+      title = primeraLinea.replace(/^#\s*/, '').slice(0, 120);
+    }
+
     const slugBase = slugify(title) || slugify(tema) || `inversion-${Date.now()}`;
     const slug = `${slugBase}-${Date.now().toString().slice(-5)}`;
     const excerpt = contenido.replace(/^#+\s*/gm, '').replace(/\n+/g, ' ').slice(0, 160);
@@ -100,4 +113,4 @@ Extensión: alrededor de 300 a 400 palabras. Incluye un primer párrafo resumen 
     console.error('Error inesperado:', err);
     return res.status(500).json({ error: 'Error inesperado', detalle: String(err) });
   }
-};
+}
