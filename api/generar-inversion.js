@@ -6,9 +6,9 @@
 //
 // Variables de entorno necesarias en Vercel (Project Settings → Environment Variables):
 //   GEMINI_API_KEY        -> tu clave de Google AI Studio
-//   SUPABASE_URL           -> https://yhxebtkxagxowrvrqssf.supabase.co
+//   SUPABASE_URL             -> https://yhxebtkxagxowrvrqssf.supabase.co
 //   SUPABASE_SERVICE_KEY   -> la "service_role" key de Supabase (NO la anon key)
-//                             (Project Settings -> API -> service_role, en Supabase)
+//                              (Project Settings -> API -> service_role, en Supabase)
 //   ADMIN_PANEL_PASSWORD   -> una contraseña que tú eliges, para proteger el panel
 
 const { createClient } = require('@supabase/supabase-js');
@@ -54,7 +54,7 @@ Incluye un primer párrafo resumen de lo más importante.`;
 
   try {
     const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-pro-preview:generateContent?key=${process.env.GEMINI_API_KEY}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
