@@ -24,25 +24,37 @@ module.exports = async function handler(req, res) {
     return res.status(400).json({ error: 'Falta el ticker o tema' });
   }
 
+  // Ahora reconocemos 3 tipos: tesis, guia, o noticia
   const esTesis = tipo === 'tesis';
+  const esGuia = tipo === 'guia';
 
-  // Le pedimos a la IA que siempre empiece con un Título Principal (# )
-  const prompt = esTesis
-    ? `Escribe un Resumen Ejecutivo profesional y detallado para una tesis de inversión sobre: "${tema}".
+  // Lógica de instrucciones (Prompts) según el tipo
+  let prompt = '';
+  
+  if (esTesis) {
+    prompt = `Escribe un Resumen Ejecutivo profesional y detallado para una tesis de inversión sobre: "${tema}".
 Comienza SIEMPRE el texto con un título principal usando un solo "#" (ejemplo: "# Análisis de inversión: ${tema}").
-Luego, estructura el resto del texto con subtítulos usando "## ". Debes incluir obligatoriamente las siguientes secciones:
+Luego, estructura el texto con subtítulos usando "## ". Debes incluir:
 - ## Contexto macroeconómico y catalizadores
 - ## Oportunidades y posicionamiento estratégico
 - ## Riesgos a considerar
-
-El tono debe ser de análisis financiero institucional: serio, objetivo y riguroso. PROHIBIDO usar lenguaje publicitario, sensacionalista, clickbait o frases de urgencia.
+El tono debe ser de análisis financiero institucional: serio, objetivo y riguroso. PROHIBIDO usar lenguaje publicitario o sensacionalista.
 Extensión: alrededor de 400 palabras. 
-Al final, añade de forma discreta una línea que diga: "El análisis completo, los modelos de valoración y la investigación detallada se desarrollan en el documento extendido de la tesis."`
-    : `Escribe un artículo de noticias de bolsa sobre: "${tema}".
+Al final, añade: "El análisis completo, los modelos de valoración y la investigación detallada se desarrollan en el documento extendido de la tesis."`;
+  } else if (esGuia) {
+    prompt = `Escribe una Guía de Educación Financiera completa, clara y didáctica sobre: "${tema}".
+Comienza SIEMPRE el texto con un título principal usando un solo "#" (ejemplo: "# Guía Financiera: ${tema}").
+Luego, estructura el texto paso a paso usando subtítulos "## ". 
+El tono debe ser educativo, accesible y motivador. Explica los conceptos como si fueras un profesor experto pero cercano. Utiliza alguna analogía o ejemplo práctico sencillo para que cualquier persona pueda entenderlo.
+Extensión: alrededor de 400 a 500 palabras.`;
+  } else {
+    // Si no es tesis ni guía, asumimos que es noticia
+    prompt = `Escribe un artículo de noticias de bolsa sobre: "${tema}".
 Comienza SIEMPRE el texto con un título principal usando un solo "#".
 Basado en información reciente. Estructura con subtítulos "## " y listas "- ".
-Escribe en español. El tono debe ser periodístico financiero, serio y objetivo (estilo Bloomberg o Reuters). PROHIBIDO usar clickbait o sensacionalismo.
+Escribe en español. El tono debe ser periodístico financiero, serio y objetivo (estilo Bloomberg o Reuters). PROHIBIDO usar clickbait.
 Extensión: alrededor de 300 a 400 palabras. Incluye un primer párrafo resumen con lo más importante.`;
+  }
 
   try {
     const geminiRes = await fetch(
@@ -68,15 +80,17 @@ Extensión: alrededor de 300 a 400 palabras. Incluye un primer párrafo resumen 
       return res.status(502).json({ error: 'Gemini no devolvió contenido' });
     }
 
-    // LÓGICA DE TÍTULO CORREGIDA
-    // Buscamos la primera línea. Si es un título principal (# ), lo usamos. Si no, generamos uno limpio por defecto.
+    // Buscamos la primera línea para el título
     const lineas = contenido.split('\n').map(l => l.trim()).filter(l => l.length > 0);
     const primeraLinea = lineas[0] || '';
     
-    // Título por defecto en caso de que la IA se olvide del H1
-    let title = `${esTesis ? 'Tesis de inversión' : 'Noticia'}: ${tema}`;
+    // Título por defecto según la categoría
+    let defaultPrefix = 'Noticia';
+    if (esTesis) defaultPrefix = 'Tesis de inversión';
+    if (esGuia) defaultPrefix = 'Guía Financiera';
+    let title = `${defaultPrefix}: ${tema}`;
     
-    // Si la IA hizo caso y puso un "# ", lo extraemos limpio
+    // Si la IA puso un "# ", lo extraemos limpio
     if (primeraLinea.startsWith('# ')) {
       title = primeraLinea.replace(/^#\s*/, '').slice(0, 120);
     }
@@ -84,6 +98,17 @@ Extensión: alrededor de 300 a 400 palabras. Incluye un primer párrafo resumen 
     const slugBase = slugify(title) || slugify(tema) || `inversion-${Date.now()}`;
     const slug = `${slugBase}-${Date.now().toString().slice(-5)}`;
     const excerpt = contenido.replace(/^#+\s*/gm, '').replace(/\n+/g, ' ').slice(0, 160);
+
+    // Asignar categoría y emoji según el tipo
+    let category = 'Noticias de bolsa';
+    let cover_emoji = '📰';
+    if (esTesis) {
+      category = 'Tesis de inversión';
+      cover_emoji = '📊';
+    } else if (esGuia) {
+      category = 'Educación Financiera';
+      cover_emoji = '📚';
+    }
 
     const supa = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 
@@ -95,10 +120,10 @@ Extensión: alrededor de 300 a 400 palabras. Incluye un primer párrafo resumen 
         content: contenido,
         excerpt,
         author: 'Equipo MoneyPilot',
-        category: esTesis ? 'Tesis de inversión' : 'Noticias de bolsa',
-        categoria_seccion: 'inversion',
+        category: category,
+        categoria_seccion: 'inversion', 
         published: true,
-        cover_emoji: esTesis ? '📊' : '📰',
+        cover_emoji: cover_emoji,
       })
       .select()
       .single();
@@ -113,4 +138,4 @@ Extensión: alrededor de 300 a 400 palabras. Incluye un primer párrafo resumen 
     console.error('Error inesperado:', err);
     return res.status(500).json({ error: 'Error inesperado', detalle: String(err) });
   }
-}
+};
