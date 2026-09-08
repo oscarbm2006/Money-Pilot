@@ -1,11 +1,8 @@
 // generate-blog.js
-// Genera páginas HTML estáticas para cada artículo publicado del blog de MoneyPilot,
-// leyendo directamente de Supabase, más un índice /blog/index.html.
+// Genera páginas HTML estáticas para cada artículo publicado, separando
+// blog normal (/blog) de la sección de inversión (/inversion) según la
+// columna categoria_seccion de Supabase.
 // Se ejecuta automáticamente en cada despliegue de Vercel (ver "Build Command").
-//
-// No requiere configuración manual: usa la misma URL y clave pública (anon key)
-// que ya usa la app en el navegador — es segura para este uso porque solo lee
-// artículos publicados.
 
 const { createClient } = require('@supabase/supabase-js');
 const fs = require('fs');
@@ -14,7 +11,8 @@ const path = require('path');
 const SUPABASE_URL = "https://yhxebtkxagxowrvrqssf.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InloeGVidGt4YWd4b3dydnJxc3NmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc1MTc0MTMsImV4cCI6MjEwMzA5MzQxM30.Mt9vWxpTP-YnZp38qtBAuZVmMMKmIxIKyXA4ni4WZzM";
 const SITE_URL = "https://money-pilot-seven-orpin.vercel.app";
-const OUT_DIR = path.join(__dirname, 'blog');
+const BLOG_DIR = path.join(__dirname, 'blog');
+const INVERSION_DIR = path.join(__dirname, 'inversion');
 
 const supa = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -22,7 +20,6 @@ function escHtml(s) {
   return (s || '').replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
 }
 
-// Mismo conversor markdown minimalista que usa la app (## subtítulos, **negrita**, listas "- ")
 function mdToHtml(md) {
   const lineas = (md || '').split('\n');
   let html = ''; let enLista = false;
@@ -65,6 +62,7 @@ const STYLE = `
   .category{color:var(--primary);font-weight:800;font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;}
   .cta{margin-top:40px;padding:20px;border-radius:16px;background:var(--primary-light);color:var(--navy);font-size:.9rem;}
   .cta a{color:var(--navy);font-weight:800;}
+  .disclaimer{margin-top:16px;padding:16px 20px;border-radius:12px;background:#FFFBEB;border:1px solid #FDE68A;color:#92400E;font-size:.82rem;}
   a.back{display:inline-block;margin-top:8px;margin-bottom:24px;color:var(--primary);font-weight:700;text-decoration:none;}
   a.back:hover{text-decoration:underline;}
   footer{border-top:1px solid var(--border);padding:24px;text-align:center;color:var(--muted);font-size:.8rem;}
@@ -81,10 +79,17 @@ const FOOTER = `<footer>
   <a href="/contacto.html" style="color:var(--muted);margin:0 8px;">Contacto</a>
 </footer>`;
 
-function postPage(post) {
-  const url = `${SITE_URL}/blog/${post.slug}.html`;
+// seccion: { key: 'blog' | 'inversion', urlBase: '/blog' | '/inversion', volverTexto, tituloIndex, descIndex }
+function postPage(post, seccion) {
+  const url = `${SITE_URL}${seccion.urlBase}/${post.slug}.html`;
   const title = `${post.title} – MoneyPilot`;
   const desc = (post.excerpt || post.title || '').slice(0, 160);
+  const esInversion = seccion.key === 'inversion';
+
+  const ctaBlock = esInversion
+    ? `<div class="disclaimer">⚠️ Contenido meramente informativo y educativo, generado con apoyo de inteligencia artificial. No constituye asesoramiento ni recomendación de inversión personalizada. Antes de invertir, valora tu situación con un profesional cualificado.</div>`
+    : `<div class="cta">¿Quieres aplicar esto a tu propio caso? Usa el <a href="/">diagnóstico gratuito de MoneyPilot</a>.</div>`;
+
   return `<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -119,12 +124,12 @@ ${JSON.stringify({
 <body>
 <header><a href="/">MoneyPilot</a></header>
 <main>
-  <a class="back" href="/blog/index.html">← Volver al blog</a>
+  <a class="back" href="${seccion.urlBase}/index.html">← ${seccion.volverTexto}</a>
   <div class="category">${escHtml(post.category || 'General')}</div>
   <h1>${escHtml(post.title)}</h1>
   <div class="meta">Por ${escHtml(post.author || 'Equipo MoneyPilot')} · ${fmtFecha(post.created_at)}</div>
   <div class="content">${mdToHtml(post.content)}</div>
-  <div class="cta">¿Quieres aplicar esto a tu propio caso? Usa el <a href="/">diagnóstico gratuito de MoneyPilot</a>.</div>
+  ${ctaBlock}
   <div class="cta" style="background:var(--paper);border:1px solid var(--border);">¿Quieres aprender más? Puedes encontrar <a href="/recursos-y-libros.html">aquí algunos libros seleccionados</a> para empezar desde 0 y aprender a administrar tu propio dinero.</div>
 </main>
 ${FOOTER}
@@ -132,9 +137,9 @@ ${FOOTER}
 </html>`;
 }
 
-function indexPage(posts) {
+function indexPage(posts, seccion) {
   const items = posts.map(p => `
-  <a class="list-item" href="/blog/${p.slug}.html">
+  <a class="list-item" href="${seccion.urlBase}/${p.slug}.html">
     <div class="category">${escHtml(p.category || 'General')}</div>
     <h2>${escHtml(p.title)}</h2>
     <p>${escHtml(p.excerpt || '')}</p>
@@ -145,14 +150,14 @@ function indexPage(posts) {
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Blog de finanzas personales – MoneyPilot</title>
-<meta name="description" content="Guías claras sobre ahorro, inversión y presupuesto, además de noticias financieras, escritas por el equipo de MoneyPilot." />
+<title>${escHtml(seccion.tituloIndex)} – MoneyPilot</title>
+<meta name="description" content="${escHtml(seccion.descIndex)}" />
 <meta name="robots" content="index, follow" />
-<link rel="canonical" href="${SITE_URL}/blog/index.html" />
-<meta property="og:title" content="Blog de finanzas personales – MoneyPilot" />
-<meta property="og:description" content="Guías claras sobre ahorro, inversión y presupuesto, además de noticias financieras, escritas por el equipo de MoneyPilot." />
+<link rel="canonical" href="${SITE_URL}${seccion.urlBase}/index.html" />
+<meta property="og:title" content="${escHtml(seccion.tituloIndex)} – MoneyPilot" />
+<meta property="og:description" content="${escHtml(seccion.descIndex)}" />
 <meta property="og:type" content="website" />
-<meta property="og:url" content="${SITE_URL}/blog/index.html" />
+<meta property="og:url" content="${SITE_URL}${seccion.urlBase}/index.html" />
 <meta property="og:image" content="${SITE_URL}/og-image.png" />
 <meta property="og:locale" content="es_ES" />
 <meta name="twitter:card" content="summary_large_image" />
@@ -163,8 +168,8 @@ function indexPage(posts) {
 <body>
 <header><a href="/">MoneyPilot</a></header>
 <main>
-  <h1>Blog de finanzas personales</h1>
-  <p class="meta">Guías claras sobre ahorro, inversión y presupuesto, escritas por el equipo de MoneyPilot.</p>
+  <h1>${escHtml(seccion.tituloIndex)}</h1>
+  <p class="meta">${escHtml(seccion.descIndex)}</p>
   ${items || '<p>Todavía no hay artículos publicados.</p>'}
 </main>
 ${FOOTER}
@@ -172,8 +177,17 @@ ${FOOTER}
 </html>`;
 }
 
+function generarSeccion(posts, seccion, outDir) {
+  fs.mkdirSync(outDir, { recursive: true });
+  fs.writeFileSync(path.join(outDir, 'index.html'), indexPage(posts, seccion));
+  for (const post of posts) {
+    if (!post.slug) continue;
+    fs.writeFileSync(path.join(outDir, `${post.slug}.html`), postPage(post, seccion));
+  }
+}
+
 async function main() {
-  console.log('Generando páginas estáticas del blog…');
+  console.log('Generando páginas estáticas…');
   const { data: posts, error } = await supa
     .from('posts')
     .select('*')
@@ -182,18 +196,30 @@ async function main() {
 
   if (error) {
     console.error('Error al leer posts de Supabase:', error.message);
-    // No rompemos el build por esto: la app sigue funcionando igual aunque falle el blog estático.
     process.exit(0);
   }
 
-  fs.mkdirSync(OUT_DIR, { recursive: true });
-  fs.writeFileSync(path.join(OUT_DIR, 'index.html'), indexPage(posts || []));
-  for (const post of posts || []) {
-    if (!post.slug) continue;
-    fs.writeFileSync(path.join(OUT_DIR, `${post.slug}.html`), postPage(post));
-  }
+  const todos = posts || [];
+  const postsBlog = todos.filter(p => (p.categoria_seccion || 'blog') === 'blog');
+  const postsInversion = todos.filter(p => p.categoria_seccion === 'inversion');
 
-  console.log(`Listo: ${(posts || []).length} artículo(s) generado(s) en /blog`);
+  generarSeccion(postsBlog, {
+    key: 'blog',
+    urlBase: '/blog',
+    volverTexto: 'Volver al blog',
+    tituloIndex: 'Blog de finanzas personales',
+    descIndex: 'Guías claras sobre ahorro, inversión y presupuesto, escritas por el equipo de MoneyPilot.',
+  }, BLOG_DIR);
+
+  generarSeccion(postsInversion, {
+    key: 'inversion',
+    urlBase: '/inversion',
+    volverTexto: 'Volver a inversión',
+    tituloIndex: 'Noticias de bolsa y tesis de inversión',
+    descIndex: 'Análisis y noticias sobre mercados, generados con apoyo de inteligencia artificial. Contenido informativo, no es asesoramiento de inversión.',
+  }, INVERSION_DIR);
+
+  console.log(`Listo: ${postsBlog.length} artículo(s) en /blog, ${postsInversion.length} en /inversion`);
 }
 
 main();
