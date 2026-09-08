@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Admin · Generar artículo de inversión</title>
+<title>Admin · Generar Contenido</title>
 <meta name="robots" content="noindex, nofollow" />
 <style>
   :root{--navy:#312E81;--primary:#4F46E5;--paper:#FAFAFA;--ink:#1E1E2E;--muted:#6B7280;--border:#E5E7EB;}
@@ -13,8 +13,8 @@
   h1{font-size:1.4rem;margin-bottom:24px;}
   label{display:block;font-weight:700;font-size:.85rem;margin:18px 0 6px;}
   input[type=text], input[type=password]{width:100%;padding:12px;border:1px solid var(--border);border-radius:10px;font-size:1rem;}
-  .tipo-opciones{display:flex;gap:10px;margin-top:6px;}
-  .tipo-opciones button{flex:1;padding:10px;border-radius:10px;border:1px solid var(--border);background:#fff;cursor:pointer;font-weight:600;}
+  .tipo-opciones{display:flex;gap:10px;margin-top:6px;flex-wrap:wrap;}
+  .tipo-opciones button{flex:1;min-width:130px;padding:10px;border-radius:10px;border:1px solid var(--border);background:#fff;cursor:pointer;font-weight:600;}
   .tipo-opciones button.activo{background:var(--primary);color:#fff;border-color:var(--primary);}
   #generar{margin-top:28px;width:100%;padding:14px;border:none;border-radius:12px;background:var(--navy);color:#fff;font-weight:800;font-size:1rem;cursor:pointer;}
   #generar:disabled{opacity:.6;cursor:not-allowed;}
@@ -26,36 +26,52 @@
 </head>
 <body>
 <main>
-  <h1>Generar artículo de inversión</h1>
+  <h1>Generar contenido con IA</h1>
 
   <label>Contraseña</label>
   <input type="password" id="password" placeholder="Contraseña del panel" />
 
   <label>Tipo de contenido</label>
   <div class="tipo-opciones">
-    <button type="button" id="btnNoticia" class="activo">Noticia de bolsa</button>
-    <button type="button" id="btnTesis">Tesis de inversión</button>
+    <button type="button" id="btnNoticia" class="activo">Noticia</button>
+    <button type="button" id="btnTesis">Tesis</button>
+    <button type="button" id="btnGuia">Guía financiera</button>
   </div>
 
   <label>Ticker o tema</label>
-  <input type="text" id="tema" placeholder="Ej: NVDA, sector semiconductores, Repsol..." />
+  <input type="text" id="tema" placeholder="Ej: NVDA, sector lujo, qué es el fondo de emergencia..." />
 
-  <button id="generar">Generar artículo</button>
+  <button id="generar">Generar contenido</button>
 
   <div id="estado"></div>
 </main>
 
 <script>
   let tipo = 'noticia';
-  document.getElementById('btnNoticia').onclick = () => {
+  
+  const btnNoticia = document.getElementById('btnNoticia');
+  const btnTesis = document.getElementById('btnTesis');
+  const btnGuia = document.getElementById('btnGuia');
+
+  btnNoticia.onclick = () => {
     tipo = 'noticia';
-    document.getElementById('btnNoticia').classList.add('activo');
-    document.getElementById('btnTesis').classList.remove('activo');
+    btnNoticia.classList.add('activo');
+    btnTesis.classList.remove('activo');
+    btnGuia.classList.remove('activo');
   };
-  document.getElementById('btnTesis').onclick = () => {
+  
+  btnTesis.onclick = () => {
     tipo = 'tesis';
-    document.getElementById('btnTesis').classList.add('activo');
-    document.getElementById('btnNoticia').classList.remove('activo');
+    btnTesis.classList.add('activo');
+    btnNoticia.classList.remove('activo');
+    btnGuia.classList.remove('activo');
+  };
+
+  btnGuia.onclick = () => {
+    tipo = 'guia';
+    btnGuia.classList.add('activo');
+    btnNoticia.classList.remove('activo');
+    btnTesis.classList.remove('activo');
   };
 
   document.getElementById('generar').onclick = async () => {
@@ -69,7 +85,7 @@
 
     boton.disabled = true;
     estado.className = 'cargando';
-    estado.textContent = 'Generando artículo con Gemini… esto puede tardar 20-40 segundos.';
+    estado.textContent = 'Generando contenido con Gemini… esto puede tardar unos 15 segundos.';
 
     try {
       const res = await fetch('/api/generar-inversion', {
@@ -84,7 +100,7 @@
         estado.textContent = 'Error: ' + (data.error || 'algo falló') + (data.detalle ? (' — ' + JSON.stringify(data.detalle)) : '');
       } else {
         estado.className = 'ok';
-        estado.textContent = '✅ Artículo generado: "' + data.post.title + '". Se publicará solo en el próximo despliegue (unos minutos).';
+        estado.textContent = '✅ Contenido generado: "' + data.post.title + '". Se publicará solo en el próximo despliegue (unos minutos).';
         document.getElementById('tema').value = '';
       }
     } catch (err) {
