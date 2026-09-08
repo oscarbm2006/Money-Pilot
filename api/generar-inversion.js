@@ -40,26 +40,24 @@ El tono debe ser de análisis financiero institucional: serio, objetivo y riguro
 Extensión: alrededor de 400 palabras. 
 Al final, añade: "El análisis completo, los modelos de valoración y la investigación detallada se desarrollan en el documento extendido de la tesis."`;
   } else if (esGuia) {
-    prompt = `Actúa como un redactor experto en educación financiera y SEO, escribiendo para el blog de MoneyPilot, una herramienta española de diagnóstico financiero.
+    prompt = `Actúa como un redactor experto en educación financiera y SEO, escribiendo para el blog de MoneyPilot, una herramienta española.
 TEMA: "${tema}"
 
 REQUISITOS DE TONO Y AUDIENCIA:
 - Lector: persona española de 25-45 años, sin formación financiera. 
-- Tono: cercano, claro, directo, como si se lo explicaras a un amigo. Cero jerga corporativa y cero frases motivacionales vacías de "gurú".
-- Nivel: divulgativo pero riguroso (datos aplicables a España en 2026).
-- Evita recomendaciones de inversión personalizadas, usa lenguaje educativo ("una opción habitual es...").
-- Aporta valor accionable. El lector debe saber qué hacer al terminar.
-- Incluye OBLIGATORIAMENTE un ejemplo numérico concreto (con cifras en euros) que ilustre la idea.
+- Tono: cercano, claro, conversacional, como si se lo explicaras a un amigo tomando un café. Cero jerga, cero robot, cero frases de "gurú".
+- Nivel: divulgativo pero riguroso (datos reales aplicables a España).
+- Aporta valor accionable. El lector debe saber qué paso dar al terminar.
+- Incluye OBLIGATORIAMENTE un ejemplo numérico (con cifras en euros) que ilustre la idea central de forma práctica.
 
-ESTRUCTURA OBLIGATORIA:
-- Comienza SIEMPRE con un título principal usando un solo "#" (ej: "# Guía: ${tema}").
-- Sigue con un primer párrafo (sin subtítulo) de 2-4 frases que enganche con el problema real del lector.
-- Varios subtítulos con "## " desarrollando las ideas.
-- Usa listas con "- " donde aporte claridad.
-- Usa **negrita** solo en las 3-6 frases más importantes de todo el texto.
-- Un último apartado llamado "## En resumen" con un párrafo breve que cierre la idea y anime a actuar.
+ESTRUCTURA FLEXIBLE Y ORGÁNICA (¡NO parezcas un bot!):
+- Comienza con un título atractivo usando un solo "#" (ej: "# ${tema}").
+- Sigue con un primer párrafo introductorio que empatice directamente con una duda o problema real del lector.
+- ADAPTA LA ESTRUCTURA AL TEMA: No uses siempre la misma plantilla. Algunos temas piden un "paso a paso", otros "mitos vs realidades", y otros "errores comunes". Usa subtítulos "## " con naturalidad para guiar la lectura.
+- Destaca en **negrita** 3 a 5 frases clave para facilitar el escaneo visual.
+- CIERRE NATURAL: Tienes TOTALMENTE PROHIBIDO usar subtítulos como "## En resumen", "## Conclusión" o "## Para terminar". Cierra el artículo de forma orgánica y conversacional integrando el consejo final en el flujo del texto o invitando a la acción.
 
-EXTENSIÓN: Máximo 400-500 palabras (Hazlo conciso y directo para no exceder el límite de tiempo del servidor).`;
+EXTENSIÓN: Máximo 400-500 palabras (Hazlo directo para no exceder el límite de tiempo del servidor).`;
   } else {
     prompt = `Escribe un artículo de noticias de bolsa sobre: "${tema}".
 Comienza SIEMPRE el texto con un título principal usando un solo "#".
