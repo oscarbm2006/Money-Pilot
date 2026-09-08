@@ -24,11 +24,9 @@ module.exports = async function handler(req, res) {
     return res.status(400).json({ error: 'Falta el ticker o tema' });
   }
 
-  // Ahora reconocemos 3 tipos: tesis, guia, o noticia
   const esTesis = tipo === 'tesis';
   const esGuia = tipo === 'guia';
 
-  // Lógica de instrucciones (Prompts) según el tipo
   let prompt = '';
   
   if (esTesis) {
@@ -42,13 +40,27 @@ El tono debe ser de análisis financiero institucional: serio, objetivo y riguro
 Extensión: alrededor de 400 palabras. 
 Al final, añade: "El análisis completo, los modelos de valoración y la investigación detallada se desarrollan en el documento extendido de la tesis."`;
   } else if (esGuia) {
-    prompt = `Escribe una Guía de Educación Financiera completa, clara y didáctica sobre: "${tema}".
-Comienza SIEMPRE el texto con un título principal usando un solo "#" (ejemplo: "# Guía Financiera: ${tema}").
-Luego, estructura el texto paso a paso usando subtítulos "## ". 
-El tono debe ser educativo, accesible y motivador. Explica los conceptos como si fueras un profesor experto pero cercano. Utiliza alguna analogía o ejemplo práctico sencillo para que cualquier persona pueda entenderlo.
-Extensión: alrededor de 400 a 500 palabras.`;
+    prompt = `Actúa como un redactor experto en educación financiera y SEO, escribiendo para el blog de MoneyPilot, una herramienta española de diagnóstico financiero.
+TEMA: "${tema}"
+
+REQUISITOS DE TONO Y AUDIENCIA:
+- Lector: persona española de 25-45 años, sin formación financiera. 
+- Tono: cercano, claro, directo, como si se lo explicaras a un amigo. Cero jerga corporativa y cero frases motivacionales vacías de "gurú".
+- Nivel: divulgativo pero riguroso (datos aplicables a España en 2026).
+- Evita recomendaciones de inversión personalizadas, usa lenguaje educativo ("una opción habitual es...").
+- Aporta valor accionable. El lector debe saber qué hacer al terminar.
+- Incluye OBLIGATORIAMENTE un ejemplo numérico concreto (con cifras en euros) que ilustre la idea.
+
+ESTRUCTURA OBLIGATORIA:
+- Comienza SIEMPRE con un título principal usando un solo "#" (ej: "# Guía: ${tema}").
+- Sigue con un primer párrafo (sin subtítulo) de 2-4 frases que enganche con el problema real del lector.
+- Varios subtítulos con "## " desarrollando las ideas.
+- Usa listas con "- " donde aporte claridad.
+- Usa **negrita** solo en las 3-6 frases más importantes de todo el texto.
+- Un último apartado llamado "## En resumen" con un párrafo breve que cierre la idea y anime a actuar.
+
+EXTENSIÓN: Máximo 400-500 palabras (Hazlo conciso y directo para no exceder el límite de tiempo del servidor).`;
   } else {
-    // Si no es tesis ni guía, asumimos que es noticia
     prompt = `Escribe un artículo de noticias de bolsa sobre: "${tema}".
 Comienza SIEMPRE el texto con un título principal usando un solo "#".
 Basado en información reciente. Estructura con subtítulos "## " y listas "- ".
@@ -80,33 +92,30 @@ Extensión: alrededor de 300 a 400 palabras. Incluye un primer párrafo resumen 
       return res.status(502).json({ error: 'Gemini no devolvió contenido' });
     }
 
-    // Buscamos la primera línea para el título
     const lineas = contenido.split('\n').map(l => l.trim()).filter(l => l.length > 0);
     const primeraLinea = lineas[0] || '';
     
-    // Título por defecto según la categoría
     let defaultPrefix = 'Noticia';
     if (esTesis) defaultPrefix = 'Tesis de inversión';
     if (esGuia) defaultPrefix = 'Guía Financiera';
     let title = `${defaultPrefix}: ${tema}`;
     
-    // Si la IA puso un "# ", lo extraemos limpio
     if (primeraLinea.startsWith('# ')) {
       title = primeraLinea.replace(/^#\s*/, '').slice(0, 120);
     }
 
     const slugBase = slugify(title) || slugify(tema) || `inversion-${Date.now()}`;
     const slug = `${slugBase}-${Date.now().toString().slice(-5)}`;
+    
     const excerpt = contenido.replace(/^#+\s*/gm, '').replace(/\n+/g, ' ').slice(0, 160);
 
-    // Asignar categoría y emoji según el tipo
     let category = 'Noticias de bolsa';
     let cover_emoji = '📰';
     if (esTesis) {
       category = 'Tesis de inversión';
       cover_emoji = '📊';
     } else if (esGuia) {
-      category = 'Educación Financiera';
+      category = 'Educación financiera'; 
       cover_emoji = '📚';
     }
 
