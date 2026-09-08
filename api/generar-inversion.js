@@ -1,12 +1,53 @@
-try {
+// api/generar-inversion.js
+const { createClient } = require('@supabase/supabase-js');
+
+function slugify(texto) {
+  return (texto || '')
+    .toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-')
+    .slice(0, 80);
+}
+
+module.exports = async function handler(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Método no permitido' });
+  }
+
+  const { password, tema, tipo } = req.body || {};
+  if (!password || password !== process.env.ADMIN_PANEL_PASSWORD) {
+    return res.status(401).json({ error: 'Contraseña incorrecta' });
+  }
+  if (!tema || typeof tema !== 'string') {
+    return res.status(400).json({ error: 'Falta el ticker o tema' });
+  }
+
+  const esTesis = tipo === 'tesis';
+
+  const prompt = esTesis
+    ? `Escribe una tesis de inversión detallada y bien fundamentada sobre: "${tema}".
+Usa datos actuales y recientes (precio, métricas financieras clave, catalizadores, riesgos).
+Estructura el texto con subtítulos usando "## " al inicio de cada línea de subtítulo (por ejemplo "## Contexto y catalizadores").
+Usa listas con "- " cuando enumeres puntos. No uses markdown de negrita excepto "**palabra**" si de verdad hace falta.
+Incluye al final un apartado "## Riesgos a considerar".
+No des consejos personalizados de compra/venta, preséntalo como análisis informativo.
+Escribe en español, tono profesional pero claro, unas 500-700 palabras.`
+    : `Escribe un artículo de noticias de bolsa sobre: "${tema}".
+Basado en la información más reciente disponible. Estructura con subtítulos "## " y listas "- " donde aporte claridad.
+Escribe en español, tono periodístico claro, unas 400-600 palabras.
+Incluye un primer párrafo resumen de lo más importante.`;
+
+  try {
+    // CAMBIO AL MODELO 3.6-FLASH QUE PIDE GOOGLE
     const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }]
-          // HEMOS QUITADO LA HERRAMIENTA DE BÚSQUEDA AQUÍ
         }),
       }
     );
@@ -23,7 +64,6 @@ try {
       return res.status(502).json({ error: 'Gemini no devolvió contenido' });
     }
 
-    // El título: primera línea del contenido si parece un título corto, si no, generamos uno simple
     const primeraLinea = contenido.split('\n').find(l => l.trim().length > 0) || tema;
     const title = primeraLinea.replace(/^#+\s*/, '').slice(0, 120) || `${esTesis ? 'Tesis de inversión' : 'Noticia'}: ${tema}`;
     const slugBase = slugify(title) || slugify(tema) || `inversion-${Date.now()}`;
