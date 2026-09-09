@@ -1120,33 +1120,6 @@ function exportarJSON({
   gastoTotal,
   ahorroDisponible
 }) {
-  const esGuia = f.categoria_seccion.value === 'guia';
-const faseNueva = esGuia ? (Number(f.fase.value) || null) : null;
-
-let ordenNuevo = null;
-
-if (esGuia && faseNueva) {
-  const postsDeLaFase = posts.filter(p =>
-    p.categoria_seccion === 'guia' &&
-    Number(p.fase) === Number(faseNueva) &&
-    (!editando || p.id !== editando.id)
-  );
-
-  const maxOrden = postsDeLaFase.reduce(
-    (max, p) => Math.max(max, Number(p.orden) || 0),
-    0
-  );
-
-  if (
-    editando &&
-    Number(editando.fase) === Number(faseNueva) &&
-    editando.orden != null
-  ) {
-    ordenNuevo = editando.orden;
-  } else {
-    ordenNuevo = maxOrden + 1;
-  }
-}
   const payload = {
     generado: new Date().toISOString(),
     ingresosMensuales: datos.ingresos,
@@ -7164,6 +7137,32 @@ let query = supa
   async function guardar(e) {
     e.preventDefault();
     const f = e.target;
+    const esGuia = f.categoria_seccion.value === 'guia';
+    const faseNueva = esGuia ? (Number(f.fase.value) || null) : null;
+    let ordenNuevo = null;
+
+    if (esGuia && faseNueva) {
+      const postsDeLaFase = posts.filter(p =>
+        p.categoria_seccion === 'guia' &&
+        Number(p.fase) === Number(faseNueva) &&
+        (!editando || p.id !== editando.id)
+      );
+      const maxOrden = postsDeLaFase.reduce(
+        (max, p) => Math.max(max, Number(p.orden) || 0),
+        0
+      );
+
+      if (
+        editando &&
+        Number(editando.fase) === Number(faseNueva) &&
+        editando.orden != null
+      ) {
+        ordenNuevo = editando.orden;
+      } else {
+        ordenNuevo = maxOrden + 1;
+      }
+    }
+
     const payload = {
       title: f.title.value.trim(),
       slug: f.slug.value.trim() || slugify(f.title.value),
@@ -7174,7 +7173,8 @@ let query = supa
       cover_emoji: f.cover_emoji.value.trim() || '📊',
       published: f.published.checked,
       categoria_seccion: f.categoria_seccion.value,
-      fase: f.categoria_seccion.value === 'guia' ? (Number(f.fase.value) || null) : null,
+      fase: faseNueva,
+      orden: ordenNuevo,
       updated_at: new Date().toISOString()
     };
     let error;
