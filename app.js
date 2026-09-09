@@ -7240,9 +7240,6 @@ function Blog({ user }) {
       posts: postsTab.filter(p => Number(p.fase) === n),
       abiertoPorDefecto: faseAbierta === n,
       onAbrir: () => setFaseAbierta(faseAbierta === n ? null : n)
-      esAdmin: esAdmin,
-onEditar: p => setEditando(p),
-onBorrar: id => borrar(id)
     })))
   :
     postsTab.length === 0 ?
