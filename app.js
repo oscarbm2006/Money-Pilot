@@ -6999,7 +6999,7 @@ function AcordeonFase({ numero, titulo, posts, abiertoPorDefecto, onAbrir }) {
   }, p.title), p.excerpt && /*#__PURE__*/React.createElement("div", {
     className: "text-xs mt-0.5",
     style: { color: C.muted }
-  }, p.excerpt))));
+  }, p.excerpt)))));
 }
 function Blog({ user }) {
   const [posts, setPosts] = useState([]);
