@@ -6968,8 +6968,7 @@ const NOMBRES_FASE_BLOG = {
   4: 'Fase 4: Optimización y Estrategia Avanzada',
   5: 'Fase 5: Objetivos Vitales y Legado',
 };
-function AcordeonFase({ numero, titulo, posts, abiertoPorDefecto, onAbrir }) {
-  return /*#__PURE__*/React.createElement("div", {
+function AcordeonFase({ numero, titulo, posts, abiertoPorDefecto, onAbrir, esAdmin, onEditar, onBorrar }) {  return /*#__PURE__*/React.createElement("div", {
     className: "rounded-2xl border overflow-hidden mb-3",
     style: { borderColor: C.border, backgroundColor: C.surface }
   }, /*#__PURE__*/React.createElement("button", {
@@ -7063,10 +7062,13 @@ function Blog({ user }) {
     }, post.category || 'General'), /*#__PURE__*/React.createElement("h1", {
       className: "font-serif text-3xl font-bold mb-2",
       style: { color: C.ink }
-    }, post.title), /*#__PURE__*/React.createElement("div", {
-      className: "text-xs mb-8",
-      style: { color: C.muted }
-    }, "Por ", post.author || 'Equipo MoneyPilot', " · ", fmtFecha(post.created_at)), /*#__PURE__*/React.createElement("div", {
+    }, post.title), (post.categoria_seccion === 'guia' ? /*#__PURE__*/React.createElement("div", {
+  className: "text-xs mb-8",
+  style: { color: C.muted }
+}, "Por ", post.author || 'Equipo MoneyPilot') : /*#__PURE__*/React.createElement("div", {
+  className: "text-xs mb-8",
+  style: { color: C.muted }
+}, "Por ", post.author || 'Equipo MoneyPilot', " · ", fmtFecha(post.created_at))), /*#__PURE__*/React.createElement("div", {
       className: "prose-blog",
       style: { color: C.ink, lineHeight: 1.75 },
       dangerouslySetInnerHTML: { __html: mdToHtml(post.content) }
