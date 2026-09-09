@@ -1120,6 +1120,33 @@ function exportarJSON({
   gastoTotal,
   ahorroDisponible
 }) {
+  const esGuia = f.categoria_seccion.value === 'guia';
+const faseNueva = esGuia ? (Number(f.fase.value) || null) : null;
+
+let ordenNuevo = null;
+
+if (esGuia && faseNueva) {
+  const postsDeLaFase = posts.filter(p =>
+    p.categoria_seccion === 'guia' &&
+    Number(p.fase) === Number(faseNueva) &&
+    (!editando || p.id !== editando.id)
+  );
+
+  const maxOrden = postsDeLaFase.reduce(
+    (max, p) => Math.max(max, Number(p.orden) || 0),
+    0
+  );
+
+  if (
+    editando &&
+    Number(editando.fase) === Number(faseNueva) &&
+    editando.orden != null
+  ) {
+    ordenNuevo = editando.orden;
+  } else {
+    ordenNuevo = maxOrden + 1;
+  }
+}
   const payload = {
     generado: new Date().toISOString(),
     ingresosMensuales: datos.ingresos,
@@ -6968,78 +6995,151 @@ const NOMBRES_FASE_BLOG = {
   4: 'Fase 4: Optimización y Estrategia Avanzada',
   5: 'Fase 5: Objetivos Vitales y Legado',
 };
-function AcordeonFase({ numero, titulo, posts, abiertoPorDefecto, onAbrir, esAdmin, onEditar, onBorrar }) {
+function AcordeonFase({
+  numero,
+  titulo,
+  posts,
+  abiertoPorDefecto,
+  onAbrir,
+  esAdmin,
+  onEditar,
+  onBorrar,
+  onMover
+}) {
   return /*#__PURE__*/React.createElement("div", {
     className: "rounded-2xl border overflow-hidden mb-3",
     style: {
       borderColor: C.border,
       backgroundColor: C.surface
     }
-  }, /*#__PURE__*/React.createElement("button", {
+  },
+
+  /*#__PURE__*/React.createElement("button", {
     onClick: onAbrir,
     className: "w-full text-left px-5 py-4 flex items-center justify-between gap-3",
     style: {
       backgroundColor: abiertoPorDefecto ? C.sandLight : "transparent"
     }
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "font-serif font-bold text-base",
-    style: {
-      color: C.ink
-    }
-  }, titulo), /*#__PURE__*/React.createElement(I.chevronDown, {
-    size: 18,
-    color: C.sand,
-    style: {
-      transform: abiertoPorDefecto ? "rotate(180deg)" : "none",
-      transition: "transform 200ms"
-    }
-  })), abiertoPorDefecto && /*#__PURE__*/React.createElement("div", {
+  },
+    /*#__PURE__*/React.createElement("span", {
+      className: "font-serif font-bold text-base",
+      style: {
+        color: C.ink
+      }
+    }, titulo),
+
+    /*#__PURE__*/React.createElement(I.chevronDown, {
+      size: 18,
+      color: C.sand,
+      style: {
+        transform: abiertoPorDefecto ? "rotate(180deg)" : "none",
+        transition: "transform 200ms"
+      }
+    })
+  ),
+
+  abiertoPorDefecto && /*#__PURE__*/React.createElement("div", {
     className: "px-5 pb-4 space-y-1"
-  }, posts.length === 0 ? /*#__PURE__*/React.createElement("p", {
-    className: "text-xs py-2",
-    style: {
-      color: C.muted
-    }
-  }, "Todavía no hay artículos en esta fase.") : posts.map(p => /*#__PURE__*/React.createElement("div", {
-    key: p.id,
-    className: "border-b last:border-b-0",
-    style: {
-      borderColor: C.border
-    }
-  }, /*#__PURE__*/React.createElement("button", {
-    onClick: () => window.__abrirPostBlog(p.slug),
-    className: "w-full text-left py-2.5"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "text-sm font-bold",
-    style: {
-      color: C.ink
-    }
-  }, p.title), p.excerpt && /*#__PURE__*/React.createElement("div", {
-    className: "text-xs mt-0.5",
-    style: {
-      color: C.muted
-    }
-  }, p.excerpt)), esAdmin && /*#__PURE__*/React.createElement("div", {
-    className: "pb-2 flex gap-3"
-  }, /*#__PURE__*/React.createElement("button", {
-    onClick: e => {
-      e.stopPropagation();
-      onEditar(p);
-    },
-    className: "text-xs font-bold",
-    style: {
-      color: C.sand
-    }
-  }, "Editar"), /*#__PURE__*/React.createElement("button", {
-    onClick: e => {
-      e.stopPropagation();
-      onBorrar(p.id);
-    },
-    className: "text-xs font-bold",
-    style: {
-      color: C.crit
-    }
-}, "Borrar"))))));}
+  },
+
+    posts.length === 0
+
+      ? /*#__PURE__*/React.createElement("p", {
+          className: "text-xs py-2",
+          style: {
+            color: C.muted
+          }
+        }, "Todavía no hay artículos en esta fase.")
+
+      : posts.map((p, index) => /*#__PURE__*/React.createElement("div", {
+          key: p.id,
+          className: "border-b last:border-b-0",
+          style: {
+            borderColor: C.border
+          }
+        },
+
+        /*#__PURE__*/React.createElement("button", {
+          onClick: () => window.__abrirPostBlog(p.slug),
+          className: "w-full text-left py-2.5"
+        },
+
+          /*#__PURE__*/React.createElement("div", {
+            className: "text-sm font-bold",
+            style: {
+              color: C.ink
+            }
+          }, p.title),
+
+          p.excerpt && /*#__PURE__*/React.createElement("div", {
+            className: "text-xs mt-0.5",
+            style: {
+              color: C.muted
+            }
+          }, p.excerpt)
+        ),
+
+        esAdmin && /*#__PURE__*/React.createElement("div", {
+          className: "pb-2 flex gap-3 items-center flex-wrap"
+        },
+
+          /*#__PURE__*/React.createElement("button", {
+            type: "button",
+            disabled: index === 0,
+            onClick: e => {
+              e.stopPropagation();
+              onMover(p, "arriba");
+            },
+            className: "text-xs font-bold",
+            style: {
+              color: index === 0 ? C.muted : C.sand,
+              opacity: index === 0 ? 0.4 : 1,
+              cursor: index === 0 ? "not-allowed" : "pointer"
+            }
+          }, "▲ Subir"),
+
+          /*#__PURE__*/React.createElement("button", {
+            type: "button",
+            disabled: index === posts.length - 1,
+            onClick: e => {
+              e.stopPropagation();
+              onMover(p, "abajo");
+            },
+            className: "text-xs font-bold",
+            style: {
+              color: index === posts.length - 1 ? C.muted : C.sand,
+              opacity: index === posts.length - 1 ? 0.4 : 1,
+              cursor: index === posts.length - 1 ? "not-allowed" : "pointer"
+            }
+          }, "▼ Bajar"),
+
+          /*#__PURE__*/React.createElement("button", {
+            type: "button",
+            onClick: e => {
+              e.stopPropagation();
+              onEditar(p);
+            },
+            className: "text-xs font-bold",
+            style: {
+              color: C.sand
+            }
+          }, "Editar"),
+
+          /*#__PURE__*/React.createElement("button", {
+            type: "button",
+            onClick: e => {
+              e.stopPropagation();
+              onBorrar(p.id);
+            },
+            className: "text-xs font-bold",
+            style: {
+              color: C.crit
+            }
+          }, "Borrar")
+        )
+      )
+  ));
+}
 function Blog({ user }) {
   const [posts, setPosts] = useState([]);
   const [cargando, setCargando] = useState(true);
@@ -7087,11 +7187,61 @@ let query = supa
     setEditando(null);
     cargar();
   }
-  async function borrar(id) {
-    if (!confirm('¿Borrar este artículo? No se puede deshacer.')) return;
-    await supa.from('posts').delete().eq('id', id);
-    cargar();
+async function borrar(id) {
+  if (!confirm('¿Borrar este artículo? No se puede deshacer.')) return;
+  await supa.from('posts').delete().eq('id', id);
+  cargar();
   }
+  async function moverPost(post, direccion) {
+  const postsFase = posts
+    .filter(p =>
+      p.categoria_seccion === 'guia' &&
+      Number(p.fase) === Number(post.fase)
+    )
+    .sort((a, b) => {
+      const oa = Number(a.orden) || 999999;
+      const ob = Number(b.orden) || 999999;
+      return oa - ob;
+    });
+
+  const indice = postsFase.findIndex(p => p.id === post.id);
+
+  if (indice === -1) return;
+
+  const nuevoIndice =
+    direccion === 'arriba'
+      ? indice - 1
+      : indice + 1;
+
+  if (nuevoIndice < 0 || nuevoIndice >= postsFase.length) return;
+
+  const otroPost = postsFase[nuevoIndice];
+
+  const ordenActual = Number(post.orden);
+  const ordenOtro = Number(otroPost.orden);
+
+  const { error: error1 } = await supa
+    .from('posts')
+    .update({ orden: ordenOtro })
+    .eq('id', post.id);
+
+  if (error1) {
+    alert('Error al mover el artículo: ' + error1.message);
+    return;
+  }
+
+  const { error: error2 } = await supa
+    .from('posts')
+    .update({ orden: ordenActual })
+    .eq('id', otroPost.id);
+
+  if (error2) {
+    alert('Error al mover el artículo: ' + error2.message);
+    return;
+  }
+
+  cargar();
+}
   const post = slugAbierto ? posts.find(p => p.slug === slugAbierto) : null;
   if (post) {
     return /*#__PURE__*/React.createElement("div", {
@@ -7246,6 +7396,7 @@ onAbrir: () => setFaseAbierta(faseAbierta === n ? null : n),
 esAdmin: esAdmin,
 onEditar: p => setEditando(p),
 onBorrar: id => borrar(id)
+      onMover: (p, direccion) => moverPost(p, direccion)
 })))
   :
     postsTab.length === 0 ?
