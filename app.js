@@ -6968,37 +6968,79 @@ const NOMBRES_FASE_BLOG = {
   4: 'Fase 4: Optimización y Estrategia Avanzada',
   5: 'Fase 5: Objetivos Vitales y Legado',
 };
-function AcordeonFase({ numero, titulo, posts, abiertoPorDefecto, onAbrir, esAdmin, onEditar, onBorrar }) {  return /*#__PURE__*/React.createElement("div", {
+function AcordeonFase({ numero, titulo, posts, abiertoPorDefecto, onAbrir, esAdmin, onEditar, onBorrar }) {
+  return /*#__PURE__*/React.createElement("div", {
     className: "rounded-2xl border overflow-hidden mb-3",
-    style: { borderColor: C.border, backgroundColor: C.surface }
+    style: {
+      borderColor: C.border,
+      backgroundColor: C.surface
+    }
   }, /*#__PURE__*/React.createElement("button", {
     onClick: onAbrir,
     className: "w-full text-left px-5 py-4 flex items-center justify-between gap-3",
-    style: { backgroundColor: abiertoPorDefecto ? C.sandLight : "transparent" }
+    style: {
+      backgroundColor: abiertoPorDefecto ? C.sandLight : "transparent"
+    }
   }, /*#__PURE__*/React.createElement("span", {
     className: "font-serif font-bold text-base",
-    style: { color: C.ink }
+    style: {
+      color: C.ink
+    }
   }, titulo), /*#__PURE__*/React.createElement(I.chevronDown, {
     size: 18,
     color: C.sand,
-    style: { transform: abiertoPorDefecto ? "rotate(180deg)" : "none", transition: "transform 200ms" }
+    style: {
+      transform: abiertoPorDefecto ? "rotate(180deg)" : "none",
+      transition: "transform 200ms"
+    }
   })), abiertoPorDefecto && /*#__PURE__*/React.createElement("div", {
     className: "px-5 pb-4 space-y-1"
   }, posts.length === 0 ? /*#__PURE__*/React.createElement("p", {
     className: "text-xs py-2",
-    style: { color: C.muted }
-  }, "Todavía no hay artículos en esta fase.") : posts.map(p => /*#__PURE__*/React.createElement("button", {
+    style: {
+      color: C.muted
+    }
+  }, "Todavía no hay artículos en esta fase.") : posts.map(p => /*#__PURE__*/React.createElement("div", {
     key: p.id,
+    className: "border-b last:border-b-0",
+    style: {
+      borderColor: C.border
+    }
+  }, /*#__PURE__*/React.createElement("button", {
     onClick: () => window.__abrirPostBlog(p.slug),
-    className: "w-full text-left py-2.5 border-b last:border-b-0",
-    style: { borderColor: C.border }
+    className: "w-full text-left py-2.5"
   }, /*#__PURE__*/React.createElement("div", {
     className: "text-sm font-bold",
-    style: { color: C.ink }
+    style: {
+      color: C.ink
+    }
   }, p.title), p.excerpt && /*#__PURE__*/React.createElement("div", {
     className: "text-xs mt-0.5",
-    style: { color: C.muted }
-}, p.excerpt)))));
+    style: {
+      color: C.muted
+    }
+  }, p.excerpt)), esAdmin && /*#__PURE__*/React.createElement("div", {
+    className: "pb-2 flex gap-3"
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: e => {
+      e.stopPropagation();
+      onEditar(p);
+    },
+    className: "text-xs font-bold",
+    style: {
+      color: C.sand
+    }
+  }, "Editar"), /*#__PURE__*/React.createElement("button", {
+    onClick: e => {
+      e.stopPropagation();
+      onBorrar(p.id);
+    },
+    className: "text-xs font-bold",
+    style: {
+      color: C.crit
+    }
+  }, "Borrar")))));
+}
 function Blog({ user }) {
   const [posts, setPosts] = useState([]);
   const [cargando, setCargando] = useState(true);
