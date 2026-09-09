@@ -7039,8 +7039,7 @@ function AcordeonFase({ numero, titulo, posts, abiertoPorDefecto, onAbrir, esAdm
     style: {
       color: C.crit
     }
-  }, "Borrar")))));
-}
+}, "Borrar"))))));}
 function Blog({ user }) {
   const [posts, setPosts] = useState([]);
   const [cargando, setCargando] = useState(true);
