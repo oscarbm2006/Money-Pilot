@@ -7138,7 +7138,7 @@ function AcordeonFase({
           }, "Borrar")
         )
       )
-  ));
+  )));
 }
 function Blog({ user }) {
   const [posts, setPosts] = useState([]);
@@ -7395,7 +7395,7 @@ abiertoPorDefecto: faseAbierta === n,
 onAbrir: () => setFaseAbierta(faseAbierta === n ? null : n),
 esAdmin: esAdmin,
 onEditar: p => setEditando(p),
-onBorrar: id => borrar(id)
+onBorrar: id => borrar(id),
       onMover: (p, direccion) => moverPost(p, direccion)
 })))
   :
