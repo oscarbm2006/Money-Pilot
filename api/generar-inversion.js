@@ -112,12 +112,17 @@ Extensión: alrededor de 300 a 400 palabras. Incluye un primer párrafo resumen 
 
     let category = 'Noticias de bolsa';
     let cover_emoji = '📰';
+    let categoria_seccion = 'bolsa';
+    let fase = null;
     if (esTesis) {
       category = 'Tesis de inversión';
       cover_emoji = '📊';
+      categoria_seccion = 'tesis';
     } else if (esGuia) {
       category = 'Educación financiera'; 
       cover_emoji = '📚';
+      categoria_seccion = 'guia';
+      fase = 1;
     }
 
     const supa = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
@@ -131,7 +136,8 @@ Extensión: alrededor de 300 a 400 palabras. Incluye un primer párrafo resumen 
         excerpt,
         author: 'Equipo MoneyPilot',
         category: category,
-        categoria_seccion: 'inversion', 
+        categoria_seccion,
+        fase,
         published: true,
         cover_emoji: cover_emoji,
       })
