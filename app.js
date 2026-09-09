@@ -7238,9 +7238,12 @@ function Blog({ user }) {
       numero: n,
       titulo: NOMBRES_FASE_BLOG[n],
       posts: postsTab.filter(p => Number(p.fase) === n),
-      abiertoPorDefecto: faseAbierta === n,
-      onAbrir: () => setFaseAbierta(faseAbierta === n ? null : n)
-    })))
+abiertoPorDefecto: faseAbierta === n,
+onAbrir: () => setFaseAbierta(faseAbierta === n ? null : n),
+esAdmin: esAdmin,
+onEditar: p => setEditando(p),
+onBorrar: id => borrar(id)
+})))
   :
     postsTab.length === 0 ?
       /*#__PURE__*/React.createElement("p", {
