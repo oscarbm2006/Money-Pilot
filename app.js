@@ -7051,8 +7051,11 @@ function Blog({ user }) {
   window.__abrirPostBlog = setSlugAbierto;
   async function cargar() {
     setCargando(true);
-    let query = supa.from('posts').select('*').order('created_at', { ascending: true });
-    if (!esAdmin) query = query.eq('published', true);
+let query = supa
+  .from('posts')
+  .select('*')
+  .order('orden', { ascending: true, nullsFirst: false })
+  .order('created_at', { ascending: true });    if (!esAdmin) query = query.eq('published', true);
     const { data } = await query;
     setPosts(data || []);
     setCargando(false);
