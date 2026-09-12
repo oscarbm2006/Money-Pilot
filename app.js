@@ -1485,6 +1485,180 @@ function useDeudasMirrorSync({
 }
 
 /* ============================================================
+   INVERSIONES — persistencia local y sincronización con Supabase
+   (Fase 4 de la hoja de ruta: cartera de inversión manual)
+   ============================================================ */
+const INVERSIONES_STORAGE_KEY = "salud-financiera:inversiones-v1";
+const TIPOS_INVERSION_DEF = ["Acciones", "ETF", "Fondo indexado", "Fondo de pensiones", "Criptomoneda", "Otro"];
+function crearIdInversionLocal() {
+  return "local_inv_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8);
+}
+function esIdInversionLocal(id) {
+  return typeof id === "string" && id.startsWith("local_inv_");
+}
+function numOrNull(v) {
+  if (v === "" || v === undefined || v === null) return null;
+  const n = Number(v);
+  return isNaN(n) ? null : n;
+}
+function mapInversionRemotaALocal(row) {
+  return {
+    id: row.id,
+    tipo: row.tipo || "Otro",
+    nombre: row.nombre || "",
+    entidad: row.entidad || "",
+    ticker: row.ticker || "",
+    valorActual: row.valor_actual == null ? null : Number(row.valor_actual),
+    totalAportado: row.total_aportado == null ? null : Number(row.total_aportado),
+    moneda: row.moneda || "EUR"
+  };
+}
+function mapInversionLocalARemota(inv, userId) {
+  return {
+    user_id: userId,
+    tipo: inv.tipo || "Otro",
+    nombre: inv.nombre || "Sin nombre",
+    entidad: inv.entidad || null,
+    ticker: inv.ticker || null,
+    valor_actual: numOrNull(inv.valorActual),
+    total_aportado: numOrNull(inv.totalAportado),
+    moneda: inv.moneda || "EUR"
+  };
+}
+function useInversionesPersistidas() {
+  const [ready, setReady] = useState(false);
+  const [inversionesGuardadas, setInversionesGuardadas] = useState(null);
+  useEffect(() => {
+    let cancelled = false;
+    try {
+      const raw = window.localStorage.getItem(INVERSIONES_STORAGE_KEY);
+      if (!cancelled && raw) setInversionesGuardadas(JSON.parse(raw));
+    } catch (e) {/* sin datos guardados aún */} finally {
+      if (!cancelled) setReady(true);
+    }
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  const save = useCallback(async inversiones => {
+    try {
+      window.localStorage.setItem(INVERSIONES_STORAGE_KEY, JSON.stringify(inversiones));
+    } catch (e) {/* fallo silencioso */}
+  }, []);
+  return {
+    ready,
+    inversionesGuardadas,
+    save
+  };
+}
+function useInversionesSync({
+  user,
+  inversiones,
+  setInversiones,
+  onSaved
+}) {
+  const [cloudReady, setCloudReady] = useState(false);
+  const migradoRef = useRef(false);
+  useEffect(() => {
+    if (!user) {
+      setCloudReady(false);
+      migradoRef.current = false;
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const {
+        data,
+        error
+      } = await supa.from("inversiones").select("*").eq("user_id", user.id).order("created_at", {
+        ascending: true
+      });
+      if (cancelled) return;
+      if (!error && data) {
+        if (data.length > 0) {
+          setInversiones(data.map(mapInversionRemotaALocal));
+        } else if (!migradoRef.current && inversiones.length > 0) {
+          const migradas = [];
+          for (const inv of inversiones) {
+            const {
+              data: fila,
+              error: errIns
+            } = await supa.from("inversiones").insert(mapInversionLocalARemota(inv, user.id)).select().single();
+            if (!errIns && fila) migradas.push(mapInversionRemotaALocal(fila));
+          }
+          if (migradas.length) setInversiones(migradas);
+        }
+      }
+      migradoRef.current = true;
+      setCloudReady(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line
+  }, [user]);
+  const agregarInversion = useCallback(async nueva => {
+    if (user && cloudReady) {
+      const {
+        data,
+        error
+      } = await supa.from("inversiones").insert(mapInversionLocalARemota(nueva, user.id)).select().single();
+      if (!error && data) {
+        setInversiones(prev => [...prev, mapInversionRemotaALocal(data)]);
+        onSaved && onSaved("Inversión guardada en la nube");
+        return;
+      }
+      onSaved && onSaved("No se pudo guardar en la nube. Se guardó en este dispositivo.", "error");
+    }
+    setInversiones(prev => [...prev, {
+      ...nueva,
+      id: crearIdInversionLocal()
+    }]);
+  }, [user, cloudReady, setInversiones, onSaved]);
+  const actualizarInversion = useCallback(async (id, cambios) => {
+    setInversiones(prev => prev.map(inv => inv.id === id ? {
+      ...inv,
+      ...cambios
+    } : inv));
+    if (user && cloudReady && !esIdInversionLocal(id)) {
+      const payload = {};
+      const mapaColumnas = {
+        tipo: "tipo",
+        nombre: "nombre",
+        entidad: "entidad",
+        ticker: "ticker",
+        moneda: "moneda"
+      };
+      Object.entries(mapaColumnas).forEach(([campo, columna]) => {
+        if (cambios[campo] !== undefined) payload[columna] = cambios[campo] || null;
+      });
+      if (cambios.valorActual !== undefined) payload.valor_actual = numOrNull(cambios.valorActual);
+      if (cambios.totalAportado !== undefined) payload.total_aportado = numOrNull(cambios.totalAportado);
+      if (Object.keys(payload).length === 0) return;
+      const {
+        error
+      } = await supa.from("inversiones").update(payload).eq("id", id);
+      if (error) onSaved && onSaved("No se pudo actualizar en la nube.", "error");
+    }
+  }, [user, cloudReady, setInversiones, onSaved]);
+  const eliminarInversion = useCallback(async id => {
+    setInversiones(prev => prev.filter(inv => inv.id !== id));
+    if (user && cloudReady && !esIdInversionLocal(id)) {
+      const {
+        error
+      } = await supa.from("inversiones").delete().eq("id", id);
+      if (error) onSaved && onSaved("No se pudo borrar en la nube.", "error");
+    }
+  }, [user, cloudReady, setInversiones, onSaved]);
+  return {
+    cloudReady,
+    agregarInversion,
+    actualizarInversion,
+    eliminarInversion
+  };
+}
+
+/* ============================================================
    TOAST — feedback discreto de guardado (local y nube)
    ============================================================ */
 function useToast() {
@@ -8109,6 +8283,231 @@ function Cuentas({
     size: 15
   }))))))))));
 }
+/* ============================================================
+   PANTALLA: INVERSIONES (Fase 4 de la hoja de ruta)
+   ============================================================ */
+function Inversiones({
+  inversiones,
+  onAgregar,
+  onActualizar,
+  onEliminar
+}) {
+  const [editando, setEditando] = useState(null);
+  const [borrador, setBorrador] = useState(null);
+  const totalInvertido = inversiones.reduce((s, inv) => s + (Number(inv.valorActual) || 0), 0);
+  const totalAportadoGlobal = inversiones.reduce((s, inv) => s + (Number(inv.totalAportado) || 0), 0);
+  const rentabilidadGlobal = totalAportadoGlobal > 0 ? totalInvertido - totalAportadoGlobal : null;
+  const abrirNueva = () => {
+    setEditando(null);
+    setBorrador({
+      tipo: "Acciones",
+      nombre: "",
+      entidad: "",
+      ticker: "",
+      valorActual: 0,
+      totalAportado: null,
+      moneda: "EUR"
+    });
+  };
+  const abrirEditar = inv => {
+    setEditando(inv.id);
+    setBorrador({
+      ...inv
+    });
+  };
+  const guardar = () => {
+    if (!borrador || !borrador.nombre.trim()) return;
+    if (editando) {
+      onActualizar(editando, borrador);
+    } else {
+      onAgregar(borrador);
+    }
+    setEditando(null);
+    setBorrador(null);
+  };
+  const cancelar = () => {
+    setEditando(null);
+    setBorrador(null);
+  };
+  const porTipo = useMemo(() => {
+    const grupos = {};
+    inversiones.forEach(inv => {
+      const key = inv.tipo || "Otro";
+      if (!grupos[key]) grupos[key] = [];
+      grupos[key].push(inv);
+    });
+    return grupos;
+  }, [inversiones]);
+  const el = React.createElement;
+  const filasPorTipo = Object.keys(porTipo).map(tipo => {
+    const items = porTipo[tipo];
+    const subtotal = items.reduce((s, inv) => s + (Number(inv.valorActual) || 0), 0);
+    const filas = items.map(inv => {
+      const rentabilidad = inv.totalAportado > 0 ? (Number(inv.valorActual) || 0) - Number(inv.totalAportado) : null;
+      const detalle = [inv.ticker, inv.entidad].filter(Boolean).join(" · ") || "Sin más detalles";
+      const columnaValor = el("div", {
+        className: "text-right"
+      }, el("div", {
+        className: "text-sm font-bold",
+        style: { color: C.ink }
+      }, euros(inv.valorActual)), rentabilidad != null ? el("div", {
+        className: "text-xs font-bold",
+        style: { color: rentabilidad >= 0 ? C.salu : C.crit }
+      }, (rentabilidad >= 0 ? "+" : "") + euros(rentabilidad)) : null);
+      const botonEditar = el("button", {
+        onClick: () => abrirEditar(inv),
+        style: { color: C.navy },
+        "aria-label": "Editar inversión"
+      }, el(I.edit, { size: 15 }));
+      const botonBorrar = el("button", {
+        onClick: () => onEliminar(inv.id),
+        style: { color: C.crit },
+        "aria-label": "Eliminar inversión"
+      }, el(I.trash, { size: 15 }));
+      return el("div", {
+        key: inv.id,
+        className: "flex items-center justify-between gap-3 rounded-lg px-3.5 py-2.5",
+        style: { backgroundColor: C.paper }
+      }, el("div", {
+        className: "min-w-0"
+      }, el("div", {
+        className: "text-sm font-bold truncate",
+        style: { color: C.ink }
+      }, inv.nombre || "Sin nombre"), el("div", {
+        className: "text-xs",
+        style: { color: C.muted }
+      }, detalle)), el("div", {
+        className: "flex items-center gap-3 shrink-0"
+      }, columnaValor, botonEditar, botonBorrar));
+    });
+    return el(Card, {
+      key: tipo,
+      className: "p-5"
+    }, el("div", {
+      className: "flex items-center justify-between mb-3"
+    }, el("div", {
+      className: "font-serif font-bold text-base",
+      style: { color: C.ink }
+    }, tipo), el("div", {
+      className: "text-sm font-bold",
+      style: { color: C.salu }
+    }, euros(subtotal))), el("div", {
+      className: "space-y-2"
+    }, filas));
+  });
+  const introDiv = el("div", {
+    className: "max-w-3xl section-intro"
+  }, el(Eyebrow, null, "Tu cartera"), el("h2", {
+    className: "font-serif text-3xl sm:text-4xl font-bold mt-2",
+    style: { color: C.ink }
+  }, "Tus inversiones, en un solo sitio"), el("p", {
+    className: "text-sm sm:text-base mt-3",
+    style: { color: C.muted }
+  }, "Añade manualmente tus acciones, fondos, ETFs, pensiones o cripto para ver el valor total de tu cartera. Los precios no se actualizan solos: tú decides cuándo revisar y actualizar el valor."));
+  const resumenCard = el(Card, {
+    className: "p-5 flex items-center justify-between gap-4 flex-wrap"
+  }, el("div", {
+    className: "flex flex-wrap gap-8"
+  }, el("div", null, el(Eyebrow, null, "Valor total de la cartera"), el("div", {
+    className: "font-serif text-3xl font-bold mt-1",
+    style: { color: C.ink }
+  }, euros(totalInvertido))), rentabilidadGlobal != null ? el("div", null, el(Eyebrow, null, "Rentabilidad estimada"), el("div", {
+    className: "font-serif text-3xl font-bold mt-1",
+    style: { color: rentabilidadGlobal >= 0 ? C.salu : C.crit }
+  }, (rentabilidadGlobal >= 0 ? "+" : "") + euros(rentabilidadGlobal))) : null), el("button", {
+    onClick: abrirNueva,
+    className: "inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-bold",
+    style: { backgroundColor: C.sand, color: C.navy }
+  }, el(I.plus, { size: 15 }), " Añadir inversión"));
+  const formularioCard = !borrador ? null : el(Card, {
+    className: "p-5",
+    style: { borderColor: C.sand }
+  }, el("div", {
+    className: "text-sm font-bold mb-3",
+    style: { color: C.ink }
+  }, editando ? "Editar inversión" : "Nueva inversión"), el("div", {
+    className: "grid grid-cols-1 sm:grid-cols-2 gap-3"
+  }, el("div", null, el("label", {
+    className: "block text-xs font-bold mb-1.5",
+    style: { color: C.ink }
+  }, "Tipo"), el("select", {
+    value: borrador.tipo,
+    onChange: e => setBorrador({ ...borrador, tipo: e.target.value }),
+    className: "w-full rounded-lg px-3 py-2 text-sm font-bold border outline-none",
+    style: { borderColor: C.border, color: C.ink, backgroundColor: C.paper }
+  }, TIPOS_INVERSION_DEF.map(t => el("option", { key: t, value: t }, t)))), el("div", null, el("label", {
+    className: "block text-xs font-bold mb-1.5",
+    style: { color: C.ink }
+  }, "Nombre"), el("input", {
+    value: borrador.nombre,
+    onChange: e => setBorrador({ ...borrador, nombre: e.target.value }),
+    placeholder: "Ej. MSCI World, Apple, Bitcoin...",
+    className: "w-full rounded-lg px-3 py-2 text-sm font-bold border outline-none",
+    style: { borderColor: C.border, color: C.ink, backgroundColor: C.paper }
+  })), el(NumberField, {
+    label: "Valor actual",
+    value: borrador.valorActual,
+    onChange: v => setBorrador({ ...borrador, valorActual: v })
+  }), el(NumberField, {
+    label: "Total aportado (opcional)",
+    value: borrador.totalAportado || 0,
+    onChange: v => setBorrador({ ...borrador, totalAportado: v || null }),
+    hint: "Para calcular la rentabilidad, cuánto has invertido en total."
+  }), el("div", null, el("label", {
+    className: "block text-xs font-bold mb-1.5",
+    style: { color: C.ink }
+  }, "Ticker (opcional)"), el("input", {
+    value: borrador.ticker || "",
+    onChange: e => setBorrador({ ...borrador, ticker: e.target.value }),
+    placeholder: "Ej. AAPL, VWCE",
+    className: "w-full rounded-lg px-3 py-2 text-sm font-bold border outline-none",
+    style: { borderColor: C.border, color: C.ink, backgroundColor: C.paper }
+  })), el("div", null, el("label", {
+    className: "block text-xs font-bold mb-1.5",
+    style: { color: C.ink }
+  }, "Broker / entidad (opcional)"), el("input", {
+    value: borrador.entidad || "",
+    onChange: e => setBorrador({ ...borrador, entidad: e.target.value }),
+    placeholder: "Ej. Trade Republic, MyInvestor",
+    className: "w-full rounded-lg px-3 py-2 text-sm font-bold border outline-none",
+    style: { borderColor: C.border, color: C.ink, backgroundColor: C.paper }
+  }))), el("div", {
+    className: "flex gap-2 mt-4"
+  }, el("button", {
+    onClick: guardar,
+    className: "px-4 py-2 rounded-lg text-xs font-bold",
+    style: { backgroundColor: C.sand, color: C.navy }
+  }, "Guardar inversión"), el("button", {
+    onClick: cancelar,
+    className: "px-4 py-2 rounded-lg text-xs font-bold border",
+    style: { borderColor: C.border, color: C.ink }
+  }, "Cancelar")));
+  const estadoVacioCard = inversiones.length > 0 || borrador ? null : el(Card, {
+    className: "p-8 text-center"
+  }, el(I.chartPie, {
+    size: 28,
+    className: "mx-auto mb-3",
+    color: C.muted
+  }), el("p", {
+    className: "text-sm font-bold",
+    style: { color: C.ink }
+  }, "Todavía no has añadido ninguna inversión"), el("p", {
+    className: "text-sm mt-1",
+    style: { color: C.muted }
+  }, "Añade tu primera inversión para ver el valor total de tu cartera."), el("button", {
+    onClick: abrirNueva,
+    className: "mt-4 px-4 py-2 rounded-lg text-xs font-bold",
+    style: { backgroundColor: C.sand, color: C.navy }
+  }, "Añadir mi primera inversión"));
+  const notaFinal = el("p", {
+    className: "text-[11px] readable-note"
+  }, "Contenido informativo. Los valores que introduces son responsabilidad tuya; MoneyPilot no verifica precios de mercado ni ofrece asesoramiento de inversión.");
+  return el("section", {
+    className: "py-16 sm:py-24 section-tinted"
+  }, el("div", {
+    className: "max-w-4xl mx-auto px-4 sm:px-6 space-y-6"
+  }, introDiv, resumenCard, formularioCard, estadoVacioCard, filasPorTipo, notaFinal));
+}
 function App() {
   const {
     ready,
@@ -8196,6 +8595,33 @@ function App() {
     if (!cuentasHidratadas) return;
     guardarCuentasLocal(cuentas);
   }, [cuentas, cuentasHidratadas]);
+  // --- Inversiones (Fase 4 de la hoja de ruta) ---
+  const [inversiones, setInversiones] = useState([]);
+  const {
+    ready: inversionesReady,
+    inversionesGuardadas,
+    save: guardarInversionesLocal
+  } = useInversionesPersistidas();
+  const [inversionesHidratadas, setInversionesHidratadas] = useState(false);
+  useEffect(() => {
+    if (!inversionesReady) return;
+    if (Array.isArray(inversionesGuardadas)) setInversiones(inversionesGuardadas);
+    setInversionesHidratadas(true);
+  }, [inversionesReady, inversionesGuardadas]);
+  const {
+    agregarInversion,
+    actualizarInversion,
+    eliminarInversion
+  } = useInversionesSync({
+    user,
+    inversiones,
+    setInversiones,
+    onSaved: (msg, tone) => showToast(msg, tone)
+  });
+  useDebouncedEffect(() => {
+    if (!inversionesHidratadas) return;
+    guardarInversionesLocal(inversiones);
+  }, [inversiones, inversionesHidratadas]);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
@@ -8408,7 +8834,7 @@ function App() {
     }
   }, "MoneyPilot")), /*#__PURE__*/React.createElement("nav", {
     className: "hidden md:flex items-center gap-1 text-xs font-bold flex-wrap"
-  }, [["inicio", "Introducción"], ["diagnostico", "Diagnóstico"], ["cuentas", "Cuentas"], ["estrategia", "Estrategia"], ["simulador", "Simulador"], ["blog", "Blog"]].map(([id, label]) => /*#__PURE__*/React.createElement("button", {
+  }, [["inicio", "Introducción"], ["diagnostico", "Diagnóstico"], ["cuentas", "Cuentas"], ["inversiones", "Inversiones"], ["estrategia", "Estrategia"], ["simulador", "Simulador"], ["blog", "Blog"]].map(([id, label]) => /*#__PURE__*/React.createElement("button", {
     key: id,
     onClick: () => setVistaActual(id),
     className: "px-3 py-2 rounded-lg transition-colors hover:bg-white/10 " + (vistaActual === id ? "nav-link-active" : "nav-link-muted"),
@@ -8460,7 +8886,7 @@ function App() {
     size: 13
   })))), /*#__PURE__*/React.createElement("div", {
     className: "md:hidden flex gap-1 overflow-x-auto pb-2 -mx-1 px-1"
-  }, [["inicio", "Introducción"], ["diagnostico", "Diagnóstico"], ["cuentas", "Cuentas"], ["estrategia", "Estrategia"], ["simulador", "Simulador"], ["blog", "Blog"]].map(([id, label]) => /*#__PURE__*/React.createElement("button", {
+  }, [["inicio", "Introducción"], ["diagnostico", "Diagnóstico"], ["cuentas", "Cuentas"], ["inversiones", "Inversiones"], ["estrategia", "Estrategia"], ["simulador", "Simulador"], ["blog", "Blog"]].map(([id, label]) => /*#__PURE__*/React.createElement("button", {
     key: id,
     onClick: () => setVistaActual(id),
     className: "whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-bold " + (vistaActual === id ? "nav-link-active" : "nav-link-muted"),
@@ -8512,6 +8938,14 @@ function App() {
     onAgregar: agregarCuenta,
     onActualizar: actualizarCuenta,
     onEliminar: eliminarCuenta
+  })), vistaActual === 'inversiones' && /*#__PURE__*/React.createElement("div", {
+    key: "inversiones",
+    className: "fade-switch-enter"
+  }, /*#__PURE__*/React.createElement(Inversiones, {
+    inversiones: inversiones,
+    onAgregar: agregarInversion,
+    onActualizar: actualizarInversion,
+    onEliminar: eliminarInversion
   })), vistaActual === 'estrategia' && /*#__PURE__*/React.createElement("div", {
     key: "estrategia",
     className: "fade-switch-enter"
