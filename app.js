@@ -1352,6 +1352,139 @@ function useCuentasSync({
 }
 
 /* ============================================================
+   DEUDAS — espejo en segundo plano hacia la tabla `deudas`
+   (Fase 3 de la hoja de ruta). No sustituye la lógica existente
+   de bola de nieve / avalancha ni el formulario de Diagnóstico:
+   sigue funcionando exactamente igual, tal y como estaba. Este
+   bloque solo copia cada deuda activa a la tabla normalizada de
+   Supabase cuando hay sesión iniciada, marcando cada deuda local
+   con un identificador oculto (_deudaRemoteId) para saber a qué
+   fila de la nube corresponde en próximas ediciones o borrados.
+   ============================================================ */
+function deudaTieneContenido(d) {
+  return Number(d.pendiente) > 0 || !!d.nombre || Number(d.cuota) > 0 || Number(d.tasa) > 0;
+}
+function mapDeudaParaSupabase(d, userId) {
+  return {
+    user_id: userId,
+    tipo: d.tipo || "otro",
+    nombre: d.nombre || "Deuda sin nombre",
+    saldo_pendiente: Number(d.pendiente) || 0,
+    cuota_mensual: Number(d.cuota) || 0,
+    tae: d.tasa === "" || d.tasa == null ? null : Number(d.tasa) || null
+  };
+}
+function useDeudasMirrorSync({
+  user,
+  datos,
+  setDatos,
+  onSaved
+}) {
+  const [cloudReady, setCloudReady] = useState(false);
+  const migradoRef = useRef(false);
+  const remoteIdsConocidosRef = useRef(new Set());
+  useEffect(() => {
+    if (!user) {
+      setCloudReady(false);
+      migradoRef.current = false;
+      remoteIdsConocidosRef.current = new Set();
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const {
+        data,
+        error
+      } = await supa.from("deudas").select("*").eq("user_id", user.id).order("created_at", {
+        ascending: true
+      });
+      if (cancelled) return;
+      if (!error && data) {
+        if (data.length === 0 && !migradoRef.current) {
+          const activas = (datos.deudas || []).filter(deudaTieneContenido);
+          if (activas.length > 0) {
+            const nuevasDeudas = [...datos.deudas];
+            for (const d of activas) {
+              const idx = nuevasDeudas.indexOf(d);
+              const {
+                data: fila,
+                error: errIns
+              } = await supa.from("deudas").insert(mapDeudaParaSupabase(d, user.id)).select().single();
+              if (!errIns && fila && idx > -1) {
+                nuevasDeudas[idx] = {
+                  ...nuevasDeudas[idx],
+                  _deudaRemoteId: fila.id
+                };
+                remoteIdsConocidosRef.current.add(fila.id);
+              }
+            }
+            if (!cancelled) setDatos(prevDatos => ({
+              ...prevDatos,
+              deudas: nuevasDeudas
+            }));
+          }
+        } else if (data.length > 0) {
+          remoteIdsConocidosRef.current = new Set(data.map(r => r.id));
+        }
+      }
+      migradoRef.current = true;
+      if (!cancelled) setCloudReady(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line
+  }, [user]);
+  useDebouncedEffect(() => {
+    if (!user || !cloudReady) return;
+    (async () => {
+      const actuales = datos.deudas || [];
+      const idsVistos = new Set();
+      let cambios = false;
+      const actualizadas = [...actuales];
+      for (let i = 0; i < actualizadas.length; i++) {
+        const d = actualizadas[i];
+        if (!deudaTieneContenido(d)) continue;
+        if (d._deudaRemoteId) {
+          idsVistos.add(d._deudaRemoteId);
+          const {
+            error
+          } = await supa.from("deudas").update(mapDeudaParaSupabase(d, user.id)).eq("id", d._deudaRemoteId);
+          if (error) onSaved && onSaved("No se pudo sincronizar una deuda con la nube.", "error");
+        } else {
+          const {
+            data: fila,
+            error
+          } = await supa.from("deudas").insert(mapDeudaParaSupabase(d, user.id)).select().single();
+          if (!error && fila) {
+            actualizadas[i] = {
+              ...d,
+              _deudaRemoteId: fila.id
+            };
+            idsVistos.add(fila.id);
+            cambios = true;
+          }
+        }
+      }
+      for (const idRemoto of remoteIdsConocidosRef.current) {
+        if (!idsVistos.has(idRemoto)) {
+          await supa.from("deudas").delete().eq("id", idRemoto);
+        }
+      }
+      remoteIdsConocidosRef.current = idsVistos;
+      if (cambios) setDatos(prevDatos => ({
+        ...prevDatos,
+        deudas: actualizadas
+      }));
+    })();
+    // eslint-disable-next-line
+  }, [datos.deudas, user, cloudReady], 1200);
+  return {
+    cloudReady
+  };
+}
+
+/* ============================================================
    TOAST — feedback discreto de guardado (local y nube)
    ============================================================ */
 function useToast() {
@@ -8090,6 +8223,15 @@ function App() {
     setQuizState,
     historial,
     setHistorial,
+    onSaved: showToast
+  });
+  // Espejo en segundo plano de las deudas hacia la tabla `deudas` (Fase 3).
+  // No cambia nada visible: Diagnóstico, Estrategia y el simulador de deudas
+  // siguen leyendo y calculando exactamente igual desde `datos.deudas`.
+  useDeudasMirrorSync({
+    user,
+    datos,
+    setDatos,
     onSaved: showToast
   });
   useEffect(() => {
