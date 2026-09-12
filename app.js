@@ -1659,6 +1659,163 @@ function useInversionesSync({
 }
 
 /* ============================================================
+   ACTIVOS — persistencia local y sincronización con Supabase
+   (Fase 5 de la hoja de ruta: otros bienes, para el Patrimonio)
+   ============================================================ */
+const ACTIVOS_STORAGE_KEY = "salud-financiera:activos-v1";
+const TIPOS_ACTIVO_DEF = ["Vivienda", "Vehículo", "Otro"];
+function crearIdActivoLocal() {
+  return "local_act_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8);
+}
+function esIdActivoLocal(id) {
+  return typeof id === "string" && id.startsWith("local_act_");
+}
+function mapActivoRemotoALocal(row) {
+  return {
+    id: row.id,
+    tipo: row.tipo || "Otro",
+    nombre: row.nombre || "",
+    valorActual: Number(row.valor_actual) || 0,
+    notas: row.notas || "",
+    moneda: row.moneda || "EUR"
+  };
+}
+function mapActivoLocalARemoto(a, userId) {
+  return {
+    user_id: userId,
+    tipo: a.tipo || "Otro",
+    nombre: a.nombre || "Sin nombre",
+    valor_actual: Number(a.valorActual) || 0,
+    notas: a.notas || null,
+    moneda: a.moneda || "EUR"
+  };
+}
+function useActivosPersistidos() {
+  const [ready, setReady] = useState(false);
+  const [activosGuardados, setActivosGuardados] = useState(null);
+  useEffect(() => {
+    let cancelled = false;
+    try {
+      const raw = window.localStorage.getItem(ACTIVOS_STORAGE_KEY);
+      if (!cancelled && raw) setActivosGuardados(JSON.parse(raw));
+    } catch (e) {/* sin datos guardados aún */} finally {
+      if (!cancelled) setReady(true);
+    }
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  const save = useCallback(async activos => {
+    try {
+      window.localStorage.setItem(ACTIVOS_STORAGE_KEY, JSON.stringify(activos));
+    } catch (e) {/* fallo silencioso */}
+  }, []);
+  return {
+    ready,
+    activosGuardados,
+    save
+  };
+}
+function useActivosSync({
+  user,
+  activos,
+  setActivos,
+  onSaved
+}) {
+  const [cloudReady, setCloudReady] = useState(false);
+  const migradoRef = useRef(false);
+  useEffect(() => {
+    if (!user) {
+      setCloudReady(false);
+      migradoRef.current = false;
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const {
+        data,
+        error
+      } = await supa.from("activos").select("*").eq("user_id", user.id).order("created_at", {
+        ascending: true
+      });
+      if (cancelled) return;
+      if (!error && data) {
+        if (data.length > 0) {
+          setActivos(data.map(mapActivoRemotoALocal));
+        } else if (!migradoRef.current && activos.length > 0) {
+          const migrados = [];
+          for (const a of activos) {
+            const {
+              data: fila,
+              error: errIns
+            } = await supa.from("activos").insert(mapActivoLocalARemoto(a, user.id)).select().single();
+            if (!errIns && fila) migrados.push(mapActivoRemotoALocal(fila));
+          }
+          if (migrados.length) setActivos(migrados);
+        }
+      }
+      migradoRef.current = true;
+      setCloudReady(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line
+  }, [user]);
+  const agregarActivo = useCallback(async nuevo => {
+    if (user && cloudReady) {
+      const {
+        data,
+        error
+      } = await supa.from("activos").insert(mapActivoLocalARemoto(nuevo, user.id)).select().single();
+      if (!error && data) {
+        setActivos(prev => [...prev, mapActivoRemotoALocal(data)]);
+        onSaved && onSaved("Activo guardado en la nube");
+        return;
+      }
+      onSaved && onSaved("No se pudo guardar en la nube. Se guardó en este dispositivo.", "error");
+    }
+    setActivos(prev => [...prev, {
+      ...nuevo,
+      id: crearIdActivoLocal()
+    }]);
+  }, [user, cloudReady, setActivos, onSaved]);
+  const actualizarActivo = useCallback(async (id, cambios) => {
+    setActivos(prev => prev.map(a => a.id === id ? {
+      ...a,
+      ...cambios
+    } : a));
+    if (user && cloudReady && !esIdActivoLocal(id)) {
+      const payload = {};
+      ["tipo", "nombre", "notas", "moneda"].forEach(k => {
+        if (cambios[k] !== undefined) payload[k] = cambios[k] || null;
+      });
+      if (cambios.valorActual !== undefined) payload.valor_actual = Number(cambios.valorActual) || 0;
+      if (Object.keys(payload).length === 0) return;
+      const {
+        error
+      } = await supa.from("activos").update(payload).eq("id", id);
+      if (error) onSaved && onSaved("No se pudo actualizar en la nube.", "error");
+    }
+  }, [user, cloudReady, setActivos, onSaved]);
+  const eliminarActivo = useCallback(async id => {
+    setActivos(prev => prev.filter(a => a.id !== id));
+    if (user && cloudReady && !esIdActivoLocal(id)) {
+      const {
+        error
+      } = await supa.from("activos").delete().eq("id", id);
+      if (error) onSaved && onSaved("No se pudo borrar en la nube.", "error");
+    }
+  }, [user, cloudReady, setActivos, onSaved]);
+  return {
+    cloudReady,
+    agregarActivo,
+    actualizarActivo,
+    eliminarActivo
+  };
+}
+
+/* ============================================================
    TOAST — feedback discreto de guardado (local y nube)
    ============================================================ */
 function useToast() {
@@ -8508,6 +8665,271 @@ function Inversiones({
     className: "max-w-4xl mx-auto px-4 sm:px-6 space-y-6"
   }, introDiv, resumenCard, formularioCard, estadoVacioCard, filasPorTipo, notaFinal));
 }
+/* ============================================================
+   PANTALLA: PATRIMONIO (Fase 5 de la hoja de ruta)
+   Consolida Cuentas + Inversiones + Otros activos, menos Deudas,
+   en una sola foto del patrimonio neto. El registro de "otros
+   activos" (vivienda, vehículo...) vive dentro de esta pantalla,
+   ya que no tenía una pestaña propia.
+   ============================================================ */
+function Patrimonio({
+  cuentas,
+  inversiones,
+  activos,
+  deudas,
+  onAgregarActivo,
+  onActualizarActivo,
+  onEliminarActivo,
+  onIrACuentas,
+  onIrAInversiones,
+  onIrADiagnostico
+}) {
+  const el = React.createElement;
+  const [editando, setEditando] = useState(null);
+  const [borrador, setBorrador] = useState(null);
+
+  const totalCuentas = cuentas.reduce((s, c) => s + (Number(c.saldo) || 0), 0);
+  const totalInversiones = inversiones.reduce((s, inv) => s + (Number(inv.valorActual) || 0), 0);
+  const totalActivos = activos.reduce((s, a) => s + (Number(a.valorActual) || 0), 0);
+  const deudasActivas = (deudas || []).filter(d => Number(d.pendiente) > 0);
+  const totalDeudas = deudasActivas.reduce((s, d) => s + Number(d.pendiente || 0), 0);
+  const totalActivosGeneral = totalCuentas + totalInversiones + totalActivos;
+  const patrimonioNeto = totalActivosGeneral - totalDeudas;
+
+  const abrirNuevoActivo = () => {
+    setEditando(null);
+    setBorrador({ tipo: "Vivienda", nombre: "", valorActual: 0, notas: "" });
+  };
+  const abrirEditarActivo = a => {
+    setEditando(a.id);
+    setBorrador({ ...a });
+  };
+  const guardarActivo = () => {
+    if (!borrador || !borrador.nombre.trim()) return;
+    if (editando) onActualizarActivo(editando, borrador);
+    else onAgregarActivo(borrador);
+    setEditando(null);
+    setBorrador(null);
+  };
+  const cancelarActivo = () => {
+    setEditando(null);
+    setBorrador(null);
+  };
+
+  const donutData = [
+    { name: "Liquidez (cuentas)", value: totalCuentas, color: C.exc },
+    { name: "Inversiones", value: totalInversiones, color: C.sand },
+    { name: "Otros activos", value: totalActivos, color: C.mej }
+  ].filter(d => d.value > 0);
+
+  const cabecera = el("div", {
+    className: "max-w-3xl section-intro"
+  }, el(Eyebrow, null, "Tu foto completa"), el("h2", {
+    className: "font-serif text-3xl sm:text-4xl font-bold mt-2",
+    style: { color: C.ink }
+  }, "Tu patrimonio neto"), el("p", {
+    className: "text-sm sm:text-base mt-3",
+    style: { color: C.muted }
+  }, "Todo lo que tienes (cuentas, inversiones y otros bienes) menos todo lo que debes. Se actualiza automáticamente según lo que registres en Cuentas, Inversiones, Deudas y aquí abajo."));
+
+  const filaResumen = (etiqueta, valor, color) => el("div", {
+    key: etiqueta,
+    className: "flex items-center justify-between gap-3 rounded-lg px-3.5 py-2.5",
+    style: { backgroundColor: C.paper }
+  }, el("span", {
+    className: "text-sm font-bold",
+    style: { color: C.ink }
+  }, etiqueta), el("span", {
+    className: "text-sm font-bold",
+    style: { color: color || C.ink }
+  }, euros(valor)));
+
+  const tarjetaResumen = el(Card, {
+    className: "p-6"
+  }, el("div", {
+    className: "flex flex-col sm:flex-row items-center gap-6"
+  }, donutData.length > 0 ? el(SimpleDonut, {
+    data: donutData,
+    size: 160,
+    thickness: 22
+  }) : el("div", {
+    className: "w-40 h-40 rounded-full flex items-center justify-center text-center text-xs px-4",
+    style: { backgroundColor: C.bgDeepMid, color: C.muted }
+  }, "Añade cuentas, inversiones u otros activos para ver el reparto"), el("div", {
+    className: "flex-1 w-full"
+  }, el(Eyebrow, null, "Patrimonio neto"), el("div", {
+    className: "font-serif text-4xl font-bold mt-1",
+    style: { color: patrimonioNeto >= 0 ? C.ink : C.crit }
+  }, euros(patrimonioNeto)), el("div", {
+    className: "space-y-2 mt-4"
+  }, filaResumen("Total en cuentas (liquidez)", totalCuentas, C.exc), filaResumen("Total en inversiones", totalInversiones, C.sand), filaResumen("Total en otros activos", totalActivos, C.mej), filaResumen("Total en deudas pendientes", -totalDeudas, C.crit)))));
+
+  const seccionCuentas = el(Card, {
+    className: "p-5"
+  }, el("div", {
+    className: "flex items-center justify-between gap-3"
+  }, el("div", null, el(Eyebrow, null, "Liquidez"), el("div", {
+    className: "font-serif text-lg font-bold mt-1",
+    style: { color: C.ink }
+  }, euros(totalCuentas))), el("button", {
+    onClick: onIrACuentas,
+    className: "text-xs font-bold px-3 py-2 rounded-lg border",
+    style: { borderColor: C.border, color: C.navy }
+  }, "Gestionar cuentas")), el("p", {
+    className: "text-xs mt-2",
+    style: { color: C.muted }
+  }, cuentas.length === 0 ? "Todavía no has añadido ninguna cuenta." : `${cuentas.length} cuenta(s) registrada(s).`));
+
+  const seccionInversiones = el(Card, {
+    className: "p-5"
+  }, el("div", {
+    className: "flex items-center justify-between gap-3"
+  }, el("div", null, el(Eyebrow, null, "Inversiones"), el("div", {
+    className: "font-serif text-lg font-bold mt-1",
+    style: { color: C.ink }
+  }, euros(totalInversiones))), el("button", {
+    onClick: onIrAInversiones,
+    className: "text-xs font-bold px-3 py-2 rounded-lg border",
+    style: { borderColor: C.border, color: C.navy }
+  }, "Gestionar inversiones")), el("p", {
+    className: "text-xs mt-2",
+    style: { color: C.muted }
+  }, inversiones.length === 0 ? "Todavía no has añadido ninguna inversión." : `${inversiones.length} inversión(es) registrada(s).`));
+
+  const seccionDeudas = el(Card, {
+    className: "p-5"
+  }, el("div", {
+    className: "flex items-center justify-between gap-3"
+  }, el("div", null, el(Eyebrow, null, "Deudas"), el("div", {
+    className: "font-serif text-lg font-bold mt-1",
+    style: { color: totalDeudas > 0 ? C.crit : C.ink }
+  }, euros(totalDeudas))), el("button", {
+    onClick: onIrADiagnostico,
+    className: "text-xs font-bold px-3 py-2 rounded-lg border",
+    style: { borderColor: C.border, color: C.navy }
+  }, "Gestionar deudas")), el("p", {
+    className: "text-xs mt-2",
+    style: { color: C.muted }
+  }, deudasActivas.length === 0 ? "No tienes deudas pendientes registradas." : `${deudasActivas.length} deuda(s) activa(s).`));
+
+  const iconoPorTipoActivo = tipo => tipo === "Vivienda" ? I.house : tipo === "Vehículo" ? I.car : I.landmark;
+
+  const formularioActivo = !borrador ? null : el(Card, {
+    className: "p-5",
+    style: { borderColor: C.sand }
+  }, el("div", {
+    className: "text-sm font-bold mb-3",
+    style: { color: C.ink }
+  }, editando ? "Editar activo" : "Nuevo activo"), el("div", {
+    className: "grid grid-cols-1 sm:grid-cols-2 gap-3"
+  }, el("div", null, el("label", {
+    className: "block text-xs font-bold mb-1.5",
+    style: { color: C.ink }
+  }, "Tipo"), el("select", {
+    value: borrador.tipo,
+    onChange: e => setBorrador({ ...borrador, tipo: e.target.value }),
+    className: "w-full rounded-lg px-3 py-2 text-sm font-bold border outline-none",
+    style: { borderColor: C.border, color: C.ink, backgroundColor: C.paper }
+  }, TIPOS_ACTIVO_DEF.map(t => el("option", { key: t, value: t }, t)))), el("div", null, el("label", {
+    className: "block text-xs font-bold mb-1.5",
+    style: { color: C.ink }
+  }, "Nombre"), el("input", {
+    value: borrador.nombre,
+    onChange: e => setBorrador({ ...borrador, nombre: e.target.value }),
+    placeholder: "Ej. Piso habitual, Coche familiar...",
+    className: "w-full rounded-lg px-3 py-2 text-sm font-bold border outline-none",
+    style: { borderColor: C.border, color: C.ink, backgroundColor: C.paper }
+  })), el(NumberField, {
+    label: "Valor estimado actual",
+    value: borrador.valorActual,
+    onChange: v => setBorrador({ ...borrador, valorActual: v })
+  }), el("div", null, el("label", {
+    className: "block text-xs font-bold mb-1.5",
+    style: { color: C.ink }
+  }, "Notas (opcional)"), el("input", {
+    value: borrador.notas || "",
+    onChange: e => setBorrador({ ...borrador, notas: e.target.value }),
+    placeholder: "Ej. Tasación de 2024",
+    className: "w-full rounded-lg px-3 py-2 text-sm font-bold border outline-none",
+    style: { borderColor: C.border, color: C.ink, backgroundColor: C.paper }
+  }))), el("div", {
+    className: "flex gap-2 mt-4"
+  }, el("button", {
+    onClick: guardarActivo,
+    className: "px-4 py-2 rounded-lg text-xs font-bold",
+    style: { backgroundColor: C.sand, color: C.navy }
+  }, "Guardar activo"), el("button", {
+    onClick: cancelarActivo,
+    className: "px-4 py-2 rounded-lg text-xs font-bold border",
+    style: { borderColor: C.border, color: C.ink }
+  }, "Cancelar")));
+
+  const filasActivos = activos.map(a => {
+    const Icono = iconoPorTipoActivo(a.tipo);
+    return el("div", {
+      key: a.id,
+      className: "flex items-center justify-between gap-3 rounded-lg px-3.5 py-2.5",
+      style: { backgroundColor: C.paper }
+    }, el("div", {
+      className: "flex items-center gap-3 min-w-0"
+    }, el("div", {
+      className: "w-8 h-8 rounded-full flex items-center justify-center shrink-0",
+      style: { backgroundColor: C.mejLight }
+    }, el(Icono, { size: 15, color: C.mej })), el("div", {
+      className: "min-w-0"
+    }, el("div", {
+      className: "text-sm font-bold truncate",
+      style: { color: C.ink }
+    }, a.nombre || "Sin nombre"), el("div", {
+      className: "text-xs",
+      style: { color: C.muted }
+    }, a.tipo))), el("div", {
+      className: "flex items-center gap-3 shrink-0"
+    }, el("div", {
+      className: "text-sm font-bold",
+      style: { color: C.ink }
+    }, euros(a.valorActual)), el("button", {
+      onClick: () => abrirEditarActivo(a),
+      style: { color: C.navy },
+      "aria-label": "Editar activo"
+    }, el(I.edit, { size: 15 })), el("button", {
+      onClick: () => onEliminarActivo(a.id),
+      style: { color: C.crit },
+      "aria-label": "Eliminar activo"
+    }, el(I.trash, { size: 15 }))));
+  });
+
+  const seccionActivos = el(Card, {
+    className: "p-5"
+  }, el("div", {
+    className: "flex items-center justify-between gap-3 mb-3"
+  }, el("div", null, el(Eyebrow, null, "Otros activos"), el("p", {
+    className: "text-xs mt-1",
+    style: { color: C.muted }
+  }, "Vivienda, vehículo u otros bienes de valor, estimados por ti.")), el("button", {
+    onClick: abrirNuevoActivo,
+    className: "inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold",
+    style: { backgroundColor: C.sand, color: C.navy }
+  }, el(I.plus, { size: 14 }), " Añadir activo")), activos.length === 0 && !borrador ? el("p", {
+    className: "text-sm",
+    style: { color: C.muted }
+  }, "Todavía no has añadido ningún otro activo.") : el("div", {
+    className: "space-y-2"
+  }, filasActivos));
+
+  const notaFinal = el("p", {
+    className: "text-[11px] readable-note"
+  }, "Contenido informativo. Los valores de tus cuentas, inversiones y otros activos son los que tú introduces; MoneyPilot no verifica precios de mercado, tasaciones ni saldos reales.");
+
+  return el("section", {
+    className: "py-16 sm:py-24 section-tinted"
+  }, el("div", {
+    className: "max-w-4xl mx-auto px-4 sm:px-6 space-y-6"
+  }, cabecera, tarjetaResumen, el("div", {
+    className: "grid grid-cols-1 sm:grid-cols-3 gap-4"
+  }, seccionCuentas, seccionInversiones, seccionDeudas), seccionActivos, formularioActivo, notaFinal));
+}
+
 function App() {
   const {
     ready,
@@ -8622,6 +9044,33 @@ function App() {
     if (!inversionesHidratadas) return;
     guardarInversionesLocal(inversiones);
   }, [inversiones, inversionesHidratadas]);
+  // --- Activos: otros bienes, para el Patrimonio (Fase 5) ---
+  const [activos, setActivos] = useState([]);
+  const {
+    ready: activosReady,
+    activosGuardados,
+    save: guardarActivosLocal
+  } = useActivosPersistidos();
+  const [activosHidratados, setActivosHidratados] = useState(false);
+  useEffect(() => {
+    if (!activosReady) return;
+    if (Array.isArray(activosGuardados)) setActivos(activosGuardados);
+    setActivosHidratados(true);
+  }, [activosReady, activosGuardados]);
+  const {
+    agregarActivo,
+    actualizarActivo,
+    eliminarActivo
+  } = useActivosSync({
+    user,
+    activos,
+    setActivos,
+    onSaved: (msg, tone) => showToast(msg, tone)
+  });
+  useDebouncedEffect(() => {
+    if (!activosHidratados) return;
+    guardarActivosLocal(activos);
+  }, [activos, activosHidratados]);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
@@ -8834,7 +9283,7 @@ function App() {
     }
   }, "MoneyPilot")), /*#__PURE__*/React.createElement("nav", {
     className: "hidden md:flex items-center gap-1 text-xs font-bold flex-wrap"
-  }, [["inicio", "Introducción"], ["diagnostico", "Diagnóstico"], ["cuentas", "Cuentas"], ["inversiones", "Inversiones"], ["estrategia", "Estrategia"], ["simulador", "Simulador"], ["blog", "Blog"]].map(([id, label]) => /*#__PURE__*/React.createElement("button", {
+  }, [["inicio", "Introducción"], ["diagnostico", "Diagnóstico"], ["cuentas", "Cuentas"], ["inversiones", "Inversiones"], ["patrimonio", "Patrimonio"], ["estrategia", "Estrategia"], ["simulador", "Simulador"], ["blog", "Blog"]].map(([id, label]) => /*#__PURE__*/React.createElement("button", {
     key: id,
     onClick: () => setVistaActual(id),
     className: "px-3 py-2 rounded-lg transition-colors hover:bg-white/10 " + (vistaActual === id ? "nav-link-active" : "nav-link-muted"),
@@ -8886,7 +9335,7 @@ function App() {
     size: 13
   })))), /*#__PURE__*/React.createElement("div", {
     className: "md:hidden flex gap-1 overflow-x-auto pb-2 -mx-1 px-1"
-  }, [["inicio", "Introducción"], ["diagnostico", "Diagnóstico"], ["cuentas", "Cuentas"], ["inversiones", "Inversiones"], ["estrategia", "Estrategia"], ["simulador", "Simulador"], ["blog", "Blog"]].map(([id, label]) => /*#__PURE__*/React.createElement("button", {
+  }, [["inicio", "Introducción"], ["diagnostico", "Diagnóstico"], ["cuentas", "Cuentas"], ["inversiones", "Inversiones"], ["patrimonio", "Patrimonio"], ["estrategia", "Estrategia"], ["simulador", "Simulador"], ["blog", "Blog"]].map(([id, label]) => /*#__PURE__*/React.createElement("button", {
     key: id,
     onClick: () => setVistaActual(id),
     className: "whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-bold " + (vistaActual === id ? "nav-link-active" : "nav-link-muted"),
@@ -8946,6 +9395,20 @@ function App() {
     onAgregar: agregarInversion,
     onActualizar: actualizarInversion,
     onEliminar: eliminarInversion
+  })), vistaActual === 'patrimonio' && /*#__PURE__*/React.createElement("div", {
+    key: "patrimonio",
+    className: "fade-switch-enter"
+  }, /*#__PURE__*/React.createElement(Patrimonio, {
+    cuentas: cuentas,
+    inversiones: inversiones,
+    activos: activos,
+    deudas: datos.deudas,
+    onAgregarActivo: agregarActivo,
+    onActualizarActivo: actualizarActivo,
+    onEliminarActivo: eliminarActivo,
+    onIrACuentas: () => setVistaActual('cuentas'),
+    onIrAInversiones: () => setVistaActual('inversiones'),
+    onIrADiagnostico: () => setVistaActual('diagnostico')
   })), vistaActual === 'estrategia' && /*#__PURE__*/React.createElement("div", {
     key: "estrategia",
     className: "fade-switch-enter"
