@@ -1191,6 +1191,167 @@ function useDatosPersistidos() {
 }
 
 /* ============================================================
+   CUENTAS — persistencia local y sincronización con Supabase
+   (Fase 2 de la hoja de ruta: cuentas bancarias manuales)
+   ============================================================ */
+const CUENTAS_STORAGE_KEY = "salud-financiera:cuentas-v1";
+const CUENTA_TIPOS_DEF = ["Corriente", "Ahorro", "Remunerada", "Depósito", "Otra"];
+function crearIdCuentaLocal() {
+  return "local_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8);
+}
+function esIdCuentaLocal(id) {
+  return typeof id === "string" && id.startsWith("local_");
+}
+function mapCuentaRemotaALocal(row) {
+  return {
+    id: row.id,
+    banco: row.banco || "",
+    tipo: row.tipo || "Corriente",
+    nombre: row.nombre || "",
+    saldo: Number(row.saldo) || 0,
+    moneda: row.moneda || "EUR"
+  };
+}
+function mapCuentaLocalARemota(c, userId) {
+  return {
+    user_id: userId,
+    banco: c.banco || "",
+    tipo: c.tipo || "Corriente",
+    nombre: c.nombre || "",
+    saldo: Number(c.saldo) || 0,
+    moneda: c.moneda || "EUR"
+  };
+}
+function useCuentasPersistidas() {
+  const [ready, setReady] = useState(false);
+  const [cuentasGuardadas, setCuentasGuardadas] = useState(null);
+  useEffect(() => {
+    let cancelled = false;
+    try {
+      const raw = window.localStorage.getItem(CUENTAS_STORAGE_KEY);
+      if (!cancelled && raw) setCuentasGuardadas(JSON.parse(raw));
+    } catch (e) {/* sin datos guardados aún */} finally {
+      if (!cancelled) setReady(true);
+    }
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  const save = useCallback(async cuentas => {
+    try {
+      window.localStorage.setItem(CUENTAS_STORAGE_KEY, JSON.stringify(cuentas));
+    } catch (e) {/* fallo silencioso */}
+  }, []);
+  return {
+    ready,
+    cuentasGuardadas,
+    save
+  };
+}
+// Sincroniza el listado de cuentas con la tabla `cuentas` de Supabase.
+// Mientras el usuario no inicia sesión, las cuentas viven solo en localStorage
+// (id con prefijo "local_"); al iniciar sesión, si no hay cuentas ya guardadas
+// en la nube, se suben las locales una a una para no perder lo introducido.
+function useCuentasSync({
+  user,
+  cuentas,
+  setCuentas,
+  onSaved
+}) {
+  const [cloudReady, setCloudReady] = useState(false);
+  const migradoRef = useRef(false);
+  useEffect(() => {
+    if (!user) {
+      setCloudReady(false);
+      migradoRef.current = false;
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const {
+        data,
+        error
+      } = await supa.from("cuentas").select("*").eq("user_id", user.id).order("created_at", {
+        ascending: true
+      });
+      if (cancelled) return;
+      if (!error && data) {
+        if (data.length > 0) {
+          setCuentas(data.map(mapCuentaRemotaALocal));
+        } else if (!migradoRef.current && cuentas.length > 0) {
+          const migradas = [];
+          for (const c of cuentas) {
+            const {
+              data: fila,
+              error: errIns
+            } = await supa.from("cuentas").insert(mapCuentaLocalARemota(c, user.id)).select().single();
+            if (!errIns && fila) migradas.push(mapCuentaRemotaALocal(fila));
+          }
+          if (migradas.length) setCuentas(migradas);
+        }
+      }
+      migradoRef.current = true;
+      setCloudReady(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line
+  }, [user]);
+  const agregarCuenta = useCallback(async nueva => {
+    if (user && cloudReady) {
+      const {
+        data,
+        error
+      } = await supa.from("cuentas").insert(mapCuentaLocalARemota(nueva, user.id)).select().single();
+      if (!error && data) {
+        setCuentas(prev => [...prev, mapCuentaRemotaALocal(data)]);
+        onSaved && onSaved("Cuenta guardada en la nube");
+        return;
+      }
+      onSaved && onSaved("No se pudo guardar en la nube. Se guardó en este dispositivo.", "error");
+    }
+    setCuentas(prev => [...prev, {
+      ...nueva,
+      id: crearIdCuentaLocal()
+    }]);
+  }, [user, cloudReady, setCuentas, onSaved]);
+  const actualizarCuenta = useCallback(async (id, cambios) => {
+    setCuentas(prev => prev.map(c => c.id === id ? {
+      ...c,
+      ...cambios
+    } : c));
+    if (user && cloudReady && !esIdCuentaLocal(id)) {
+      const payload = {};
+      ["banco", "tipo", "nombre", "moneda"].forEach(k => {
+        if (cambios[k] !== undefined) payload[k] = cambios[k];
+      });
+      if (cambios.saldo !== undefined) payload.saldo = Number(cambios.saldo) || 0;
+      if (Object.keys(payload).length === 0) return;
+      const {
+        error
+      } = await supa.from("cuentas").update(payload).eq("id", id);
+      if (error) onSaved && onSaved("No se pudo actualizar en la nube.", "error");
+    }
+  }, [user, cloudReady, setCuentas, onSaved]);
+  const eliminarCuenta = useCallback(async id => {
+    setCuentas(prev => prev.filter(c => c.id !== id));
+    if (user && cloudReady && !esIdCuentaLocal(id)) {
+      const {
+        error
+      } = await supa.from("cuentas").delete().eq("id", id);
+      if (error) onSaved && onSaved("No se pudo borrar en la nube.", "error");
+    }
+  }, [user, cloudReady, setCuentas, onSaved]);
+  return {
+    cloudReady,
+    agregarCuenta,
+    actualizarCuenta,
+    eliminarCuenta
+  };
+}
+
+/* ============================================================
    TOAST — feedback discreto de guardado (local y nube)
    ============================================================ */
 function useToast() {
@@ -7558,6 +7719,263 @@ function Contacto() {
     }
   }, "soportemoneypilot@gmail.com"), ".")));
 }
+/* ============================================================
+   PANTALLA: CUENTAS (Fase 2 de la hoja de ruta)
+   ============================================================ */
+function Cuentas({
+  cuentas,
+  onAgregar,
+  onActualizar,
+  onEliminar
+}) {
+  const [editando, setEditando] = useState(null);
+  const [borrador, setBorrador] = useState(null);
+  const totalLiquidez = cuentas.reduce((s, c) => s + (Number(c.saldo) || 0), 0);
+  const abrirNueva = () => {
+    setEditando(null);
+    setBorrador({
+      banco: "",
+      tipo: "Corriente",
+      nombre: "",
+      saldo: 0,
+      moneda: "EUR"
+    });
+  };
+  const abrirEditar = c => {
+    setEditando(c.id);
+    setBorrador({
+      ...c
+    });
+  };
+  const guardar = () => {
+    if (!borrador || !borrador.banco.trim() || !borrador.nombre.trim()) return;
+    if (editando) {
+      onActualizar(editando, borrador);
+    } else {
+      onAgregar(borrador);
+    }
+    setEditando(null);
+    setBorrador(null);
+  };
+  const cancelar = () => {
+    setEditando(null);
+    setBorrador(null);
+  };
+  const porBanco = useMemo(() => {
+    const grupos = {};
+    cuentas.forEach(c => {
+      const key = c.banco || "Sin banco";
+      if (!grupos[key]) grupos[key] = [];
+      grupos[key].push(c);
+    });
+    return grupos;
+  }, [cuentas]);
+  return /*#__PURE__*/React.createElement("section", {
+    className: "py-16 sm:py-24 section-tinted"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "max-w-4xl mx-auto px-4 sm:px-6 space-y-6"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "max-w-3xl section-intro"
+  }, /*#__PURE__*/React.createElement(Eyebrow, null, "Tu liquidez"), /*#__PURE__*/React.createElement("h2", {
+    className: "font-serif text-3xl sm:text-4xl font-bold mt-2",
+    style: {
+      color: C.ink
+    }
+  }, "Tus cuentas, en un solo sitio"), /*#__PURE__*/React.createElement("p", {
+    className: "text-sm sm:text-base mt-3",
+    style: {
+      color: C.muted
+    }
+  }, "Añade tus cuentas bancarias manualmente para ver tu liquidez total consolidada. No conectamos con tu banco: tú decides qué saldo introducir y cuándo actualizarlo.")), /*#__PURE__*/React.createElement(Card, {
+    className: "p-5 flex items-center justify-between gap-4 flex-wrap"
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(Eyebrow, null, "Liquidez total"), /*#__PURE__*/React.createElement("div", {
+    className: "font-serif text-3xl font-bold mt-1",
+    style: {
+      color: C.ink
+    }
+  }, euros(totalLiquidez))), /*#__PURE__*/React.createElement("button", {
+    onClick: abrirNueva,
+    className: "inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-bold",
+    style: {
+      backgroundColor: C.sand,
+      color: C.navy
+    }
+  }, /*#__PURE__*/React.createElement(I.plus, {
+    size: 15
+  }), " Añadir cuenta")), borrador && /*#__PURE__*/React.createElement(Card, {
+    className: "p-5",
+    style: {
+      borderColor: C.sand
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-sm font-bold mb-3",
+    style: {
+      color: C.ink
+    }
+  }, editando ? "Editar cuenta" : "Nueva cuenta"), /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-1 sm:grid-cols-2 gap-3"
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    className: "block text-xs font-bold mb-1.5",
+    style: {
+      color: C.ink
+    }
+  }, "Banco"), /*#__PURE__*/React.createElement("input", {
+    value: borrador.banco,
+    onChange: e => setBorrador({
+      ...borrador,
+      banco: e.target.value
+    }),
+    placeholder: "Ej. CaixaBank",
+    className: "w-full rounded-lg px-3 py-2 text-sm font-bold border outline-none",
+    style: {
+      borderColor: C.border,
+      color: C.ink,
+      backgroundColor: C.paper
+    }
+  })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    className: "block text-xs font-bold mb-1.5",
+    style: {
+      color: C.ink
+    }
+  }, "Tipo de cuenta"), /*#__PURE__*/React.createElement("select", {
+    value: borrador.tipo,
+    onChange: e => setBorrador({
+      ...borrador,
+      tipo: e.target.value
+    }),
+    className: "w-full rounded-lg px-3 py-2 text-sm font-bold border outline-none",
+    style: {
+      borderColor: C.border,
+      color: C.ink,
+      backgroundColor: C.paper
+    }
+  }, CUENTA_TIPOS_DEF.map(t => /*#__PURE__*/React.createElement("option", {
+    key: t,
+    value: t
+  }, t)))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    className: "block text-xs font-bold mb-1.5",
+    style: {
+      color: C.ink
+    }
+  }, "Nombre de la cuenta"), /*#__PURE__*/React.createElement("input", {
+    value: borrador.nombre,
+    onChange: e => setBorrador({
+      ...borrador,
+      nombre: e.target.value
+    }),
+    placeholder: "Ej. Cuenta nómina",
+    className: "w-full rounded-lg px-3 py-2 text-sm font-bold border outline-none",
+    style: {
+      borderColor: C.border,
+      color: C.ink,
+      backgroundColor: C.paper
+    }
+  })), /*#__PURE__*/React.createElement(NumberField, {
+    label: "Saldo actual",
+    value: borrador.saldo,
+    onChange: v => setBorrador({
+      ...borrador,
+      saldo: v
+    })
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-2 mt-4"
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: guardar,
+    className: "px-4 py-2 rounded-lg text-xs font-bold",
+    style: {
+      backgroundColor: C.sand,
+      color: C.navy
+    }
+  }, "Guardar cuenta"), /*#__PURE__*/React.createElement("button", {
+    onClick: cancelar,
+    className: "px-4 py-2 rounded-lg text-xs font-bold border",
+    style: {
+      borderColor: C.border,
+      color: C.ink
+    }
+  }, "Cancelar"))), cuentas.length === 0 && !borrador && /*#__PURE__*/React.createElement(Card, {
+    className: "p-8 text-center"
+  }, /*#__PURE__*/React.createElement(I.wallet, {
+    size: 28,
+    className: "mx-auto mb-3",
+    color: C.muted
+  }), /*#__PURE__*/React.createElement("p", {
+    className: "text-sm font-bold",
+    style: {
+      color: C.ink
+    }
+  }, "Todavía no has añadido ninguna cuenta"), /*#__PURE__*/React.createElement("p", {
+    className: "text-sm mt-1",
+    style: {
+      color: C.muted
+    }
+  }, "Añade tu primera cuenta para empezar a ver tu liquidez consolidada."), /*#__PURE__*/React.createElement("button", {
+    onClick: abrirNueva,
+    className: "mt-4 px-4 py-2 rounded-lg text-xs font-bold",
+    style: {
+      backgroundColor: C.sand,
+      color: C.navy
+    }
+  }, "Añadir mi primera cuenta")), Object.keys(porBanco).map(banco => /*#__PURE__*/React.createElement(Card, {
+    key: banco,
+    className: "p-5"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center justify-between mb-3"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "font-serif font-bold text-base",
+    style: {
+      color: C.ink
+    }
+  }, banco), /*#__PURE__*/React.createElement("div", {
+    className: "text-sm font-bold",
+    style: {
+      color: C.salu
+    }
+  }, euros(porBanco[banco].reduce((s, c) => s + (Number(c.saldo) || 0), 0)))), /*#__PURE__*/React.createElement("div", {
+    className: "space-y-2"
+  }, porBanco[banco].map(c => /*#__PURE__*/React.createElement("div", {
+    key: c.id,
+    className: "flex items-center justify-between gap-3 rounded-lg px-3.5 py-2.5",
+    style: {
+      backgroundColor: C.paper
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "min-w-0"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-sm font-bold truncate",
+    style: {
+      color: C.ink
+    }
+  }, c.nombre || "Sin nombre"), /*#__PURE__*/React.createElement("div", {
+    className: "text-xs",
+    style: {
+      color: C.muted
+    }
+  }, c.tipo)), /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-3 shrink-0"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-sm font-bold",
+    style: {
+      color: C.ink
+    }
+  }, euros(c.saldo)), /*#__PURE__*/React.createElement("button", {
+    onClick: () => abrirEditar(c),
+    style: {
+      color: C.navy
+    },
+    "aria-label": "Editar cuenta"
+  }, /*#__PURE__*/React.createElement(I.edit, {
+    size: 15
+  })), /*#__PURE__*/React.createElement("button", {
+    onClick: () => onEliminar(c.id),
+    style: {
+      color: C.crit
+    },
+    "aria-label": "Eliminar cuenta"
+  }, /*#__PURE__*/React.createElement(I.trash, {
+    size: 15
+  }))))))))));
+}
 function App() {
   const {
     ready,
@@ -7618,6 +8036,33 @@ function App() {
   });
   const [objetivoSeleccionadoId, setObjetivoSeleccionadoId] = useState(null);
   const [historial, setHistorial] = useState([]);
+  // --- Cuentas (Fase 2 de la hoja de ruta) ---
+  const [cuentas, setCuentas] = useState([]);
+  const {
+    ready: cuentasReady,
+    cuentasGuardadas,
+    save: guardarCuentasLocal
+  } = useCuentasPersistidas();
+  const [cuentasHidratadas, setCuentasHidratadas] = useState(false);
+  useEffect(() => {
+    if (!cuentasReady) return;
+    if (Array.isArray(cuentasGuardadas)) setCuentas(cuentasGuardadas);
+    setCuentasHidratadas(true);
+  }, [cuentasReady, cuentasGuardadas]);
+  const {
+    agregarCuenta,
+    actualizarCuenta,
+    eliminarCuenta
+  } = useCuentasSync({
+    user,
+    cuentas,
+    setCuentas,
+    onSaved: (msg, tone) => showToast(msg, tone)
+  });
+  useDebouncedEffect(() => {
+    if (!cuentasHidratadas) return;
+    guardarCuentasLocal(cuentas);
+  }, [cuentas, cuentasHidratadas]);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
@@ -7821,7 +8266,7 @@ function App() {
     }
   }, "MoneyPilot")), /*#__PURE__*/React.createElement("nav", {
     className: "hidden md:flex items-center gap-1 text-xs font-bold flex-wrap"
-  }, [["inicio", "Introducción"], ["diagnostico", "Diagnóstico"], ["estrategia", "Estrategia"], ["simulador", "Simulador"], ["blog", "Blog"]].map(([id, label]) => /*#__PURE__*/React.createElement("button", {
+  }, [["inicio", "Introducción"], ["diagnostico", "Diagnóstico"], ["cuentas", "Cuentas"], ["estrategia", "Estrategia"], ["simulador", "Simulador"], ["blog", "Blog"]].map(([id, label]) => /*#__PURE__*/React.createElement("button", {
     key: id,
     onClick: () => setVistaActual(id),
     className: "px-3 py-2 rounded-lg transition-colors hover:bg-white/10 " + (vistaActual === id ? "nav-link-active" : "nav-link-muted"),
@@ -7873,7 +8318,7 @@ function App() {
     size: 13
   })))), /*#__PURE__*/React.createElement("div", {
     className: "md:hidden flex gap-1 overflow-x-auto pb-2 -mx-1 px-1"
-  }, [["inicio", "Introducción"], ["diagnostico", "Diagnóstico"], ["estrategia", "Estrategia"], ["simulador", "Simulador"], ["blog", "Blog"]].map(([id, label]) => /*#__PURE__*/React.createElement("button", {
+  }, [["inicio", "Introducción"], ["diagnostico", "Diagnóstico"], ["cuentas", "Cuentas"], ["estrategia", "Estrategia"], ["simulador", "Simulador"], ["blog", "Blog"]].map(([id, label]) => /*#__PURE__*/React.createElement("button", {
     key: id,
     onClick: () => setVistaActual(id),
     className: "whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-bold " + (vistaActual === id ? "nav-link-active" : "nav-link-muted"),
@@ -7917,6 +8362,14 @@ function App() {
     onFinalizar: () => {
       setVistaActual('estrategia');
     }
+  })), vistaActual === 'cuentas' && /*#__PURE__*/React.createElement("div", {
+    key: "cuentas",
+    className: "fade-switch-enter"
+  }, /*#__PURE__*/React.createElement(Cuentas, {
+    cuentas: cuentas,
+    onAgregar: agregarCuenta,
+    onActualizar: actualizarCuenta,
+    onEliminar: eliminarCuenta
   })), vistaActual === 'estrategia' && /*#__PURE__*/React.createElement("div", {
     key: "estrategia",
     className: "fade-switch-enter"
