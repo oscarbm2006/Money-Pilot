@@ -5790,6 +5790,224 @@ function calcularPlanObjetivos(datos = {}) {
     objetivosOrdenados: orden.map(o => o.id)
   };
 }
+
+/* ============================================================
+   MOTOR DE DIAGNÓSTICO (Fase 6 de la hoja de ruta)
+   ------------------------------------------------------------
+   Construye una lista de "lo que va bien" y "lo que preocupa,
+   y por qué" a partir de TODOS los datos disponibles: capacidad
+   de ahorro, fondo de emergencia, deuda cara, liquidez real de
+   las cuentas, exposición de la cartera de inversión y viabilidad
+   de los objetivos. No modifica la puntuación de salud financiera
+   existente ni ningún cálculo previo: es una capa explicativa
+   adicional, tal y como pide el roadmap ("explicación clara de
+   la situación").
+   ============================================================ */
+function calcularDiagnosticoAmpliado({
+  datos,
+  cuentas = [],
+  inversiones = [],
+  planObjetivos
+}) {
+  const positivos = [];
+  const preocupantes = [];
+  const capacidad = planObjetivos.capacidadMensual;
+  const ratioAhorro = planObjetivos.ingresos > 0 ? capacidad / planObjetivos.ingresos : null;
+
+  // 1. Capacidad de ahorro
+  if (capacidad != null) {
+    if (capacidad <= 0) {
+      preocupantes.push({
+        titulo: "Gastas más de lo que ingresas",
+        texto: `Tu margen mensual actual es ${euros(capacidad)}. Cualquier imprevisto (una avería, una factura inesperada) tendría que pagarse con deuda o con tus ahorros.`
+      });
+    } else if (ratioAhorro != null && ratioAhorro < 0.10) {
+      preocupantes.push({
+        titulo: "Tu margen de ahorro es reducido",
+        texto: `Ahorras ${pct(ratioAhorro * 100)} de lo que ingresas. Por debajo del 10% cuesta avanzar hacia tus objetivos y hacia un colchón de seguridad.`
+      });
+    } else {
+      positivos.push({
+        titulo: "Ahorras una parte saludable de tus ingresos",
+        texto: `Actualmente ahorras ${pct(ratioAhorro * 100)} de lo que ingresas cada mes.`
+      });
+    }
+  }
+
+  // 2. Liquidez / fondo de emergencia — usa el saldo real de tus Cuentas si las
+  // tienes registradas; si no, usa el ahorro manual introducido en Diagnóstico.
+  const liquidezReal = cuentas.length > 0 ? cuentas.reduce((s, c) => s + (Number(c.saldo) || 0), 0) : Number(datos.ahorroActual) || 0;
+  const gastosEsenciales = planObjetivos.fondoEmergenciaNecesario != null ? planObjetivos.fondoEmergenciaNecesario / 6 : null;
+  const coberturaMeses = gastosEsenciales != null && gastosEsenciales > 0 ? liquidezReal / gastosEsenciales : null;
+  if (coberturaMeses != null) {
+    if (coberturaMeses < 3) {
+      preocupantes.push({
+        titulo: "Tu colchón de emergencia es insuficiente",
+        texto: `Con tu liquidez actual (${euros(liquidezReal)}) cubrirías ${coberturaMeses.toFixed(1)} meses de gastos esenciales. Por debajo de 3 meses, un imprevisto puede obligarte a endeudarte.`
+      });
+    } else if (coberturaMeses < 6) {
+      preocupantes.push({
+        titulo: "Tu fondo de emergencia es mejorable",
+        texto: `Cubre ${coberturaMeses.toFixed(1)} meses de gastos esenciales. La referencia recomendada son 6 meses.`
+      });
+    } else {
+      positivos.push({
+        titulo: "Tu fondo de emergencia es sólido",
+        texto: `Cubre ${coberturaMeses.toFixed(1)} meses de gastos esenciales, por encima del mínimo recomendado.`
+      });
+    }
+  }
+
+  // 3. Deuda cara
+  const deudasActivas = (datos.deudas || []).filter(d => Number(d.pendiente) > 0);
+  const deudaCara = deudasActivas.filter(d => Number(d.tasa) >= 10);
+  if (deudaCara.length > 0) {
+    const nombres = deudaCara.map(d => d.nombre || "deuda sin nombre").join(", ");
+    preocupantes.push({
+      titulo: "Tienes deuda con un interés elevado",
+      texto: `${nombres} tiene(n) un interés del 10% o más. Ese coste suele superar la rentabilidad esperada de invertir, así que normalmente conviene amortizarla antes de invertir más.`
+    });
+  } else if (deudasActivas.length > 0) {
+    positivos.push({
+      titulo: "Tu deuda actual tiene un coste moderado",
+      texto: "Ninguna de tus deudas activas supera el 10% de interés."
+    });
+  } else {
+    positivos.push({
+      titulo: "No tienes deudas activas registradas",
+      texto: "Esto te da más margen para ahorrar e invertir sin compromisos previos."
+    });
+  }
+
+  // 4. Exposición de la cartera de inversión
+  if (inversiones.length > 0) {
+    const totalInvertido = inversiones.reduce((s, inv) => s + (Number(inv.valorActual) || 0), 0);
+    const tiposUnicos = new Set(inversiones.map(inv => inv.tipo)).size;
+    if (tiposUnicos === 1 && inversiones.length >= 2) {
+      preocupantes.push({
+        titulo: "Tu cartera está concentrada en un único tipo de activo",
+        texto: `Toda tu inversión (${euros(totalInvertido)}) está en "${inversiones[0].tipo}". Repartir entre varios tipos de activo reduce el impacto de que uno de ellos baje de valor.`
+      });
+    } else {
+      positivos.push({
+        titulo: "Tu cartera está repartida en varios tipos de activo",
+        texto: `Tienes inversión en ${tiposUnicos} tipos de activo distintos.`
+      });
+    }
+    if (gastosEsenciales != null && liquidezReal > gastosEsenciales * 12 && totalInvertido < liquidezReal) {
+      preocupantes.push({
+        titulo: "Tienes bastante liquidez sin invertir",
+        texto: `Tu liquidez (${euros(liquidezReal)}) supera ampliamente tu fondo de emergencia recomendado. Salvo que la necesites pronto, ese exceso suele perder poder adquisitivo con la inflación si se queda parado.`
+      });
+    }
+  }
+
+  // 5. Objetivos financieros
+  if (planObjetivos.objetivos.length > 0) {
+    const noViables = planObjetivos.objetivos.filter(o => o.estadoViabilidad === "no_viable");
+    if (planObjetivos.conflictoObjetivos) {
+      preocupantes.push({
+        titulo: "Tus objetivos piden más de lo que puedes aportar",
+        texto: `En conjunto necesitas ${euros(planObjetivos.aportacionComprometida)}/mes, pero tu capacidad actual es ${euros(planObjetivos.capacidadParaObjetivos)}/mes.`
+      });
+    } else if (noViables.length > 0) {
+      preocupantes.push({
+        titulo: "Alguno de tus objetivos no es viable con el ritmo actual",
+        texto: `${noViables.map(o => o.nombre || "un objetivo").join(", ")} necesita más aportación mensual de la que tu capacidad actual permite, dado el plazo indicado.`
+      });
+    } else {
+      positivos.push({
+        titulo: "Tus objetivos son viables con tu ritmo actual",
+        texto: "Con tu capacidad de ahorro y los plazos indicados, tus objetivos registrados son alcanzables."
+      });
+    }
+  }
+  return {
+    positivos,
+    preocupantes,
+    liquidezReal,
+    coberturaMeses
+  };
+}
+
+/* ============================================================
+   MOTOR DE PRIORIDADES (Fase 7 de la hoja de ruta)
+   ------------------------------------------------------------
+   Convierte el diagnóstico en un orden de actuación claro:
+   1. Seguridad financiera básica (no gastar más de lo que entra).
+   2. Colchón mínimo de seguridad.
+   3. Deuda cara o de alto coste.
+   4. Fondo de emergencia completo (6 meses).
+   5. Inversión y optimización patrimonial.
+   6. Objetivos financieros.
+   No cambia la pregunta principal de la web ni sustituye al
+   diagnóstico: solo indica "qué deberías hacer ahora" y por qué,
+   evitando recomendar invertir por defecto si hay algo más
+   prioritario pendiente (deuda cara, fondo insuficiente, etc.).
+   ============================================================ */
+function calcularPrioridades({
+  datos,
+  inversiones = [],
+  planObjetivos,
+  diagnostico
+}) {
+  const capacidad = planObjetivos.capacidadMensual;
+  const coberturaMeses = diagnostico.coberturaMeses;
+  const deudasActivas = (datos.deudas || []).filter(d => Number(d.pendiente) > 0);
+  const deudaCara = deudasActivas.filter(d => Number(d.tasa) >= 10);
+  const objetivosProblema = planObjetivos.conflictoObjetivos || planObjetivos.objetivos.some(o => o.estadoViabilidad === "no_viable");
+  const nombresDeudaCara = deudaCara.map(d => d.nombre || "una deuda").join(", ");
+
+  const pasos = [{
+    id: "seguridad",
+    titulo: "Ajusta tu presupuesto",
+    texto: capacidad != null ? `Ahora mismo tu margen mensual es ${euros(capacidad)}. Antes de pensar en deudas, fondo de emergencia o inversión, necesitas que ese número deje de ser negativo.` : "Introduce tus ingresos y gastos para poder evaluar tu situación.",
+    satisfecho: capacidad == null || capacidad > 0
+  }, {
+    id: "colchon",
+    titulo: "Consigue un colchón mínimo de seguridad",
+    texto: `Tu liquidez actual cubre ${coberturaMeses == null ? "una parte todavía por calcular de" : coberturaMeses.toFixed(1)} tus gastos esenciales de un mes. Antes de atacar deudas o invertir, conviene tener al menos 1 mes cubierto para no depender de más deuda ante cualquier imprevisto.`,
+    satisfecho: coberturaMeses == null || coberturaMeses >= 1
+  }, {
+    id: "deuda_cara",
+    titulo: "Prioriza tu deuda más cara",
+    texto: deudaCara.length > 0 ? `${nombresDeudaCara} tiene(n) un interés del 10% o más. Ese coste suele superar lo que ganarías invirtiendo, así que amortizarla es más prioritario que invertir.` : "No tienes deuda con un interés elevado pendiente.",
+    satisfecho: deudaCara.length === 0
+  }, {
+    id: "fondo_emergencia",
+    titulo: "Completa tu fondo de emergencia",
+    texto: `Tu colchón cubre ${coberturaMeses == null ? "una parte todavía por calcular" : coberturaMeses.toFixed(1) + " de los 6"} meses de gasto recomendados. Complétalo antes de invertir con fuerza, así no tendrás que deshacer inversiones ante un imprevisto.`,
+    satisfecho: coberturaMeses == null || coberturaMeses >= 6
+  }, {
+    id: "inversion",
+    titulo: "Valora empezar o aumentar tu inversión",
+    texto: capacidad != null && capacidad > 0 ? "Con tu deuda cara resuelta y el fondo de emergencia cubierto, tienes margen para valorar destinar tu ahorro mensual a inversión, según tu perfil de riesgo." : "Todavía no tienes margen mensual para destinar a inversión.",
+    satisfecho: inversiones.length > 0 || capacidad == null || capacidad <= 0
+  }, {
+    id: "objetivos",
+    titulo: "Revisa tus objetivos",
+    texto: objetivosProblema ? "Alguno de tus objetivos necesita más aportación de la que tu capacidad actual permite. Revísalo para ajustar plazo o importe." : "Con tu base financiera cubierta, revisa tus objetivos y ajusta su ritmo si tu situación cambia.",
+    satisfecho: planObjetivos.objetivos.length === 0 || !objetivosProblema
+  }];
+  let actualAsignado = false;
+  const pasosConEstado = pasos.map(p => {
+    let estado;
+    if (p.satisfecho) estado = "hecho";else if (!actualAsignado) {
+      estado = "actual";
+      actualAsignado = true;
+    } else estado = "pendiente";
+    return {
+      ...p,
+      estado
+    };
+  });
+  const todoEnOrden = !actualAsignado;
+  return {
+    pasos: pasosConEstado,
+    todoEnOrden
+  };
+}
+
 function objetivoLegadoDesdeColeccion(objetivos = []) {
   const o = objetivos[0];
   return o ? {
@@ -8930,6 +9148,155 @@ function Patrimonio({
   }, seccionCuentas, seccionInversiones, seccionDeudas), seccionActivos, formularioActivo, notaFinal));
 }
 
+/* ============================================================
+   PANTALLA: PANEL DE DIAGNÓSTICO (Fase 6 de la hoja de ruta)
+   "Qué está bien, qué preocupa y por qué" — se muestra al
+   principio de Estrategia, antes del resto de contenido.
+   ============================================================ */
+function PanelDiagnostico({
+  diagnostico
+}) {
+  const el = React.createElement;
+  const {
+    positivos,
+    preocupantes
+  } = diagnostico;
+  if (positivos.length === 0 && preocupantes.length === 0) return null;
+
+  const tarjetaItem = (item, tipo) => el("div", {
+    key: item.titulo,
+    className: "rounded-xl p-4",
+    style: {
+      backgroundColor: tipo === "positivo" ? C.saluLight : C.critLight
+    }
+  }, el("div", {
+    className: "flex items-start gap-2.5"
+  }, el(tipo === "positivo" ? I.checkCircle : I.alertTriangle, {
+    size: 16,
+    color: tipo === "positivo" ? C.salu : C.crit,
+    className: "mt-0.5 shrink-0"
+  }), el("div", null, el("div", {
+    className: "text-sm font-bold",
+    style: {
+      color: C.ink
+    }
+  }, item.titulo), el("p", {
+    className: "text-xs mt-1",
+    style: {
+      color: C.muted
+    }
+  }, item.texto))));
+
+  const columnaPositivos = positivos.length === 0 ? null : el("div", {
+    className: "space-y-3"
+  }, el("div", {
+    className: "text-xs font-bold uppercase",
+    style: {
+      color: C.salu,
+      letterSpacing: "0.06em"
+    }
+  }, "Lo que va bien"), positivos.map(item => tarjetaItem(item, "positivo")));
+
+  const columnaPreocupantes = preocupantes.length === 0 ? null : el("div", {
+    className: "space-y-3"
+  }, el("div", {
+    className: "text-xs font-bold uppercase",
+    style: {
+      color: C.crit,
+      letterSpacing: "0.06em"
+    }
+  }, "Lo que preocupa, y por qué"), preocupantes.map(item => tarjetaItem(item, "preocupante")));
+
+  return el(Card, {
+    className: "p-5 sm:p-6"
+  }, el(Eyebrow, null, "Tu diagnóstico"), el("h3", {
+    className: "font-serif text-xl font-bold mt-1",
+    style: {
+      color: C.ink
+    }
+  }, "Qué está bien, qué preocupa y por qué"), el("p", {
+    className: "text-sm mt-1 mb-4",
+    style: {
+      color: C.muted
+    }
+  }, "Construido con tus datos de ingresos, gastos, deudas, cuentas, inversiones y objetivos."), el("div", {
+    className: "grid grid-cols-1 sm:grid-cols-2 gap-4"
+  }, columnaPositivos, columnaPreocupantes));
+}
+
+/* ============================================================
+   PANTALLA: PANEL DE PRIORIDAD (Fase 7 de la hoja de ruta)
+   "Qué deberías hacer ahora" — orden de actuación con el paso
+   actual destacado y los siguientes como referencia futura.
+   ============================================================ */
+function PanelPrioridad({
+  prioridad
+}) {
+  const el = React.createElement;
+  const {
+    pasos,
+    todoEnOrden
+  } = prioridad;
+
+  if (todoEnOrden) {
+    return el(Card, {
+      className: "p-5 sm:p-6",
+      style: { borderColor: C.salu + "55" }
+    }, el("div", {
+      className: "flex items-start gap-3"
+    }, el("div", {
+      className: "w-10 h-10 rounded-xl flex items-center justify-center shrink-0",
+      style: { backgroundColor: C.saluLight }
+    }, el(I.checkCircle, { size: 18, color: C.salu })), el("div", null, el(Eyebrow, null, "Qué deberías hacer ahora"), el("h3", {
+      className: "font-serif text-xl font-bold mt-1",
+      style: { color: C.ink }
+    }, "Tu situación está en orden"), el("p", {
+      className: "text-sm mt-1",
+      style: { color: C.muted }
+    }, "Tu fondo de emergencia está cubierto, no tienes deuda cara pendiente y tu margen de ahorro es positivo. Sigue con tu plan y revisa esta pantalla si tu situación cambia."))));
+  }
+
+  const filaPaso = (paso, index) => {
+    const esActual = paso.estado === "actual";
+    const esHecho = paso.estado === "hecho";
+    const numeroOIcono = esHecho ? el(I.check, { size: 14, color: C.white }) : (index + 1);
+    return el("div", {
+      key: paso.id,
+      className: "flex items-start gap-3 rounded-xl p-3.5",
+      style: {
+        backgroundColor: esActual ? C.sandLight : "transparent",
+        border: esActual ? "1px solid " + C.sand : "1px solid transparent"
+      }
+    }, el("div", {
+      className: "w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0",
+      style: {
+        backgroundColor: esHecho ? C.salu : esActual ? C.sand : C.border,
+        color: esHecho || esActual ? C.white : C.muted
+      }
+    }, numeroOIcono), el("div", {
+      className: "min-w-0"
+    }, el("div", {
+      className: "text-sm font-bold",
+      style: { color: esHecho ? C.muted : C.ink, textDecoration: esHecho ? "line-through" : "none" }
+    }, paso.titulo), !esHecho && el("p", {
+      className: "text-xs mt-1",
+      style: { color: C.muted }
+    }, paso.texto)));
+  };
+
+  return el(Card, {
+    className: "p-5 sm:p-6"
+  }, el(Eyebrow, null, "Qué deberías hacer ahora"), el("h3", {
+    className: "font-serif text-xl font-bold mt-1",
+    style: { color: C.ink }
+  }, "Tu orden de actuación"), el("p", {
+    className: "text-sm mt-1 mb-4",
+    style: { color: C.muted }
+  }, "Basado en tu situación: seguridad básica, deuda cara, fondo de emergencia, inversión y objetivos, en ese orden — con excepciones si tu caso lo requiere."), el("div", {
+    className: "space-y-2"
+  }, pasos.map((p, i) => filaPaso(p, i))));
+}
+
 function App() {
   const {
     ready,
@@ -9207,6 +9574,18 @@ function App() {
   const ahorroDisponible = capacidadFinanciera.capacidadMensual == null ? 0 : capacidadFinanciera.capacidadMensual;
   const ratioAhorro = capacidadFinanciera.ingresos > 0 ? ahorroDisponible / capacidadFinanciera.ingresos : 0;
   const planObjetivos = useMemo(() => calcularPlanObjetivos(datos), [datos]);
+  const diagnosticoAmpliado = useMemo(() => calcularDiagnosticoAmpliado({
+    datos,
+    cuentas,
+    inversiones,
+    planObjetivos
+  }), [datos, cuentas, inversiones, planObjetivos]);
+  const prioridadActual = useMemo(() => calcularPrioridades({
+    datos,
+    inversiones,
+    planObjetivos,
+    diagnostico: diagnosticoAmpliado
+  }), [datos, inversiones, planObjetivos, diagnosticoAmpliado]);
   useEffect(() => {
     if (!hydrated) return;
     if (sim.objetivoId || sim.inicial !== 0 || sim.mensual !== 0) return;
@@ -9428,7 +9807,11 @@ function App() {
     style: {
       color: C.muted
     }
-  }, "Aquí se concentran las métricas clave, el perfil de riesgo y las decisiones que puedes tomar a continuación.")), /*#__PURE__*/React.createElement(Dashboard, {
+  }, "Aquí se concentran las métricas clave, el perfil de riesgo y las decisiones que puedes tomar a continuación.")), /*#__PURE__*/React.createElement(PanelDiagnostico, {
+    diagnostico: diagnosticoAmpliado
+  }), /*#__PURE__*/React.createElement(PanelPrioridad, {
+    prioridad: prioridadActual
+  }), /*#__PURE__*/React.createElement(Dashboard, {
     planObjetivos: planObjetivos,
     objetivos: normalizarObjetivos(datos),
     ingresos: capacidadFinanciera.ingresos,
@@ -9699,4 +10082,3 @@ function App() {
 }
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(/*#__PURE__*/React.createElement(App, null));
-
