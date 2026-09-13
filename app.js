@@ -1816,6 +1816,109 @@ function useActivosSync({
 }
 
 /* ============================================================
+   SEGUIMIENTO — evolución en el tiempo (Fase 9 de la hoja de ruta)
+   ------------------------------------------------------------
+   Guarda "fotos" (snapshots) de tu situación financiera completa
+   en la tabla `seguimiento`, para poder ver si avanzas con el
+   tiempo. Requiere sesión iniciada, porque solo tiene sentido
+   comparar entre visitas si los datos persisten en la nube.
+   ============================================================ */
+function construirSnapshotActual({
+  liquidez,
+  totalInversiones,
+  totalActivos,
+  totalDeudas,
+  coberturaMeses,
+  ratioAhorro
+}) {
+  return {
+    liquidez: Number(liquidez) || 0,
+    inversiones_valor: Number(totalInversiones) || 0,
+    activos_valor: Number(totalActivos) || 0,
+    deuda_pendiente: Number(totalDeudas) || 0,
+    ahorro_acumulado: Number(liquidez) || 0,
+    patrimonio_neto: (Number(liquidez) || 0) + (Number(totalInversiones) || 0) + (Number(totalActivos) || 0) - (Number(totalDeudas) || 0),
+    fondo_cobertura_meses: coberturaMeses == null ? null : Number(coberturaMeses),
+    ratio_ahorro: ratioAhorro == null ? null : Number(ratioAhorro)
+  };
+}
+function useSeguimiento({
+  user
+}) {
+  const [historial, setHistorial] = useState([]);
+  const [cargando, setCargando] = useState(false);
+  const [cargado, setCargado] = useState(false);
+  const autoRegistradoRef = useRef(false);
+  useEffect(() => {
+    if (!user) {
+      setHistorial([]);
+      setCargado(false);
+      autoRegistradoRef.current = false;
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      setCargando(true);
+      const {
+        data,
+        error
+      } = await supa.from("seguimiento").select("*").eq("user_id", user.id).order("registrado_at", {
+        ascending: true
+      });
+      if (!cancelled) {
+        if (!error && data) setHistorial(data);
+        setCargando(false);
+        setCargado(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+  const registrarSnapshot = useCallback(async (valores, origen = "manual") => {
+    if (!user) return {
+      ok: false
+    };
+    const payload = {
+      user_id: user.id,
+      origen,
+      ...construirSnapshotActual(valores)
+    };
+    const {
+      data,
+      error
+    } = await supa.from("seguimiento").insert(payload).select().single();
+    if (!error && data) {
+      setHistorial(prev => [...prev, data]);
+      return {
+        ok: true
+      };
+    }
+    return {
+      ok: false,
+      error
+    };
+  }, [user]);
+
+  // Registro automático: como mucho una vez al día, en silencio, para que
+  // el histórico vaya creciendo aunque el usuario no pulse nada.
+  const registrarSiHaceFalta = useCallback(async valores => {
+    if (!user || !cargado || autoRegistradoRef.current) return;
+    const hoy = new Date().toISOString().slice(0, 10);
+    const yaHoy = historial.some(h => (h.registrado_at || "").slice(0, 10) === hoy);
+    autoRegistradoRef.current = true;
+    if (!yaHoy) await registrarSnapshot(valores, "auto");
+  }, [user, cargado, historial, registrarSnapshot]);
+  return {
+    historial,
+    cargando,
+    cargado,
+    registrarSnapshot,
+    registrarSiHaceFalta
+  };
+}
+
+/* ============================================================
    TOAST — feedback discreto de guardado (local y nube)
    ============================================================ */
 function useToast() {
@@ -9484,6 +9587,142 @@ function PlanFinanciero({
   }, "El plan se recalcula cada vez que entras, con tus datos actuales. Para ver tu evolución en el tiempo (si avanzas mes a mes) llegará próximamente un apartado de Seguimiento."));
 }
 
+/* ============================================================
+   PANTALLA: SEGUIMIENTO (Fase 9 de la hoja de ruta)
+   Evolución y progreso a lo largo del tiempo.
+   ============================================================ */
+function Seguimiento({
+  user,
+  historial,
+  cargando,
+  onRegistrar,
+  onOpenAuth
+}) {
+  const el = React.createElement;
+  const [registrando, setRegistrando] = useState(false);
+
+  if (!user) {
+    return el(Card, {
+      className: "p-8 text-center"
+    }, el(I.chartLine, { size: 28, className: "mx-auto mb-3", color: C.muted }), el("p", {
+      className: "text-sm font-bold",
+      style: { color: C.ink }
+    }, "Inicia sesión para guardar tu evolución"), el("p", {
+      className: "text-sm mt-1 max-w-sm mx-auto",
+      style: { color: C.muted }
+    }, "El seguimiento compara tu situación entre visitas, así que necesita que tus datos se guarden en la nube."), el("button", {
+      onClick: onOpenAuth,
+      className: "mt-4 px-4 py-2 rounded-lg text-xs font-bold",
+      style: { backgroundColor: C.sand, color: C.navy }
+    }, "Guardar mis datos"));
+  }
+
+  if (cargando) {
+    return el(Card, {
+      className: "p-8 text-center"
+    }, el("p", {
+      className: "text-sm",
+      style: { color: C.muted }
+    }, "Cargando tu histórico…"));
+  }
+
+  const handleRegistrar = async () => {
+    setRegistrando(true);
+    await onRegistrar();
+    setRegistrando(false);
+  };
+
+  const botonRegistrar = el("button", {
+    onClick: handleRegistrar,
+    disabled: registrando,
+    className: "inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-bold disabled:opacity-60",
+    style: { backgroundColor: C.sand, color: C.navy }
+  }, el(I.sparkles, { size: 15 }), registrando ? "Guardando…" : "Registrar mi avance ahora");
+
+  if (historial.length === 0) {
+    return el(Card, {
+      className: "p-8 text-center"
+    }, el(I.chartLine, { size: 28, className: "mx-auto mb-3", color: C.muted }), el("p", {
+      className: "text-sm font-bold",
+      style: { color: C.ink }
+    }, "Todavía no tienes ningún registro"), el("p", {
+      className: "text-sm mt-1 max-w-sm mx-auto",
+      style: { color: C.muted }
+    }, "Guarda tu primera foto de hoy. La próxima vez que vuelvas, podrás ver si has avanzado."), el("div", {
+      className: "mt-4"
+    }, botonRegistrar));
+  }
+
+  const primero = historial[0];
+  const ultimo = historial[historial.length - 1];
+  const diferencia = (campo) => Number(ultimo[campo] || 0) - Number(primero[campo] || 0);
+  const diferenciaPatrimonio = diferencia("patrimonio_neto");
+  const diferenciaDeuda = diferencia("deuda_pendiente");
+  const fechaFmt = (iso) => new Date(iso).toLocaleDateString("es-ES", { day: "2-digit", month: "short" });
+
+  const datosGrafico = historial.map(h => ({
+    fecha: fechaFmt(h.registrado_at),
+    patrimonio: Math.round(Number(h.patrimonio_neto) || 0)
+  }));
+
+  const tarjetaResumen = (etiqueta, diff, invertirColor) => {
+    const positivo = invertirColor ? diff <= 0 : diff >= 0;
+    return el("div", {
+      className: "rounded-xl p-4",
+      style: { backgroundColor: C.paper, border: "1px solid " + C.border }
+    }, el("div", {
+      className: "text-[10px] uppercase font-bold",
+      style: { color: C.muted }
+    }, etiqueta), el("div", {
+      className: "font-serif text-lg font-bold mt-1",
+      style: { color: positivo ? C.salu : C.crit }
+    }, (diff >= 0 ? "+" : "") + euros(diff)));
+  };
+
+  return el("div", {
+    className: "space-y-6"
+  }, historial.length >= 2 && el(Card, {
+    className: "p-5"
+  }, el("div", {
+    className: "flex items-center justify-between gap-3 mb-3"
+  }, el("div", null, el(Eyebrow, null, "Desde tu primer registro"), el("p", {
+    className: "text-xs mt-1",
+    style: { color: C.muted }
+  }, `${fechaFmt(primero.registrado_at)} — ${fechaFmt(ultimo.registrado_at)}`)), botonRegistrar), el("div", {
+    className: "grid grid-cols-2 sm:grid-cols-2 gap-3"
+  }, tarjetaResumen("Patrimonio neto", diferenciaPatrimonio, false), tarjetaResumen("Deuda pendiente", diferenciaDeuda, true))), historial.length < 2 && el(Card, {
+    className: "p-5 flex items-center justify-between gap-3 flex-wrap"
+  }, el("p", {
+    className: "text-sm",
+    style: { color: C.muted }
+  }, "Tienes un registro guardado. Vuelve otro día y registra de nuevo para empezar a ver tu evolución."), botonRegistrar), el(Card, {
+    className: "p-5"
+  }, el(Eyebrow, null, "Evolución de tu patrimonio neto"), el("div", {
+    className: "h-64 mt-3"
+  }, el(SimpleAreaChart, {
+    data: datosGrafico,
+    xKey: "fecha",
+    series: [{ key: "patrimonio", label: "Patrimonio neto", color: C.sand, opacity: 0.3 }],
+    formatY: v => v.toLocaleString("es-ES") + " €"
+  }))), el(Card, {
+    className: "p-5"
+  }, el(Eyebrow, null, "Historial de registros"), el("div", {
+    className: "space-y-2 mt-3"
+  }, [...historial].reverse().map(h => el("div", {
+    key: h.id,
+    className: "flex items-center justify-between gap-3 rounded-lg px-3.5 py-2.5",
+    style: { backgroundColor: C.paper }
+  }, el("span", {
+    className: "text-xs font-bold",
+    style: { color: C.muted }
+  }, fechaFmt(h.registrado_at), h.origen === "auto" ? " · automático" : ""), el("span", {
+    className: "text-sm font-bold",
+    style: { color: C.ink }
+  }, euros(h.patrimonio_neto)))))), el("p", {
+    className: "text-[11px] readable-note"
+  }, "Cada registro guarda tu liquidez, inversiones, otros activos, deudas y fondo de emergencia de ese momento. Se genera automáticamente como mucho una vez al día, o cuando pulsas «Registrar mi avance»."));
+}
+
 function App() {
   const {
     ready,
@@ -9782,6 +10021,28 @@ function App() {
     prioridad: prioridadActual,
     perfil
   }), [datos, cuentas, inversiones, planObjetivos, diagnosticoAmpliado, prioridadActual, perfil]);
+  // --- Seguimiento: evolución en el tiempo (Fase 9) ---
+  const {
+    historial: historialSeguimiento,
+    cargando: cargandoSeguimiento,
+    registrarSnapshot,
+    registrarSiHaceFalta
+  } = useSeguimiento({
+    user
+  });
+  const valoresSnapshotActual = useMemo(() => ({
+    liquidez: diagnosticoAmpliado.liquidezReal,
+    totalInversiones: inversiones.reduce((s, inv) => s + (Number(inv.valorActual) || 0), 0),
+    totalActivos: activos.reduce((s, a) => s + (Number(a.valorActual) || 0), 0),
+    totalDeudas: (datos.deudas || []).filter(d => Number(d.pendiente) > 0).reduce((s, d) => s + Number(d.pendiente || 0), 0),
+    coberturaMeses: diagnosticoAmpliado.coberturaMeses,
+    ratioAhorro: capacidadFinanciera.ingresos > 0 ? capacidadFinanciera.capacidadMensual / capacidadFinanciera.ingresos : null
+  }), [diagnosticoAmpliado, inversiones, activos, datos.deudas, capacidadFinanciera]);
+  useEffect(() => {
+    if (!user || !hydrated) return;
+    registrarSiHaceFalta(valoresSnapshotActual);
+    // eslint-disable-next-line
+  }, [user, hydrated, historialSeguimiento.length]);
   useEffect(() => {
     if (!hydrated) return;
     if (sim.objetivoId || sim.inicial !== 0 || sim.mensual !== 0) return;
@@ -9858,7 +10119,7 @@ function App() {
     }
   }, "MoneyPilot")), /*#__PURE__*/React.createElement("nav", {
     className: "hidden md:flex items-center gap-1 text-xs font-bold flex-wrap"
-  }, [["inicio", "Introducción"], ["diagnostico", "Diagnóstico"], ["cuentas", "Cuentas"], ["inversiones", "Inversiones"], ["patrimonio", "Patrimonio"], ["estrategia", "Estrategia"], ["plan", "Plan"], ["simulador", "Simulador"], ["blog", "Blog"]].map(([id, label]) => /*#__PURE__*/React.createElement("button", {
+  }, [["inicio", "Introducción"], ["diagnostico", "Diagnóstico"], ["cuentas", "Cuentas"], ["inversiones", "Inversiones"], ["patrimonio", "Patrimonio"], ["estrategia", "Estrategia"], ["plan", "Plan"], ["seguimiento", "Seguimiento"], ["simulador", "Simulador"], ["blog", "Blog"]].map(([id, label]) => /*#__PURE__*/React.createElement("button", {
     key: id,
     onClick: () => setVistaActual(id),
     className: "px-3 py-2 rounded-lg transition-colors hover:bg-white/10 " + (vistaActual === id ? "nav-link-active" : "nav-link-muted"),
@@ -9910,7 +10171,7 @@ function App() {
     size: 13
   })))), /*#__PURE__*/React.createElement("div", {
     className: "md:hidden flex gap-1 overflow-x-auto pb-2 -mx-1 px-1"
-  }, [["inicio", "Introducción"], ["diagnostico", "Diagnóstico"], ["cuentas", "Cuentas"], ["inversiones", "Inversiones"], ["patrimonio", "Patrimonio"], ["estrategia", "Estrategia"], ["plan", "Plan"], ["simulador", "Simulador"], ["blog", "Blog"]].map(([id, label]) => /*#__PURE__*/React.createElement("button", {
+  }, [["inicio", "Introducción"], ["diagnostico", "Diagnóstico"], ["cuentas", "Cuentas"], ["inversiones", "Inversiones"], ["patrimonio", "Patrimonio"], ["estrategia", "Estrategia"], ["plan", "Plan"], ["seguimiento", "Seguimiento"], ["simulador", "Simulador"], ["blog", "Blog"]].map(([id, label]) => /*#__PURE__*/React.createElement("button", {
     key: id,
     onClick: () => setVistaActual(id),
     className: "whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-bold " + (vistaActual === id ? "nav-link-active" : "nav-link-muted"),
@@ -10094,6 +10355,31 @@ function App() {
     }
   }, "Prioridad actual, siguiente acción y las fases que vendrán después, calculado con todos tus datos.")), /*#__PURE__*/React.createElement(PlanFinanciero, {
     plan: planFinanciero
+  })))), vistaActual === 'seguimiento' && /*#__PURE__*/React.createElement("div", {
+    key: "seguimiento",
+    className: "fade-switch-enter"
+  }, /*#__PURE__*/React.createElement("section", {
+    className: "py-16 sm:py-24 section-tinted"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "max-w-4xl mx-auto px-4 sm:px-6 space-y-6"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "max-w-3xl section-intro"
+  }, /*#__PURE__*/React.createElement(Eyebrow, null, "Tu evolución"), /*#__PURE__*/React.createElement("h2", {
+    className: "font-serif text-3xl sm:text-4xl font-bold mt-2",
+    style: {
+      color: C.ink
+    }
+  }, "¿Estás avanzando?"), /*#__PURE__*/React.createElement("p", {
+    className: "text-sm sm:text-base mt-3",
+    style: {
+      color: C.muted
+    }
+  }, "Guarda una foto de tu situación cada vez que quieras, y compárala con las anteriores.")), /*#__PURE__*/React.createElement(Seguimiento, {
+    user: user,
+    historial: historialSeguimiento,
+    cargando: cargandoSeguimiento,
+    onRegistrar: () => registrarSnapshot(valoresSnapshotActual, "manual"),
+    onOpenAuth: () => setShowAuthModal(true)
   })))), vistaActual === 'simulador' && /*#__PURE__*/React.createElement("div", {
     key: "simulador",
     className: "fade-switch-enter"
