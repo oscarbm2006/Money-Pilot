@@ -6008,6 +6008,109 @@ function calcularPrioridades({
   };
 }
 
+/* ============================================================
+   PLAN FINANCIERO PERSONALIZADO (Fase 8 de la hoja de ruta)
+   ------------------------------------------------------------
+   Convierte el diagnóstico y las prioridades en un plan concreto
+   de 5 fases (colchón inicial, deuda, fondo de emergencia,
+   inversión, objetivos), cada una con su meta, lo que llevas
+   hecho, lo que falta y una acción concreta. Se calcula siempre
+   en vivo a partir de tus datos actuales; el histórico de
+   evolución (para ver si avanzas con el tiempo) llegará con la
+   Fase 9 (Seguimiento), que es la que usará snapshots guardados.
+   ============================================================ */
+function calcularPlanFinanciero({
+  datos,
+  cuentas = [],
+  inversiones = [],
+  planObjetivos,
+  diagnostico,
+  prioridad,
+  perfil
+}) {
+  const capacidad = planObjetivos.capacidadMensual;
+  const liquidezReal = diagnostico.liquidezReal;
+  const fondo = calcularFondoEmergencia(datos);
+  const gastosEsenciales = fondo.gastosEsenciales;
+  const metaColchonInicial = gastosEsenciales != null ? gastosEsenciales : null;
+  const deudasActivas = (datos.deudas || []).filter(d => Number(d.pendiente) > 0);
+  const deudaCara = deudasActivas.filter(d => Number(d.tasa) >= 10);
+  const restanteDeudaCara = deudaCara.reduce((s, d) => s + Number(d.pendiente || 0), 0);
+  const totalInvertido = inversiones.reduce((s, inv) => s + (Number(inv.valorActual) || 0), 0);
+  const estadoPorId = id => {
+    const paso = prioridad.pasos.find(p => p.id === id);
+    if (!paso) return "completado";
+    return paso.estado === "hecho" ? "completado" : paso.estado === "actual" ? "en_curso" : "pendiente";
+  };
+  const bloqueadoPorPresupuesto = prioridad.pasos.find(p => p.id === "seguridad")?.estado === "actual";
+  const restanteColchon = metaColchonInicial != null ? Math.max(0, metaColchonInicial - liquidezReal) : null;
+  const restanteFondo = fondo.objetivo != null ? Math.max(0, fondo.objetivo - liquidezReal) : null;
+  const fases = [{
+    id: "colchon_inicial",
+    titulo: "Colchón inicial",
+    objetivoTexto: "Conseguir una reserva mínima de seguridad (1 mes de gastos esenciales).",
+    meta: metaColchonInicial,
+    actual: liquidezReal,
+    restante: restanteColchon,
+    progreso: metaColchonInicial > 0 ? Math.min(100, liquidezReal / metaColchonInicial * 100) : null,
+    accion: restanteColchon > 0 ? `Aparta ${euros(restanteColchon)} más para llegar a 1 mes de colchón.` : "Colchón mínimo conseguido.",
+    estado: bloqueadoPorPresupuesto ? "pendiente" : estadoPorId("colchon")
+  }, {
+    id: "deuda",
+    titulo: "Deuda cara",
+    objetivoTexto: "Priorizar y amortizar la deuda de mayor coste (interés del 10% o más).",
+    meta: null,
+    actual: null,
+    restante: restanteDeudaCara,
+    progreso: null,
+    accion: restanteDeudaCara > 0 ? `Destina tu excedente mensual a amortizar ${deudaCara.map(d => d.nombre || "esta deuda").join(", ")} mediante bola de nieve o avalancha.` : "No tienes deuda cara pendiente.",
+    estado: bloqueadoPorPresupuesto ? "pendiente" : estadoPorId("deuda_cara")
+  }, {
+    id: "fondo_emergencia",
+    titulo: "Fondo de emergencia",
+    objetivoTexto: "Alcanzar el objetivo de 6 meses de gastos esenciales.",
+    meta: fondo.objetivo,
+    actual: liquidezReal,
+    restante: restanteFondo,
+    progreso: fondo.objetivo > 0 ? Math.min(100, liquidezReal / fondo.objetivo * 100) : null,
+    accion: restanteFondo > 0 ? `Te faltan ${euros(restanteFondo)} para completar 6 meses de fondo de emergencia.` : "Fondo de emergencia completo.",
+    estado: bloqueadoPorPresupuesto ? "pendiente" : estadoPorId("fondo_emergencia")
+  }, {
+    id: "inversion",
+    titulo: "Inversión",
+    objetivoTexto: "Definir cuánto puedes destinar a invertir de forma sostenible.",
+    meta: null,
+    actual: totalInvertido,
+    restante: null,
+    progreso: null,
+    accion: capacidad > 0 ? `Con tu margen mensual (${euros(capacidad)}) puedes valorar destinar una parte a inversión, según tu perfil de riesgo${perfil ? " (" + perfil + ")" : ""}.` : "Todavía no tienes margen mensual libre para invertir.",
+    estado: bloqueadoPorPresupuesto ? "pendiente" : estadoPorId("inversion")
+  }, {
+    id: "objetivos",
+    titulo: "Objetivos",
+    objetivoTexto: "Canalizar tu ahorro hacia tus metas: casa, coche, vacaciones, jubilación u otros.",
+    meta: null,
+    actual: planObjetivos.objetivos.length,
+    restante: null,
+    progreso: null,
+    accion: planObjetivos.principal ? `Tu objetivo prioritario es "${planObjetivos.principal.nombre || "tu objetivo"}"; te faltan ${planObjetivos.principal.importeRestante == null ? "datos por completar" : euros(planObjetivos.principal.importeRestante)}.` : "Define tus objetivos financieros para poder guiar tu ahorro hacia ellos.",
+    estado: bloqueadoPorPresupuesto ? "pendiente" : estadoPorId("objetivos")
+  }];
+  const partesSituacion = [];
+  if (deudaCara.length > 0) partesSituacion.push(`tienes deuda con un interés del 10% o más (${deudaCara.map(d => d.nombre || "una deuda").join(", ")})`);
+  if (fases[2].estado !== "completado") partesSituacion.push("un fondo de emergencia insuficiente");
+  if (inversiones.length > 0) partesSituacion.push("ya tienes inversiones en marcha");
+  const resumenSituacion = bloqueadoPorPresupuesto ? "Tu situación: ahora mismo gastas más de lo que ingresas." : partesSituacion.length > 0 ? `Tu situación: ${partesSituacion.join(", ")}.` : "Tu situación: tu base financiera está en orden.";
+  const recomendaciones = bloqueadoPorPresupuesto ? ["Ajustar tu presupuesto antes de nada, revisando ingresos y gastos."] : fases.filter(f => f.estado !== "completado").map(f => f.accion);
+  if (recomendaciones.length === 0) recomendaciones.push("Sigue así: revisa tu plan periódicamente y ajusta tus objetivos si tu situación cambia.");
+  return {
+    fases,
+    resumenSituacion,
+    recomendaciones,
+    bloqueadoPorPresupuesto
+  };
+}
+
 function objetivoLegadoDesdeColeccion(objetivos = []) {
   const o = objetivos[0];
   return o ? {
@@ -9297,6 +9400,90 @@ function PanelPrioridad({
   }, pasos.map((p, i) => filaPaso(p, i))));
 }
 
+/* ============================================================
+   PANTALLA: PLAN FINANCIERO (Fase 8 de la hoja de ruta)
+   Prioridad actual, siguiente acción y fases futuras.
+   ============================================================ */
+function PlanFinanciero({
+  plan
+}) {
+  const el = React.createElement;
+  const { fases, resumenSituacion, recomendaciones } = plan;
+
+  const iconoPorFase = id => id === "colchon_inicial" ? I.shieldCheck : id === "deuda" ? I.trash : id === "fondo_emergencia" ? I.piggy : id === "inversion" ? I.chartLine : I.target;
+
+  const badgeEstado = estado => {
+    const cfg = estado === "completado" ? { texto: "Completado", bg: C.saluLight, color: C.salu } : estado === "en_curso" ? { texto: "En curso ahora", bg: C.sandLight, color: C.navy } : { texto: "Pendiente", bg: C.bgDeepMid, color: C.muted };
+    return el("span", {
+      className: "text-[10px] font-bold uppercase px-2 py-1 rounded-full shrink-0",
+      style: { backgroundColor: cfg.bg, color: cfg.color }
+    }, cfg.texto);
+  };
+
+  const tarjetaFase = (fase, index) => {
+    const Icono = iconoPorFase(fase.id);
+    const barra = fase.progreso == null ? null : el("div", {
+      className: "h-1.5 rounded-full mt-3 overflow-hidden",
+      style: { backgroundColor: C.bgDeepMid }
+    }, el("div", {
+      className: "h-full rounded-full",
+      style: { width: fase.progreso + "%", backgroundColor: fase.estado === "completado" ? C.salu : C.sand }
+    }));
+    return el(Card, {
+      key: fase.id,
+      className: "p-5",
+      style: { borderColor: fase.estado === "en_curso" ? C.sand + "66" : C.border }
+    }, el("div", {
+      className: "flex items-start justify-between gap-3"
+    }, el("div", {
+      className: "flex items-center gap-3 min-w-0"
+    }, el("div", {
+      className: "w-9 h-9 rounded-xl flex items-center justify-center shrink-0 text-xs font-bold",
+      style: { backgroundColor: fase.estado === "completado" ? C.saluLight : C.sandLight, color: fase.estado === "completado" ? C.salu : C.navy }
+    }, fase.estado === "completado" ? el(I.check, { size: 16 }) : (index + 1)), el("div", {
+      className: "min-w-0"
+    }, el("div", {
+      className: "font-serif text-base font-bold",
+      style: { color: C.ink }
+    }, fase.titulo), el("p", {
+      className: "text-xs mt-0.5",
+      style: { color: C.muted }
+    }, fase.objetivoTexto))), badgeEstado(fase.estado)), fase.meta != null && el("div", {
+      className: "flex gap-4 mt-3 text-xs"
+    }, el("span", {
+      style: { color: C.muted }
+    }, "Meta: ", el("b", { style: { color: C.ink } }, euros(fase.meta))), el("span", {
+      style: { color: C.muted }
+    }, "Ahora: ", el("b", { style: { color: C.ink } }, euros(fase.actual)))), barra, el("p", {
+      className: "text-sm mt-3",
+      style: { color: C.ink }
+    }, fase.accion));
+  };
+
+  return el("div", {
+    className: "space-y-6"
+  }, el(Card, {
+    className: "p-5 sm:p-6",
+    style: { backgroundColor: C.sandLight, border: "1px solid rgba(79,70,229,.16)" }
+  }, el(Eyebrow, null, "Tu plan"), el("h3", {
+    className: "font-serif text-xl font-bold mt-1",
+    style: { color: C.ink }
+  }, resumenSituacion), el("div", {
+    className: "mt-3 space-y-1.5"
+  }, recomendaciones.map((texto, i) => el("div", {
+    key: i,
+    className: "flex items-start gap-2 text-sm",
+    style: { color: C.ink }
+  }, el("span", {
+    className: "font-bold shrink-0",
+    style: { color: C.navy }
+  }, (i + 1) + "."), el("span", null, texto))))), el("div", {
+    className: "space-y-4"
+  }, fases.map((f, i) => tarjetaFase(f, i))), el("p", {
+    className: "text-[11px] readable-note"
+  }, "El plan se recalcula cada vez que entras, con tus datos actuales. Para ver tu evolución en el tiempo (si avanzas mes a mes) llegará próximamente un apartado de Seguimiento."));
+}
+
 function App() {
   const {
     ready,
@@ -9586,6 +9773,15 @@ function App() {
     planObjetivos,
     diagnostico: diagnosticoAmpliado
   }), [datos, inversiones, planObjetivos, diagnosticoAmpliado]);
+  const planFinanciero = useMemo(() => calcularPlanFinanciero({
+    datos,
+    cuentas,
+    inversiones,
+    planObjetivos,
+    diagnostico: diagnosticoAmpliado,
+    prioridad: prioridadActual,
+    perfil
+  }), [datos, cuentas, inversiones, planObjetivos, diagnosticoAmpliado, prioridadActual, perfil]);
   useEffect(() => {
     if (!hydrated) return;
     if (sim.objetivoId || sim.inicial !== 0 || sim.mensual !== 0) return;
@@ -9662,7 +9858,7 @@ function App() {
     }
   }, "MoneyPilot")), /*#__PURE__*/React.createElement("nav", {
     className: "hidden md:flex items-center gap-1 text-xs font-bold flex-wrap"
-  }, [["inicio", "Introducción"], ["diagnostico", "Diagnóstico"], ["cuentas", "Cuentas"], ["inversiones", "Inversiones"], ["patrimonio", "Patrimonio"], ["estrategia", "Estrategia"], ["simulador", "Simulador"], ["blog", "Blog"]].map(([id, label]) => /*#__PURE__*/React.createElement("button", {
+  }, [["inicio", "Introducción"], ["diagnostico", "Diagnóstico"], ["cuentas", "Cuentas"], ["inversiones", "Inversiones"], ["patrimonio", "Patrimonio"], ["estrategia", "Estrategia"], ["plan", "Plan"], ["simulador", "Simulador"], ["blog", "Blog"]].map(([id, label]) => /*#__PURE__*/React.createElement("button", {
     key: id,
     onClick: () => setVistaActual(id),
     className: "px-3 py-2 rounded-lg transition-colors hover:bg-white/10 " + (vistaActual === id ? "nav-link-active" : "nav-link-muted"),
@@ -9714,7 +9910,7 @@ function App() {
     size: 13
   })))), /*#__PURE__*/React.createElement("div", {
     className: "md:hidden flex gap-1 overflow-x-auto pb-2 -mx-1 px-1"
-  }, [["inicio", "Introducción"], ["diagnostico", "Diagnóstico"], ["cuentas", "Cuentas"], ["inversiones", "Inversiones"], ["patrimonio", "Patrimonio"], ["estrategia", "Estrategia"], ["simulador", "Simulador"], ["blog", "Blog"]].map(([id, label]) => /*#__PURE__*/React.createElement("button", {
+  }, [["inicio", "Introducción"], ["diagnostico", "Diagnóstico"], ["cuentas", "Cuentas"], ["inversiones", "Inversiones"], ["patrimonio", "Patrimonio"], ["estrategia", "Estrategia"], ["plan", "Plan"], ["simulador", "Simulador"], ["blog", "Blog"]].map(([id, label]) => /*#__PURE__*/React.createElement("button", {
     key: id,
     onClick: () => setVistaActual(id),
     className: "whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-bold " + (vistaActual === id ? "nav-link-active" : "nav-link-muted"),
@@ -9877,7 +10073,28 @@ function App() {
     ahorroDisponible: ahorroDisponible,
     datos: datos,
     onSeleccionarObjetivo: setObjetivoSeleccionadoId
-  }))))), vistaActual === 'simulador' && /*#__PURE__*/React.createElement("div", {
+  }))))), vistaActual === 'plan' && /*#__PURE__*/React.createElement("div", {
+    key: "plan",
+    className: "fade-switch-enter"
+  }, /*#__PURE__*/React.createElement("section", {
+    className: "py-16 sm:py-24 section-tinted"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "max-w-4xl mx-auto px-4 sm:px-6 space-y-6"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "max-w-3xl section-intro"
+  }, /*#__PURE__*/React.createElement(Eyebrow, null, "Tu plan"), /*#__PURE__*/React.createElement("h2", {
+    className: "font-serif text-3xl sm:text-4xl font-bold mt-2",
+    style: {
+      color: C.ink
+    }
+  }, "Tu plan financiero, paso a paso"), /*#__PURE__*/React.createElement("p", {
+    className: "text-sm sm:text-base mt-3",
+    style: {
+      color: C.muted
+    }
+  }, "Prioridad actual, siguiente acción y las fases que vendrán después, calculado con todos tus datos.")), /*#__PURE__*/React.createElement(PlanFinanciero, {
+    plan: planFinanciero
+  })))), vistaActual === 'simulador' && /*#__PURE__*/React.createElement("div", {
     key: "simulador",
     className: "fade-switch-enter"
   }, /*#__PURE__*/React.createElement("section", {
