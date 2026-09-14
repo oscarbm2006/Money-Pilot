@@ -3057,7 +3057,8 @@ function SimpleAreaChart({
 function SimpleDonut({
   data,
   size = 200,
-  thickness = 28
+  thickness = 28,
+  formatCentro = v => v + "%"
 }) {
   const [hover, setHover] = useState(null);
   const total = data.reduce((s, d) => s + d.value, 0) || 1;
@@ -3115,7 +3116,7 @@ function SimpleDonut({
     style: {
       color: active.color
     }
-  }, active.value, "%"), /*#__PURE__*/React.createElement("div", {
+  }, formatCentro(active.value)), /*#__PURE__*/React.createElement("div", {
     className: "text-[10px] font-bold mt-0.5 leading-tight",
     style: {
       color: C.muted
@@ -9175,7 +9176,8 @@ function Patrimonio({
   }, donutData.length > 0 ? el(SimpleDonut, {
     data: donutData,
     size: 160,
-    thickness: 22
+    thickness: 22,
+    formatCentro: v => euros(v)
   }) : el("div", {
     className: "w-40 h-40 rounded-full flex items-center justify-center text-center text-xs px-4",
     style: { backgroundColor: C.bgDeepMid, color: C.muted }
