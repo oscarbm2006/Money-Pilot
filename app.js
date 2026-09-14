@@ -9723,6 +9723,55 @@ function Seguimiento({
   }, "Cada registro guarda tu liquidez, inversiones, otros activos, deudas y fondo de emergencia de ese momento. Se genera automáticamente como mucho una vez al día, o cuando pulsas «Registrar mi avance»."));
 }
 
+/* ============================================================
+   NAV DE ESCRITORIO (Fase 10 de la hoja de ruta)
+   Agrupa las 10 pestañas en bloques con sentido, en vez de una
+   fila plana, para mejorar la jerarquía visual del menú.
+   ============================================================ */
+function NavDesktop({
+  vistaActual,
+  setVistaActual
+}) {
+  const el = React.createElement;
+  const grupos = [
+    [["inicio", "Introducción"]],
+    [["diagnostico", "Diagnóstico"], ["cuentas", "Cuentas"], ["inversiones", "Inversiones"], ["patrimonio", "Patrimonio"]],
+    [["estrategia", "Estrategia"], ["plan", "Plan"], ["seguimiento", "Seguimiento"]],
+    [["simulador", "Simulador"], ["blog", "Blog"]]
+  ];
+  const boton = ([id, label]) => el("button", {
+    key: id,
+    onClick: () => setVistaActual(id),
+    className: "px-2.5 py-2 rounded-lg transition-colors hover:bg-white/10 " + (vistaActual === id ? "nav-link-active" : "nav-link-muted"),
+    style: vistaActual === id ? {
+      color: C.sand,
+      borderBottom: "2px solid " + C.sand
+    } : {}
+  }, label);
+  const separador = el("span", {
+    className: "hidden lg:block w-px h-4 shrink-0",
+    style: { backgroundColor: "rgba(255,255,255,.12)" }
+  });
+  const gruposConSeparadores = [];
+  grupos.forEach((grupo, i) => {
+    if (i > 0) gruposConSeparadores.push(el("span", { key: "sep-" + i }, separador));
+    gruposConSeparadores.push(el("span", {
+      key: "grupo-" + i,
+      className: "flex items-center gap-1"
+    }, grupo.map(boton)));
+  });
+  return el("nav", {
+    className: "hidden md:flex items-center gap-2 text-xs font-bold flex-wrap"
+  }, gruposConSeparadores, el("a", {
+    href: "/recursos-y-libros.html",
+    className: "px-2.5 py-2 rounded-lg transition-colors hover:bg-white/10 nav-link-muted"
+  }, "Recursos y libros"), el("button", {
+    onClick: () => setVistaActual("calculadoras"),
+    className: "shrink-0 inline-flex items-center gap-1.5 text-sm font-bold px-4 py-2.5 rounded-xl",
+    style: { backgroundColor: C.sand, color: C.white }
+  }, "Prueba nuestras calculadoras"));
+}
+
 function App() {
   const {
     ready,
@@ -10117,27 +10166,10 @@ function App() {
     style: {
       color: C.white
     }
-  }, "MoneyPilot")), /*#__PURE__*/React.createElement("nav", {
-    className: "hidden md:flex items-center gap-1 text-xs font-bold flex-wrap"
-  }, [["inicio", "Introducción"], ["diagnostico", "Diagnóstico"], ["cuentas", "Cuentas"], ["inversiones", "Inversiones"], ["patrimonio", "Patrimonio"], ["estrategia", "Estrategia"], ["plan", "Plan"], ["seguimiento", "Seguimiento"], ["simulador", "Simulador"], ["blog", "Blog"]].map(([id, label]) => /*#__PURE__*/React.createElement("button", {
-    key: id,
-    onClick: () => setVistaActual(id),
-    className: "px-3 py-2 rounded-lg transition-colors hover:bg-white/10 " + (vistaActual === id ? "nav-link-active" : "nav-link-muted"),
-    style: vistaActual === id ? {
-      color: C.sand,
-      borderBottom: "2px solid " + C.sand
-    } : {}
-  }, label)), /*#__PURE__*/React.createElement("a", {
-    href: "/recursos-y-libros.html",
-    className: "px-3 py-2 rounded-lg transition-colors hover:bg-white/10 nav-link-muted"
-}, "Recursos y libros"), /*#__PURE__*/React.createElement("button", {
-    onClick: () => setVistaActual("calculadoras"),
-    className: "shrink-0 inline-flex items-center gap-1.5 text-sm font-bold px-4 py-2.5 rounded-xl",
-    style: {
-      backgroundColor: C.sand,
-      color: C.white
-    }
-  }, "Prueba nuestras calculadoras")), /*#__PURE__*/React.createElement("div", {
+  }, "MoneyPilot")), /*#__PURE__*/React.createElement(NavDesktop, {
+    vistaActual: vistaActual,
+    setVistaActual: setVistaActual
+  }), /*#__PURE__*/React.createElement("div", {
     className: "flex items-center gap-1.5 shrink-0"
   }, authReady && (user ? /*#__PURE__*/React.createElement("div", {
     className: "flex items-center gap-2"
