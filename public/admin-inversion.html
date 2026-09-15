@@ -1,1 +1,115 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Admin · Generar Contenido</title>
+<meta name="robots" content="noindex, nofollow" />
+<style>
+  :root{--navy:#312E81;--primary:#4F46E5;--paper:#FAFAFA;--ink:#1E1E2E;--muted:#6B7280;--border:#E5E7EB;}
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:ui-sans-serif,system-ui,sans-serif;background:var(--paper);color:var(--ink);}
+  main{max-width:520px;margin:0 auto;padding:48px 24px;}
+  h1{font-size:1.4rem;margin-bottom:24px;}
+  label{display:block;font-weight:700;font-size:.85rem;margin:18px 0 6px;}
+  input[type=text], input[type=password]{width:100%;padding:12px;border:1px solid var(--border);border-radius:10px;font-size:1rem;}
+  .tipo-opciones{display:flex;gap:10px;margin-top:6px;flex-wrap:wrap;}
+  .tipo-opciones button{flex:1;min-width:130px;padding:10px;border-radius:10px;border:1px solid var(--border);background:#fff;cursor:pointer;font-weight:600;}
+  .tipo-opciones button.activo{background:var(--primary);color:#fff;border-color:var(--primary);}
+  #generar{margin-top:28px;width:100%;padding:14px;border:none;border-radius:12px;background:var(--navy);color:#fff;font-weight:800;font-size:1rem;cursor:pointer;}
+  #generar:disabled{opacity:.6;cursor:not-allowed;}
+  #estado{margin-top:18px;padding:14px;border-radius:10px;font-size:.9rem;display:none;}
+  #estado.ok{display:block;background:#ECFDF5;color:#065F46;}
+  #estado.error{display:block;background:#FEF2F2;color:#991B1B;}
+  #estado.cargando{display:block;background:#EFF6FF;color:#1E3A8A;}
+</style>
+</head>
+<body>
+<main>
+  <h1>Generar contenido con IA</h1>
 
+  <label>Contraseña</label>
+  <input type="password" id="password" placeholder="Contraseña del panel" />
+
+  <label>Tipo de contenido</label>
+  <div class="tipo-opciones">
+    <button type="button" id="btnNoticia" class="activo">Noticia</button>
+    <button type="button" id="btnTesis">Tesis</button>
+    <button type="button" id="btnGuia">Guía financiera</button>
+  </div>
+
+  <label>Ticker o tema</label>
+  <input type="text" id="tema" placeholder="Ej: NVDA, sector lujo, qué es el fondo de emergencia..." />
+
+  <button id="generar">Generar contenido</button>
+
+  <div id="estado"></div>
+</main>
+
+<script>
+  let tipo = 'noticia';
+  
+  const btnNoticia = document.getElementById('btnNoticia');
+  const btnTesis = document.getElementById('btnTesis');
+  const btnGuia = document.getElementById('btnGuia');
+
+  btnNoticia.onclick = () => {
+    tipo = 'noticia';
+    btnNoticia.classList.add('activo');
+    btnTesis.classList.remove('activo');
+    btnGuia.classList.remove('activo');
+  };
+  
+  btnTesis.onclick = () => {
+    tipo = 'tesis';
+    btnTesis.classList.add('activo');
+    btnNoticia.classList.remove('activo');
+    btnGuia.classList.remove('activo');
+  };
+
+  btnGuia.onclick = () => {
+    tipo = 'guia';
+    btnGuia.classList.add('activo');
+    btnNoticia.classList.remove('activo');
+    btnTesis.classList.remove('activo');
+  };
+
+  document.getElementById('generar').onclick = async () => {
+    const password = document.getElementById('password').value;
+    const tema = document.getElementById('tema').value.trim();
+    const estado = document.getElementById('estado');
+    const boton = document.getElementById('generar');
+
+    if (!password) { alert('Escribe la contraseña'); return; }
+    if (!tema) { alert('Escribe un ticker o tema'); return; }
+
+    boton.disabled = true;
+    estado.className = 'cargando';
+    estado.textContent = 'Generando contenido con Gemini… esto puede tardar unos 15 segundos.';
+
+    try {
+      const res = await fetch('/api/generar-inversion', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password, tema, tipo }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        estado.className = 'error';
+        estado.textContent = 'Error: ' + (data.error || 'algo falló') + (data.detalle ? (' — ' + JSON.stringify(data.detalle)) : '');
+      } else {
+        estado.className = 'ok';
+        estado.textContent = '✅ Contenido generado: "' + data.post.title + '". Se publicará solo en el próximo despliegue (unos minutos).';
+        document.getElementById('tema').value = '';
+      }
+    } catch (err) {
+      estado.className = 'error';
+      estado.textContent = 'Error de conexión: ' + err.message;
+    } finally {
+      boton.disabled = false;
+    }
+  };
+</script>
+</body>
+</html>
