@@ -65,8 +65,6 @@
 
   .glass-nav { backdrop-filter: blur(18px) saturate(140%); -webkit-backdrop-filter: blur(18px) saturate(140%); }
 
-  /* Toda caja con borde (clase .border de Tailwind) recibe un halo dorado luminoso
-     y un degradado de fondo marcado, en vez de un borde plano y un color liso. */
   .border {
     box-shadow: 0 1px 3px rgba(30,30,46,0.05), 0 8px 24px rgba(30,30,46,0.05);
     background-image:none;
@@ -74,7 +72,6 @@
   }
   .border:hover { border-color: rgba(79,70,229,0.45); box-shadow: 0 4px 16px rgba(79,70,229,0.12); }
 
-  /* Foco accesible consistente en toda la app, sin depender de los estilos inline por color */
   button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible {
     outline: 2px solid #4F46E5;
     outline-offset: 2px;
@@ -83,8 +80,6 @@
   input, select { transition: border-color 200ms ease, box-shadow 200ms ease; }
   input:focus, select:focus { border-color: #4F46E5 !important; box-shadow: 0 0 0 3px rgba(79,70,229,0.15); }
 
-  /* Exportación a PDF: se usa la impresión nativa del navegador (Guardar como PDF).
-     Ocultamos la app y mostramos solo el resumen imprimible, con colores legibles en papel. */
   .print-only { display: none; }
   @media print {
     .no-print { display: none !important; }
@@ -92,7 +87,6 @@
     body { background: #fff !important; }
   }
 
-  /* Ajustes de legibilidad: menos saturación y sin destellos */
   .text-indigo-600, .text-indigo-700 { color:#4338CA !important; }
   .bg-indigo-600 { background-color:#4F46E5 !important; }
   .bg-indigo-700 { background-color:#4338CA !important; }
@@ -283,7 +277,6 @@ section.section-tinted{
 </style>
 
 <style id="phase1-contrast-fixes">
-/* FASE 1 — Auditoría de contraste WCAG AA */
 .hero-description{
   color:#334155 !important;
   text-shadow:none;
@@ -299,19 +292,14 @@ section.section-tinted{
 </style>
 
 <style id="phase2-palette-tokens">
-/* FASE 2 — Paleta consolidada. Fuente de verdad semántica: "seguridad + crecimiento".
-   El objeto JS `C` sigue siendo quien pinta los estilos inline (no se ha migrado
-   todo a CSS puro para no reescribir ~150 referencias con riesgo de regresión),
-   pero estas variables documentan la paleta final y quedan listas para cualquier
-   CSS nuevo que se añada en fases futuras. */
 :root{
-  --brand-deep:#312E81;     /* texto de marca, cabeceras, iconografía oscura */
-  --brand-primary:#4F46E5;  /* acciones principales — antes nombrado "sand" en el JS histórico */
-  --brand-growth:#10B981;   /* ahorro, positivo */
-  --brand-caution:#F59E0B;  /* mejorable */
-  --brand-alert:#EF4444;    /* crítico */
-  --surface-0:#F5F6FA;      /* fondo base de la app */
-  --surface-1:#FFFFFF;      /* tarjetas */
+  --brand-deep:#312E81;
+  --brand-primary:#4F46E5;
+  --brand-growth:#10B981;
+  --brand-caution:#F59E0B;
+  --brand-alert:#EF4444;
+  --surface-0:#F5F6FA;
+  --surface-1:#FFFFFF;
   --text-strong:#1E1B4B;
   --text-body:#374151;
   --text-muted:#6B7280;
@@ -320,6 +308,6 @@ section.section-tinted{
 </head>
 <body>
 <div id="root"></div>
-<script src="/app.js" defer></script>
+<script type="module" src="/src/main.js"></script>
 </body>
 </html>
