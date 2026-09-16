@@ -835,8 +835,7 @@ export function Simulador({
     }));
   }, [serie, vista, inicial, horizonteSim]);
   const anioObjetivoRedondeado = seleccionado && horizonteSim ? Math.max(1, Math.min(50, Math.round(horizonteSim))) : null;
-  const aniosGrafico = Array.from(new Set([5, 10, 15, 20, 25, 30, 35, 40, 45, 50].concat(anioObjetivoRedondeado ? [anioObjetivoRedondeado] : []))).sort((a, b) => a - b);
-  const chartData = aniosGrafico.map(a => serie[a - 1]).filter(Boolean).map(d => ({
+  const chartData = serie.slice(0, 50).map(d => ({
     anio: d.anios,
     aportado: Math.round(d.totalAportado),
     interesGenerado: Math.round(d.interesGenerado),
