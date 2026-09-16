@@ -461,7 +461,8 @@ export function SimpleStackedBarChart({
   height = 280,
   formatY = v => v,
   colorAportado,
-  colorInteres
+  colorInteres,
+  marcaAnio = null
 }) {
   const [hoverIndex, setHoverIndex] = useState(null);
   const n = data.length;
@@ -483,6 +484,7 @@ export function SimpleStackedBarChart({
   const xFor = i => padL + innerW / n * i + barGap / 2;
   const yFor = v => padT + innerH - innerH * (v / niceMax);
   const hovered = hoverIndex == null ? null : data[hoverIndex];
+  const marcaIndex = marcaAnio == null ? -1 : data.findIndex(d => d[xKey] === marcaAnio);
   return /*#__PURE__*/React.createElement("div", {
     className: "relative w-full overflow-x-auto chart-interactive"
   }, /*#__PURE__*/React.createElement("svg", {
@@ -555,7 +557,31 @@ export function SimpleStackedBarChart({
       fill: C.muted,
       textAnchor: "middle"
     }, d[xKey]);
-  }), hovered && /*#__PURE__*/React.createElement("g", {
+  }), marcaIndex >= 0 && /*#__PURE__*/React.createElement("g", {
+    pointerEvents: "none"
+  }, /*#__PURE__*/React.createElement("line", {
+    x1: xFor(marcaIndex) + barW / 2,
+    x2: xFor(marcaIndex) + barW / 2,
+    y1: padT,
+    y2: padT + innerH,
+    stroke: C.sand,
+    strokeWidth: "2",
+    strokeDasharray: "4 3"
+  }), /*#__PURE__*/React.createElement("rect", {
+    x: Math.min(Math.max(xFor(marcaIndex) + barW / 2 - 42, padL), width - padR - 84),
+    y: padT - 2,
+    width: "84",
+    height: "16",
+    rx: "5",
+    fill: C.sand
+  }), /*#__PURE__*/React.createElement("text", {
+    x: Math.min(Math.max(xFor(marcaIndex) + barW / 2, padL + 42), width - padR - 42),
+    y: padT + 10,
+    fontSize: "9",
+    fontWeight: "700",
+    fill: "#fff",
+    textAnchor: "middle"
+  }, "Año objetivo")), hovered && /*#__PURE__*/React.createElement("g", {
     transform: `translate(${Math.max(padL, Math.min(width - 190, xFor(hoverIndex) - 80))},8)`
   }, /*#__PURE__*/React.createElement("rect", {
     width: "180",
