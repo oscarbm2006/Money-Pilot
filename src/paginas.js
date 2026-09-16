@@ -834,7 +834,9 @@ export function Simulador({
       diferenciaAnterior: d.valorFuturo - (i === 0 ? Number(inicial) || 0 : arr[i - 1].valorFuturo)
     }));
   }, [serie, vista, inicial, horizonteSim]);
-  const chartData = serie.slice(0, 50).map(d => ({
+  const anioObjetivoRedondeado = seleccionado && horizonteSim ? Math.max(1, Math.min(50, Math.round(horizonteSim))) : null;
+  const aniosGrafico = Array.from(new Set([5, 10, 15, 20, 25, 30, 35, 40, 45, 50].concat(anioObjetivoRedondeado ? [anioObjetivoRedondeado] : []))).sort((a, b) => a - b);
+  const chartData = aniosGrafico.map(a => serie[a - 1]).filter(Boolean).map(d => ({
     anio: d.anios,
     aportado: Math.round(d.totalAportado),
     interesGenerado: Math.round(d.interesGenerado),
@@ -988,7 +990,7 @@ export function Simulador({
     colorAportado: C.slate,
     colorInteres: C.salu,
     formatY: v => v.toLocaleString("es-ES") + " €",
-    marcaAnio: seleccionado && horizonteSim ? Math.round(horizonteSim) : null
+    marcaAnio: anioObjetivoRedondeado
   })), /*#__PURE__*/React.createElement("div", {
     className: "flex gap-4 mt-2 text-xs font-bold",
     style: {
