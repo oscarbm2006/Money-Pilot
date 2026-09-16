@@ -4442,12 +4442,31 @@ export function NavDesktop({
   setVistaActual
 }) {
   const el = React.createElement;
-  const grupos = [
-    [["inicio", "Introducción"]],
-    [["diagnostico", "Diagnóstico"], ["cuentas", "Cuentas"], ["inversiones", "Inversiones"], ["patrimonio", "Patrimonio"]],
-    [["estrategia", "Estrategia"], ["plan", "Plan"], ["seguimiento", "Seguimiento"]],
-    [["simulador", "Simulador"], ["blog", "Blog"]]
-  ];
+  const sueltoInicio = ["inicio", "Introducción"];
+  const sueltoBlog = ["blog", "Blog"];
+  const dropdowns = [{
+    id: "finanzas",
+    titulo: "Mis Finanzas",
+    items: [["diagnostico", "Diagnóstico"], ["cuentas", "Cuentas"], ["inversiones", "Inversiones"], ["patrimonio", "Patrimonio"]]
+  }, {
+    id: "plan",
+    titulo: "Plan",
+    items: [["estrategia", "Estrategia"], ["plan", "Plan"], ["seguimiento", "Seguimiento"]]
+  }, {
+    id: "herramientas",
+    titulo: "Herramientas",
+    items: [["simulador", "Simulador"], ["calculadoras", "Calculadoras"]]
+  }];
+  const [menuAbierto, setMenuAbierto] = useState(null);
+  const navRef = useRef(null);
+  useEffect(() => {
+    if (!menuAbierto) return;
+    const cerrarSiFuera = e => {
+      if (navRef.current && !navRef.current.contains(e.target)) setMenuAbierto(null);
+    };
+    document.addEventListener("mousedown", cerrarSiFuera);
+    return () => document.removeEventListener("mousedown", cerrarSiFuera);
+  }, [menuAbierto]);
   const boton = ([id, label]) => el("button", {
     key: id,
     onClick: () => setVistaActual(id),
@@ -4457,26 +4476,49 @@ export function NavDesktop({
       borderBottom: "2px solid " + C.sand
     } : {}
   }, label);
-  const separador = el("span", {
-    className: "hidden lg:block w-px h-4 shrink-0",
-    style: { backgroundColor: "rgba(255,255,255,.12)" }
-  });
-  const gruposConSeparadores = [];
-  grupos.forEach((grupo, i) => {
-    if (i > 0) gruposConSeparadores.push(el("span", { key: "sep-" + i }, separador));
-    gruposConSeparadores.push(el("span", {
-      key: "grupo-" + i,
-      className: "flex items-center gap-1"
-    }, grupo.map(boton)));
-  });
+  const grupoActivo = grupo => grupo.items.some(([id]) => id === vistaActual);
+  const dropdown = grupo => {
+    const abierto = menuAbierto === grupo.id;
+    const activo = grupoActivo(grupo);
+    return el("div", {
+      key: grupo.id,
+      className: "relative"
+    }, el("button", {
+      onClick: () => setMenuAbierto(abierto ? null : grupo.id),
+      "aria-expanded": abierto,
+      className: "px-2.5 py-2 rounded-lg transition-colors hover:bg-white/10 inline-flex items-center gap-1 " + (activo ? "nav-link-active" : "nav-link-muted"),
+      style: activo ? {
+        color: C.sand,
+        borderBottom: "2px solid " + C.sand
+      } : {}
+    }, grupo.titulo, el(I.chevronDown, {
+      size: 13,
+      style: {
+        transform: abierto ? "rotate(180deg)" : "none",
+        transition: "transform 150ms ease"
+      }
+    })), abierto && el("div", {
+      className: "absolute left-0 top-full mt-1 min-w-[190px] rounded-xl overflow-hidden export-menu",
+      style: {
+        backgroundColor: C.navy,
+        border: "1px solid rgba(255,255,255,.12)",
+        boxShadow: "0 12px 28px rgba(0,0,0,.28)",
+        zIndex: 40
+      }
+    }, grupo.items.map(([id, label]) => el("button", {
+      key: id,
+      onClick: () => {
+        setVistaActual(id);
+        setMenuAbierto(null);
+      },
+      className: "block w-full text-left px-3.5 py-2.5 text-xs font-bold transition-colors hover:bg-white/10 " + (vistaActual === id ? "nav-link-active" : "nav-link-muted")
+    }, label))));
+  };
   return el("nav", {
-    className: "hidden md:flex items-center gap-2 text-xs font-bold flex-wrap"
-  }, gruposConSeparadores, el("a", {
+    ref: navRef,
+    className: "hidden md:flex items-center gap-1 text-xs font-bold flex-wrap"
+  }, boton(sueltoInicio), dropdowns.map(dropdown), boton(sueltoBlog), el("a", {
     href: "/recursos-y-libros.html",
     className: "px-2.5 py-2 rounded-lg transition-colors hover:bg-white/10 nav-link-muted"
-  }, "Recursos y libros"), el("button", {
-    onClick: () => setVistaActual("calculadoras"),
-    className: "shrink-0 inline-flex items-center gap-1.5 text-sm font-bold px-4 py-2.5 rounded-xl",
-    style: { backgroundColor: C.sand, color: C.white }
-  }, "Prueba nuestras calculadoras"));
+  }, "Recursos y libros"));
 }
