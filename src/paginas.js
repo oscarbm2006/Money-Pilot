@@ -4511,7 +4511,13 @@ export function NavDesktop({
         setVistaActual(id);
         setMenuAbierto(null);
       },
-      className: "block w-full text-left px-3.5 py-2.5 text-xs font-bold transition-colors hover:bg-white/10 " + (vistaActual === id ? "nav-link-active" : "nav-link-muted")
+      className: "block w-full text-left px-3.5 py-2.5 text-xs font-bold transition-colors hover:bg-white/10",
+      style: vistaActual === id ? {
+        color: C.sand,
+        backgroundColor: "rgba(255,255,255,.08)"
+      } : {
+        color: "#CBD5E1"
+      }
     }, label))));
   };
   return el("nav", {
