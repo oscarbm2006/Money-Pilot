@@ -912,13 +912,13 @@ export function Simulador({
       backgroundColor: C.sand,
       color: C.white
     }
-  }, "Prueba nuestras calculadoras"))) : /*#__PURE__*/React.createElement(React.Fragment, null, !seleccionado && perfil && /*#__PURE__*/React.createElement("div", {
+  }, "Prueba nuestras calculadoras"))) : /*#__PURE__*/React.createElement(React.Fragment, null, perfil && /*#__PURE__*/React.createElement("div", {
     className: "text-xs rounded-lg px-3 py-2.5",
     style: {
       backgroundColor: C.saluLight,
       color: C.ink
     }
-  }, "Este escenario usa tu ahorro disponible (", /*#__PURE__*/React.createElement("b", null, euros(mensual), "/mes"), ") y la rentabilidad típica de tu perfil de riesgo (", /*#__PURE__*/React.createElement("b", null, perfil, " · ", tasa, "%"), ")."), seleccionado && /*#__PURE__*/React.createElement(Card, {
+  }, "Este escenario usa ", seleccionado ? "el ahorro y el plazo de tu objetivo" : /*#__PURE__*/React.createElement(React.Fragment, null, "tu ahorro disponible (", /*#__PURE__*/React.createElement("b", null, euros(mensual), "/mes"), ")"), " y asume una rentabilidad del ", /*#__PURE__*/React.createElement("b", null, tasa, "%"), " anual, la típica de un perfil ", /*#__PURE__*/React.createElement("b", null, perfil), ". ", PERFILES_INFO[perfil]?.explicacion), seleccionado && /*#__PURE__*/React.createElement(Card, {
     className: "p-5"
   }, /*#__PURE__*/React.createElement(Eyebrow, null, "Objetivo seleccionado"), /*#__PURE__*/React.createElement("div", {
     className: "grid grid-cols-2 sm:grid-cols-5 gap-3 mt-3 text-xs"
@@ -987,7 +987,8 @@ export function Simulador({
     height: 280,
     colorAportado: C.slate,
     colorInteres: C.salu,
-    formatY: v => v.toLocaleString("es-ES") + " €"
+    formatY: v => v.toLocaleString("es-ES") + " €",
+    marcaAnio: seleccionado && horizonteSim ? Math.round(horizonteSim) : null
   })), /*#__PURE__*/React.createElement("div", {
     className: "flex gap-4 mt-2 text-xs font-bold",
     style: {
