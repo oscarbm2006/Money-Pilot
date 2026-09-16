@@ -466,9 +466,9 @@ export function SimpleStackedBarChart({
 }) {
   const [hoverIndex, setHoverIndex] = useState(null);
   const n = data.length;
-  const width = Math.max(680, n * 13);
+  const width = Math.max(680, n * 16);
   const padL = 54,
-    padR = 10,
+    padR = 24,
     padT = 10,
     padB = 40;
   const innerW = width - padL - padR,
