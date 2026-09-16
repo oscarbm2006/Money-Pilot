@@ -21,7 +21,28 @@ export function App() {
     signIn,
     signOut
   } = useAuth();
-  const [vistaActual, setVistaActual] = useState('inicio');
+  const [vistaActual, setVistaActualBase] = useState(() => {
+    if (typeof window === "undefined") return "inicio";
+    try {
+      return window.localStorage.getItem("salud-financiera:ultima-vista") || "inicio";
+    } catch (e) {
+      return "inicio";
+    }
+  });
+  const setVistaActual = v => {
+    setVistaActualBase(v);
+    try {
+      window.localStorage.setItem("salud-financiera:ultima-vista", v);
+    } catch (e) {}
+  };
+  useEffect(() => {
+    if ("scrollRestoration" in window.history) window.history.scrollRestoration = "manual";
+    window.scrollTo({
+      top: 0,
+      left: 0,
+      behavior: "auto"
+    });
+  }, []);
   useEffect(() => {
     window.scrollTo({
       top: 0,
