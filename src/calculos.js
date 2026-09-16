@@ -187,9 +187,13 @@ export function calcularPerfilMultidimensional(respuestas, datos = {}) {
    * respuestas disponibles y la confianza lo refleja.
    */
   const factorFlujo = Number(datos.ingresos || 0) > 0 ? ahorroDisponible > 0 ? Math.min(4, 1 + ahorroDisponible / Math.max(Number(datos.ingresos || 1) * 0.25, 1)) : 1 : null;
-  const factorEmergencia = coberturaEmergencia == null ? null : coberturaEmergencia < 1 ? 1 : coberturaEmergencia < 3 ? 2 : coberturaEmergencia < 6 ? 3 : 4;
   const factorDeuda = ratioDeuda == null ? null : ratioDeuda > 0.40 ? 1 : ratioDeuda > 0.25 ? 2 : ratioDeuda > 0.10 ? 3 : 4;
-  const factoresFinancierosDuros = [factorFlujo, factorEmergencia, factorDeuda].filter(v => v != null);
+  // Nota: el fondo de emergencia (coberturaEmergencia) NO entra aquí a propósito.
+  // Es vital para decidir CUÁNDO empezar a invertir (ver avisos en calcularSaludFinanciera),
+  // pero no debe determinar el perfil de riesgo en sí: alguien con tolerancia agresiva
+  // y 0 de colchón sigue siendo "agresivo de perfil", aunque la recomendación práctica
+  // sea priorizar el colchón antes de invertir.
+  const factoresFinancierosDuros = [factorFlujo, factorDeuda].filter(v => v != null);
   const capacidadFactores = [qEstabilidad, qConcentracion, qPatrimonio, coberturaObjetivo == null ? null : coberturaObjetivo < 0.25 ? 1 : coberturaObjetivo < 0.50 ? 2 : coberturaObjetivo < 0.75 ? 3 : 4, qLiquidezDetalle, qColchonAlternativo];
   const capacidadEncuesta = media(capacidadFactores);
   const capacidadDura = factoresFinancierosDuros.length ? Math.min(...factoresFinancierosDuros) : null;
