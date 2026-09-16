@@ -194,7 +194,11 @@ export function calcularPerfilMultidimensional(respuestas, datos = {}) {
   // y 0 de colchón sigue siendo "agresivo de perfil", aunque la recomendación práctica
   // sea priorizar el colchón antes de invertir.
   const factoresFinancierosDuros = [factorFlujo, factorDeuda].filter(v => v != null);
-  const capacidadFactores = [qEstabilidad, qConcentracion, qPatrimonio, coberturaObjetivo == null ? null : coberturaObjetivo < 0.25 ? 1 : coberturaObjetivo < 0.50 ? 2 : coberturaObjetivo < 0.75 ? 3 : 4, qLiquidezDetalle, qColchonAlternativo];
+  // qEstabilidad y qColchonAlternativo se excluyen aquí a propósito: ambas preguntas
+  // hablan de colchón/fondo de emergencia, y ese factor no debe influir en el perfil
+  // de riesgo (ver nota sobre factorEmergencia más arriba). Sí se siguen preguntando
+  // en el test y sí siguen disponibles para otros usos (avisos de "cuándo invertir").
+  const capacidadFactores = [qConcentracion, qPatrimonio, coberturaObjetivo == null ? null : coberturaObjetivo < 0.25 ? 1 : coberturaObjetivo < 0.50 ? 2 : coberturaObjetivo < 0.75 ? 3 : 4, qLiquidezDetalle];
   const capacidadEncuesta = media(capacidadFactores);
   const capacidadDura = factoresFinancierosDuros.length ? Math.min(...factoresFinancierosDuros) : null;
   const capacidadRiesgo = a100(capacidadDura == null ? capacidadEncuesta : Math.min(capacidadEncuesta == null ? capacidadDura : capacidadEncuesta, capacidadDura));
