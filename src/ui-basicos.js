@@ -466,7 +466,7 @@ export function SimpleStackedBarChart({
 }) {
   const [hoverIndex, setHoverIndex] = useState(null);
   const n = data.length;
-  const width = Math.max(680, n * 26);
+  const width = Math.max(680, n * 13);
   const padL = 54,
     padR = 10,
     padT = 10,
@@ -479,7 +479,7 @@ export function SimpleStackedBarChart({
     ticks,
     niceMax
   } = niceTicks(maxRaw, 5);
-  const barGap = innerW / n * 0.28;
+  const barGap = innerW / n * 0.2;
   const barW = innerW / n - barGap;
   const xFor = i => padL + innerW / n * i + barGap / 2;
   const yFor = v => padT + innerH - innerH * (v / niceMax);
