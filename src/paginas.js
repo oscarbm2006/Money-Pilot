@@ -7,6 +7,7 @@ import { AcordeonFase, GastosTabs } from './secciones.js';
 
 export function PrintSummary({
   datos,
+  liquidezReal,
   perfil,
   gastoTotal,
   ahorroDisponible,
@@ -14,9 +15,15 @@ export function PrintSummary({
 }) {
   const cuotasDeuda = datos.deudas.reduce((s, d) => s + Number(d.cuota || 0), 0);
   const objetivos = normalizarObjetivos(datos);
-  const planObjetivos = calcularPlanObjetivos(datos);
+  const planObjetivos = calcularPlanObjetivos(liquidezReal == null ? datos : {
+    ...datos,
+    ahorroActual: liquidezReal
+  });
   const deudasActivas = datos.deudas.filter(d => Number(d.pendiente) > 0);
-  const fondo = calcularFondoEmergencia(datos);
+  const fondo = calcularFondoEmergencia(liquidezReal == null ? datos : {
+    ...datos,
+    ahorroActual: liquidezReal
+  });
   const coberturaMeses = fondo.coberturaMeses == null ? 0 : fondo.coberturaMeses;
   const objetivoFondo = fondo.objetivo == null ? 0 : fondo.objetivo;
   const fecha = new Date().toLocaleDateString("es-ES", {
@@ -2359,7 +2366,8 @@ export function Diagnostico({
   setDatos,
   onFinalizar,
   objetivoSeleccionadoId,
-  onEliminarSeleccionado
+  onEliminarSeleccionado,
+  liquidezReal
 }) {
   /* UX: wizard de 3 pasos. Los datos siguen viviendo en `datos` y se persisten
      exactamente por los mecanismos existentes; solo cambia cuándo se muestran. */
@@ -2380,7 +2388,10 @@ export function Diagnostico({
   const deseos = gastosDisc;
   const ahorroReal = totalIngresos - necesidades - deseos;
   const ratioAhorro = totalIngresos > 0 ? ahorroReal / totalIngresos : 0;
-  const fondo = calcularFondoEmergencia(datos);
+  const fondo = calcularFondoEmergencia(liquidezReal == null ? datos : {
+    ...datos,
+    ahorroActual: liquidezReal
+  });
   const objetivoFondo = fondo.objetivo == null ? 0 : fondo.objetivo;
   const estado = estadoAhorro(ratioAhorro);
   const puedePaso2 = Number(datos.ingresos) > 0;
