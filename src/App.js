@@ -304,28 +304,38 @@ export function App() {
   const gastoTotal = totalMensual(datos.gastosFijos) + totalMensual(datos.gastosDiscrecionales) + cuotasDeuda;
   const ahorroDisponible = capacidadFinanciera.capacidadMensual == null ? 0 : capacidadFinanciera.capacidadMensual;
   const ratioAhorro = capacidadFinanciera.ingresos > 0 ? ahorroDisponible / capacidadFinanciera.ingresos : 0;
-  const planObjetivos = useMemo(() => calcularPlanObjetivos(datos), [datos]);
+  // Fase 1.1: un único "ahorro real" para toda la app. Si el usuario tiene Cuentas
+  // registradas, se usa la suma real de sus saldos; si no, se recurre al valor que
+  // escribió a mano en Diagnóstico. Antes esto solo pasaba en Plan/Estrategia; ahora
+  // también alimenta el Diagnóstico principal, el Dashboard y el simulador, para que
+  // no haya números que no cuadren entre pantallas.
+  const liquidezReal = cuentas.length > 0 ? cuentas.reduce((s, c) => s + (Number(c.saldo) || 0), 0) : Number(datos.ahorroActual) || 0;
+  const datosParaCalculo = useMemo(() => ({
+    ...datos,
+    ahorroActual: liquidezReal
+  }), [datos, liquidezReal]);
+  const planObjetivos = useMemo(() => calcularPlanObjetivos(datosParaCalculo), [datosParaCalculo]);
   const diagnosticoAmpliado = useMemo(() => calcularDiagnosticoAmpliado({
-    datos,
+    datos: datosParaCalculo,
     cuentas,
     inversiones,
     planObjetivos
-  }), [datos, cuentas, inversiones, planObjetivos]);
+  }), [datosParaCalculo, cuentas, inversiones, planObjetivos]);
   const prioridadActual = useMemo(() => calcularPrioridades({
-    datos,
+    datos: datosParaCalculo,
     inversiones,
     planObjetivos,
     diagnostico: diagnosticoAmpliado
-  }), [datos, inversiones, planObjetivos, diagnosticoAmpliado]);
+  }), [datosParaCalculo, inversiones, planObjetivos, diagnosticoAmpliado]);
   const planFinanciero = useMemo(() => calcularPlanFinanciero({
-    datos,
+    datos: datosParaCalculo,
     cuentas,
     inversiones,
     planObjetivos,
     diagnostico: diagnosticoAmpliado,
     prioridad: prioridadActual,
     perfil
-  }), [datos, cuentas, inversiones, planObjetivos, diagnosticoAmpliado, prioridadActual, perfil]);
+  }), [datosParaCalculo, cuentas, inversiones, planObjetivos, diagnosticoAmpliado, prioridadActual, perfil]);
   // --- Seguimiento: evolución en el tiempo (Fase 9) ---
   const {
     historial: historialSeguimiento,
@@ -352,13 +362,13 @@ export function App() {
     if (!hydrated) return;
     if (sim.objetivoId || sim.inicial !== 0 || sim.mensual !== 0) return;
     setSim({
-      inicial: Number(datos.ahorroActual) > 0 ? Number(datos.ahorroActual) : 0,
+      inicial: liquidezReal > 0 ? liquidezReal : 0,
       mensual: ahorroDisponible > 0 ? ahorroDisponible : 0,
       tasa: perfil ? PERFILES_INFO[perfil].rentabilidad : 6,
       horizonte: 0,
       objetivoId: null
     });
-  }, [hydrated, datos.ahorroActual, ahorroDisponible, perfil]);
+  }, [hydrated, liquidezReal, ahorroDisponible, perfil]);
   if (!ready || !hydrated) {
     /* FASE 2: antes era backgroundColor:C.navy a pantalla completa — el único
        punto de toda la app donde el usuario veía un fondo oscuro sólido antes
@@ -492,6 +502,7 @@ export function App() {
   }, /*#__PURE__*/React.createElement(Diagnostico, {
     datos: datos,
     setDatos: setDatos,
+    liquidezReal: liquidezReal,
     objetivoSeleccionadoId: objetivoSeleccionadoId,
     onEliminarSeleccionado: () => {
       setObjetivoSeleccionadoId(null);
@@ -563,7 +574,7 @@ export function App() {
     gastoTotal: gastoTotal,
     ahorroDisponible: ahorroDisponible,
     ratioAhorro: ratioAhorro,
-    ahorroActual: datos.ahorroActual,
+    ahorroActual: liquidezReal,
     cargaDeuda: capacidadFinanciera.ingresos > 0 ? cuotasDeuda / capacidadFinanciera.ingresos : 0,
     perfil: perfil,
     historial: historial,
@@ -865,6 +876,7 @@ export function App() {
     toast: toast
   })), /*#__PURE__*/React.createElement(PrintSummary, {
     datos: datos,
+    liquidezReal: liquidezReal,
     perfil: perfil,
     gastoTotal: gastoTotal,
     ahorroDisponible: ahorroDisponible,
