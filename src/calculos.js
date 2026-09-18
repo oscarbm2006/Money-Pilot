@@ -463,6 +463,113 @@ export function proyeccionInteres(inicial, mensual, tasaAnual, anios) {
   };
 }
 
+// Fase 2.1: las 3 preguntas que antes solo resolvían las "4 calculadoras" en un
+// documento aparte. Usan el mismo método (interés compuesto mes a mes) que
+// proyeccionInteres, para que los 4 modos del simulador den resultados coherentes
+// entre sí.
+
+export function tiempoNecesarioParaObjetivo(inicial, mensual, tasaAnual, objetivo) {
+  const MAX_ANIOS = 100;
+  if (inicial >= objetivo) return {
+    alcanzado: true,
+    anios: 0,
+    meses: 0,
+    totalAportado: inicial,
+    interesGenerado: 0
+  };
+  const tasaMensual = tasaAnual / 100 / 12;
+  let capital = inicial,
+    totalAportado = inicial,
+    mesesTotales = 0;
+  for (let year = 1; year <= MAX_ANIOS; year++) {
+    for (let m = 0; m < 12; m++) {
+      capital = capital * (1 + tasaMensual) + mensual;
+      totalAportado += mensual;
+      mesesTotales++;
+      if (capital >= objetivo) return {
+        alcanzado: true,
+        anios: Math.floor(mesesTotales / 12),
+        meses: mesesTotales % 12,
+        totalAportado,
+        interesGenerado: capital - totalAportado
+      };
+    }
+  }
+  return {
+    alcanzado: false,
+    anios: MAX_ANIOS,
+    meses: 0,
+    totalAportado,
+    interesGenerado: capital - totalAportado
+  };
+}
+
+export function aportacionNecesariaParaObjetivo(inicial, objetivo, anios, tasaAnual) {
+  const n = anios * 12;
+  const i = tasaAnual / 100 / 12;
+  let mensualNecesaria;
+  if (n <= 0) mensualNecesaria = 0;else if (i > 0) {
+    const factorCrecimiento = Math.pow(1 + i, n);
+    const factorAnualidad = (factorCrecimiento - 1) / i;
+    mensualNecesaria = (objetivo - inicial * factorCrecimiento) / factorAnualidad;
+  } else mensualNecesaria = (objetivo - inicial) / n;
+  const mensualFinal = Math.max(0, mensualNecesaria);
+  const p = proyeccionInteres(inicial, mensualFinal, tasaAnual, anios);
+  return {
+    yaAlcanzado: mensualNecesaria <= 0,
+    mensualNecesaria: mensualFinal,
+    totalAportado: p.totalAportado,
+    interesGenerado: p.interesGenerado
+  };
+}
+
+export function rentabilidadNecesariaParaObjetivo(inicial, mensual, anios, objetivo) {
+  const capitalConTasa = tasaAnualProbada => proyeccionInteres(inicial, mensual, tasaAnualProbada, anios);
+  const capitalCero = capitalConTasa(0).valorFuturo;
+  if (capitalCero >= objetivo) {
+    const p = capitalConTasa(0);
+    return {
+      yaAlcanzado: true,
+      imposible: false,
+      tasaNecesaria: 0,
+      totalAportado: p.totalAportado,
+      interesGenerado: p.interesGenerado
+    };
+  }
+  let lo = 0,
+    hi = 100;
+  let capitalHi = capitalConTasa(hi).valorFuturo;
+  let iter = 0;
+  while (capitalHi < objetivo && hi < 10000 && iter < 60) {
+    hi *= 2;
+    capitalHi = capitalConTasa(hi).valorFuturo;
+    iter++;
+  }
+  if (capitalHi < objetivo) {
+    const p = capitalConTasa(hi);
+    return {
+      yaAlcanzado: false,
+      imposible: true,
+      tasaNecesaria: hi,
+      totalAportado: p.totalAportado,
+      interesGenerado: p.interesGenerado
+    };
+  }
+  for (let k = 0; k < 60; k++) {
+    const mid = (lo + hi) / 2;
+    if (capitalConTasa(mid).valorFuturo < objetivo) lo = mid;else hi = mid;
+  }
+  const tasaNecesaria = (lo + hi) / 2;
+  const p = capitalConTasa(tasaNecesaria);
+  return {
+    yaAlcanzado: false,
+    imposible: false,
+    tasaNecesaria,
+    totalAportado: p.totalAportado,
+    interesGenerado: p.interesGenerado
+  };
+}
+
 export function simularAmortizacion(deudas, extraMensual, estrategia) {
   const MAX_MESES = 480;
   const activos = deudas.filter(d => Number(d.pendiente) > 0).map(d => ({
