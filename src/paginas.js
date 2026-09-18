@@ -1,7 +1,7 @@
 const { useState, useEffect, useRef, useCallback, useMemo, useId } = React;
 
 import { ACTIVOS_DEF, ASIGNACION, BLOG_ADMIN_EMAIL, C, CUENTA_TIPOS_DEF, I, NOMBRES_FASE_BLOG, OBJETIVOS_DEF, PERFILES_INFO, PRIORIDADES_OBJETIVO, PRIORIDAD_LABEL, QUIZ_DEF, SECCIONES_BLOG, TIPOS_ACTIVO_DEF, TIPOS_INVERSION_DEF, supa } from './constantes.js';
-import { calcularCapacidadFinanciera, calcularFondoEmergencia, calcularPerfilMultidimensional, calcularPlanObjetivos, calcularSaludFinanciera, crearIdObjetivo, estadoAhorro, euros, fmtFecha, formatMeses, getNextQuestionId, mdToHtml, normalizarObjetivo, normalizarObjetivos, pct, proyeccionInteres, quizNumero, recomendacionObjetivoPorHorizonte, reconstruirEstadoQuiz, simularAmortizacion, sincronizarObjetivos, slugify, totalMensual } from './calculos.js';
+import { aportacionNecesariaParaObjetivo, calcularCapacidadFinanciera, calcularFondoEmergencia, calcularPerfilMultidimensional, calcularPlanObjetivos, calcularSaludFinanciera, crearIdObjetivo, estadoAhorro, euros, fmtFecha, formatMeses, getNextQuestionId, mdToHtml, normalizarObjetivo, normalizarObjetivos, pct, proyeccionInteres, quizNumero, recomendacionObjetivoPorHorizonte, reconstruirEstadoQuiz, rentabilidadNecesariaParaObjetivo, simularAmortizacion, sincronizarObjetivos, slugify, tiempoNecesarioParaObjetivo, totalMensual } from './calculos.js';
 import { AnimatedNumber, Badge, Card, DesgloseBarra, Eyebrow, FadeSwitch, NumberField, ProgressBar, SimpleAreaChart, SimpleDonut, SimpleStackedBarChart, StatCard, Termometro } from './ui-basicos.js';
 import { AcordeonFase, GastosTabs } from './secciones.js';
 
@@ -641,159 +641,6 @@ export function AmortizacionDeuda({
   }, euros(d.interesPagado), " interés"))))));
 }
 
-export function SelectorCalculadora({
-  onRecomendar
-}) {
-  const [abierto, setAbierto] = useState(false);
-  const [paso, setPaso] = useState(1);
-  const [recomendacion, setRecomendacion] = useState(null);
-  const elegirTieneMeta = tieneMeta => {
-    if (!tieneMeta) {
-      setRecomendacion({
-        modo: "capital",
-        titulo: "Capital final: ¿cuánto tendré?",
-        texto: "Como no tienes una meta concreta, te mostramos hasta dónde puede llegar tu ahorro con el tiempo."
-      });
-    } else {
-      setPaso(2);
-    }
-  };
-  const elegirDuda = (modo, titulo, texto) => setRecomendacion({
-    modo,
-    titulo,
-    texto
-  });
-  const reiniciar = () => {
-    setPaso(1);
-    setRecomendacion(null);
-  };
-  const volver = () => setPaso(1);
-  if (!abierto) return /*#__PURE__*/React.createElement(Card, {
-    className: "p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6"
-  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(Eyebrow, null, "¿No sabes cuál usar?"), /*#__PURE__*/React.createElement("p", {
-    className: "text-sm mt-1",
-    style: {
-      color: C.ink
-    }
-  }, "Contesta un par de preguntas rápidas y te decimos qué calculadora encaja con lo que necesitas, y por qué.")), /*#__PURE__*/React.createElement("button", {
-    onClick: () => setAbierto(true),
-    className: "shrink-0 inline-flex items-center gap-1.5 text-sm font-bold px-4 py-2.5 rounded-xl",
-    style: {
-      backgroundColor: C.sand,
-      color: C.white
-    }
-  }, "Ayúdame a elegir"));
-  return /*#__PURE__*/React.createElement(Card, {
-    className: "p-5 sm:p-6 mb-6"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "flex items-center justify-between gap-3"
-  }, /*#__PURE__*/React.createElement(Eyebrow, null, "Te ayudamos a elegir"), /*#__PURE__*/React.createElement("button", {
-    onClick: () => {
-      setAbierto(false);
-      reiniciar();
-    },
-    className: "text-xs font-bold",
-    style: {
-      color: C.muted
-    }
-  }, "Cerrar")), !recomendacion && paso === 1 && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("h3", {
-    className: "font-serif text-lg font-bold mt-2",
-    style: {
-      color: C.ink
-    }
-  }, "¿Tienes ya una cifra concreta que quieres ahorrar?"), /*#__PURE__*/React.createElement("div", {
-    className: "flex flex-wrap gap-2 mt-3"
-  }, /*#__PURE__*/React.createElement("button", {
-    onClick: () => elegirTieneMeta(true),
-    className: "px-4 py-2.5 rounded-xl border text-sm font-bold",
-    style: {
-      borderColor: C.border,
-      backgroundColor: C.paper,
-      color: C.ink
-    }
-  }, "Sí, tengo una meta en mente"), /*#__PURE__*/React.createElement("button", {
-    onClick: () => elegirTieneMeta(false),
-    className: "px-4 py-2.5 rounded-xl border text-sm font-bold",
-    style: {
-      borderColor: C.border,
-      backgroundColor: C.paper,
-      color: C.ink
-    }
-  }, "No, quiero ver hasta dónde llego"))), !recomendacion && paso === 2 && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("button", {
-    onClick: volver,
-    className: "inline-flex items-center gap-1.5 text-xs font-bold mb-1",
-    style: {
-      color: C.muted
-    }
-  }, /*#__PURE__*/React.createElement(I.arrowLeft, {
-    size: 13
-  }), " Volver"), /*#__PURE__*/React.createElement("h3", {
-    className: "font-serif text-lg font-bold mt-2",
-    style: {
-      color: C.ink
-    }
-  }, "¿Qué es lo que no tienes claro?"), /*#__PURE__*/React.createElement("div", {
-    className: "flex flex-col gap-2 mt-3"
-  }, /*#__PURE__*/React.createElement("button", {
-    onClick: () => elegirDuda("tiempo", "Tiempo para llegar a tu meta", "Con tu meta ya definida, esta calculadora te dice cuántos años y meses necesitas para alcanzarla."),
-    className: "px-4 py-2.5 rounded-xl border text-sm font-bold text-left",
-    style: {
-      borderColor: C.border,
-      backgroundColor: C.paper,
-      color: C.ink
-    }
-  }, "Cuánto tiempo me llevará llegar"), /*#__PURE__*/React.createElement("button", {
-    onClick: () => elegirDuda("aportacion", "Aportación mensual necesaria", "Con tu meta y el plazo, esta calculadora te dice cuánto necesitas ahorrar cada mes para llegar."),
-    className: "px-4 py-2.5 rounded-xl border text-sm font-bold text-left",
-    style: {
-      borderColor: C.border,
-      backgroundColor: C.paper,
-      color: C.ink
-    }
-  }, "Cuánto tengo que ahorrar cada mes"), /*#__PURE__*/React.createElement("button", {
-    onClick: () => elegirDuda("rentabilidad", "Rentabilidad necesaria", "Con tu meta, tu plazo y lo que aportas, esta calculadora te dice qué rentabilidad necesitarías para lograrlo."),
-    className: "px-4 py-2.5 rounded-xl border text-sm font-bold text-left",
-    style: {
-      borderColor: C.border,
-      backgroundColor: C.paper,
-      color: C.ink
-    }
-  }, "Si lo que espero ganar será suficiente"))), recomendacion && /*#__PURE__*/React.createElement("div", {
-    className: "mt-2"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "rounded-xl p-4",
-    style: {
-      backgroundColor: C.saluLight,
-      color: C.ink
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "text-xs font-bold uppercase",
-    style: {
-      color: C.salu,
-      letterSpacing: ".1em"
-    }
-  }, "Te recomendamos"), /*#__PURE__*/React.createElement("h3", {
-    className: "font-serif text-lg font-bold mt-1"
-  }, recomendacion.titulo), /*#__PURE__*/React.createElement("p", {
-    className: "text-sm mt-1.5"
-  }, recomendacion.texto)), /*#__PURE__*/React.createElement("div", {
-    className: "flex flex-wrap items-center gap-4 mt-4"
-  }, /*#__PURE__*/React.createElement("button", {
-    onClick: () => onRecomendar(recomendacion.modo),
-    className: "inline-flex items-center gap-1.5 text-sm font-bold px-4 py-2.5 rounded-xl",
-    style: {
-      backgroundColor: C.sand,
-      color: C.white
-    }
-  }, "Abrir esta calculadora"), /*#__PURE__*/React.createElement("button", {
-    onClick: reiniciar,
-    className: "text-sm font-bold",
-    style: {
-      color: C.muted
-    }
-  }, "Volver a empezar"))));
-}
-
 export function Simulador({
   sim,
   setSim,
@@ -801,12 +648,13 @@ export function Simulador({
   objetivoSeleccionadoId = null,
   onSeleccionarObjetivo,
   ahorroDisponible = 0,
-  perfil = null,
-  onIrACalculadoras
+  perfil = null
 }) {
   const [vista, setVista] = useState("5anos");
+  const [modo, setModo] = useState("capital");
   const seleccionado = objetivos.find(o => o.id === objetivoSeleccionadoId) || null;
   const tieneDatos = !!seleccionado || !!perfil;
+  const objetivoNum = seleccionado?.importeObjetivo != null ? Number(seleccionado.importeObjetivo) : null;
 
   // UX: el simulador ya no pide números al usuario; calcula automáticamente
   // el escenario que le corresponde a partir de su objetivo guardado y/o su
@@ -842,7 +690,22 @@ export function Simulador({
     }));
   }, [serie, vista, inicial, horizonteSim]);
   const anioObjetivoRedondeado = seleccionado && horizonteSim ? Math.max(1, Math.min(50, Math.round(horizonteSim))) : null;
-  const chartData = serie.slice(0, 50).map(d => ({
+  const resTiempo = useMemo(() => modo === "tiempo" && objetivoNum != null ? tiempoNecesarioParaObjetivo(Number(inicial) || 0, Number(mensual) || 0, Number(tasa) || 0, objetivoNum) : null, [modo, objetivoNum, inicial, mensual, tasa]);
+  const resAportacion = useMemo(() => modo === "aportacion" && objetivoNum != null ? aportacionNecesariaParaObjetivo(Number(inicial) || 0, objetivoNum, horizonteSim, Number(tasa) || 0) : null, [modo, objetivoNum, inicial, horizonteSim, tasa]);
+  const resRentabilidad = useMemo(() => modo === "rentabilidad" && objetivoNum != null ? rentabilidadNecesariaParaObjetivo(Number(inicial) || 0, Number(mensual) || 0, horizonteSim, objetivoNum) : null, [modo, objetivoNum, inicial, mensual, horizonteSim]);
+  const serieParaGrafico = useMemo(() => {
+    if (modo === "capital" || objetivoNum == null) return serie;
+    let ini = Number(inicial) || 0,
+      men = Number(mensual) || 0,
+      tas = Number(tasa) || 0;
+    if (modo === "aportacion" && resAportacion) men = resAportacion.mensualNecesaria;
+    if (modo === "rentabilidad" && resRentabilidad) tas = resRentabilidad.tasaNecesaria;
+    return Array.from({
+      length: 50
+    }, (_, i) => proyeccionInteres(ini, men, tas, i + 1));
+  }, [modo, serie, inicial, mensual, tasa, resAportacion, resRentabilidad, objetivoNum]);
+  const anioMarcaGrafico = modo === "tiempo" && resTiempo ? Math.max(1, Math.min(50, Math.round(resTiempo.anios + (resTiempo.meses > 0 ? 1 : 0)))) : anioObjetivoRedondeado;
+  const chartData = serieParaGrafico.slice(0, 50).map(d => ({
     anio: d.anios,
     aportado: Math.round(d.totalAportado),
     interesGenerado: Math.round(d.interesGenerado),
@@ -864,7 +727,21 @@ export function Simulador({
     }
   }, "Tu escenario de ahorro"), /*#__PURE__*/React.createElement("p", {
     className: "text-sm mt-1 readable-subtitle"
-  }, "Calculado con tus propios datos. Es una proyección educativa: las rentabilidades son hipotéticas y no garantizan resultados futuros.")), objetivos.length > 0 && /*#__PURE__*/React.createElement(Card, {
+  }, "Calculado con tus propios datos. Es una proyección educativa: las rentabilidades son hipotéticas y no garantizan resultados futuros.")), /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-2 sm:grid-cols-4 gap-2"
+  }, [["capital", "¿Cuánto tendré?"], ["tiempo", "¿Cuánto tardaré?"], ["aportacion", "¿Cuánto aportar?"], ["rentabilidad", "¿Qué rentabilidad?"]].map(([id, label]) => /*#__PURE__*/React.createElement("button", {
+    key: id,
+    onClick: () => setModo(id),
+    className: "text-xs font-bold px-3 py-2.5 rounded-xl text-center transition-colors",
+    style: modo === id ? {
+      backgroundColor: C.sand,
+      color: C.white
+    } : {
+      backgroundColor: C.paper,
+      color: C.muted,
+      border: "1px solid " + C.border
+    }
+  }, label))), objetivos.length > 0 && /*#__PURE__*/React.createElement(Card, {
     className: "p-5"
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex items-center justify-between gap-3"
@@ -903,30 +780,49 @@ export function Simulador({
     style: {
       color: C.muted
     }
-  }, "Así podremos calcular un escenario con tus propios números, en vez de mostrarte cifras genéricas que no te aplican."), /*#__PURE__*/React.createElement("div", {
-    className: "mt-5 pt-5 max-w-md mx-auto",
-    style: {
-      borderTop: "1px solid " + C.border
-    }
-  }, /*#__PURE__*/React.createElement("p", {
-    className: "text-xs",
-    style: {
-      color: C.muted
-    }
-  }, "Mientras tanto, puedes curiosear con cifras de ejemplo en nuestra calculadora libre."), /*#__PURE__*/React.createElement("button", {
-    onClick: onIrACalculadoras,
-    className: "mt-3 inline-flex items-center gap-1.5 text-sm font-bold px-4 py-2.5 rounded-xl",
-    style: {
-      backgroundColor: C.sand,
-      color: C.white
-    }
-  }, "Prueba nuestras calculadoras"))) : /*#__PURE__*/React.createElement(React.Fragment, null, perfil && /*#__PURE__*/React.createElement("div", {
+  }, "Así podremos calcular un escenario con tus propios números, en vez de mostrarte cifras genéricas que no te aplican.")) : /*#__PURE__*/React.createElement(React.Fragment, null, perfil && /*#__PURE__*/React.createElement("div", {
     className: "text-xs rounded-lg px-3 py-2.5",
     style: {
       backgroundColor: C.saluLight,
       color: C.ink
     }
-  }, "Este escenario usa ", seleccionado ? "el ahorro y el plazo de tu objetivo" : /*#__PURE__*/React.createElement(React.Fragment, null, "tu ahorro disponible (", /*#__PURE__*/React.createElement("b", null, euros(mensual), "/mes"), ")"), " y asume una rentabilidad del ", /*#__PURE__*/React.createElement("b", null, tasa, "%"), " anual, la típica de un perfil ", /*#__PURE__*/React.createElement("b", null, perfil), ". ", PERFILES_INFO[perfil]?.explicacion), seleccionado && /*#__PURE__*/React.createElement(Card, {
+  }, "Este escenario usa ", seleccionado ? "el ahorro y el plazo de tu objetivo" : /*#__PURE__*/React.createElement(React.Fragment, null, "tu ahorro disponible (", /*#__PURE__*/React.createElement("b", null, euros(mensual), "/mes"), ")"), " y asume una rentabilidad del ", /*#__PURE__*/React.createElement("b", null, tasa, "%"), " anual, la típica de un perfil ", /*#__PURE__*/React.createElement("b", null, perfil), ". ", PERFILES_INFO[perfil]?.explicacion), modo !== "capital" && objetivoNum == null && /*#__PURE__*/React.createElement("div", {
+    className: "text-xs rounded-lg px-3 py-2.5",
+    style: {
+      backgroundColor: C.critLight,
+      color: C.ink
+    }
+  }, "Este modo necesita un objetivo con un importe definido. Elige uno arriba en \"Conecta un objetivo\" (o crea uno nuevo en Objetivos financieros) para poder calcularlo."), modo === "tiempo" && resTiempo && /*#__PURE__*/React.createElement(Card, {
+    className: "p-5"
+  }, /*#__PURE__*/React.createElement(Eyebrow, null, "Tiempo necesario"), /*#__PURE__*/React.createElement("div", {
+    className: "mt-2 rounded-xl p-4",
+    style: {
+      backgroundColor: resTiempo.alcanzado ? C.saluLight : C.critLight,
+      color: C.ink
+    }
+  }, resTiempo.alcanzado ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("b", null, "Necesitarías ", resTiempo.anios, " años", resTiempo.meses > 0 ? ` y ${resTiempo.meses} meses` : "", " para llegar a ", euros(objetivoNum), "."), /*#__PURE__*/React.createElement("div", {
+    className: "mt-1 text-xs"
+  }, "Aportado: ", euros(resTiempo.totalAportado), " · Intereses generados: ", euros(resTiempo.interesGenerado), ".")) : /*#__PURE__*/React.createElement("b", null, "Con estos datos no llegarías a ", euros(objetivoNum), " ni en 100 años. Prueba a subir la aportación o la rentabilidad."))), modo === "aportacion" && resAportacion && /*#__PURE__*/React.createElement(Card, {
+    className: "p-5"
+  }, /*#__PURE__*/React.createElement(Eyebrow, null, "Aportación mensual necesaria"), /*#__PURE__*/React.createElement("div", {
+    className: "mt-2 rounded-xl p-4",
+    style: {
+      backgroundColor: C.saluLight,
+      color: C.ink
+    }
+  }, resAportacion.yaAlcanzado ? /*#__PURE__*/React.createElement("b", null, "Con tu capital inicial y la rentabilidad estimada, ya alcanzas ", euros(objetivoNum), " sin necesidad de aportar más.") : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("b", null, "Necesitarías aportar ", euros(resAportacion.mensualNecesaria), "/mes para llegar a ", euros(objetivoNum), " en ", horizonteSim.toFixed(1), " años."), /*#__PURE__*/React.createElement("div", {
+    className: "mt-1 text-xs"
+  }, "Aportado: ", euros(resAportacion.totalAportado), " · Intereses generados: ", euros(resAportacion.interesGenerado), ".")))), modo === "rentabilidad" && resRentabilidad && /*#__PURE__*/React.createElement(Card, {
+    className: "p-5"
+  }, /*#__PURE__*/React.createElement(Eyebrow, null, "Rentabilidad anual necesaria"), /*#__PURE__*/React.createElement("div", {
+    className: "mt-2 rounded-xl p-4",
+    style: {
+      backgroundColor: resRentabilidad.imposible ? C.critLight : C.saluLight,
+      color: C.ink
+    }
+  }, resRentabilidad.yaAlcanzado ? /*#__PURE__*/React.createElement("b", null, "Con tu capital y tu aportación actuales, ya alcanzas ", euros(objetivoNum), " sin necesidad de rentabilidad adicional.") : resRentabilidad.imposible ? /*#__PURE__*/React.createElement("b", null, "No existe una rentabilidad anual realista que alcance ", euros(objetivoNum), " en ese plazo. Prueba a aumentar el plazo o la aportación.") : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("b", null, "Necesitarías una rentabilidad anual media del ", resRentabilidad.tasaNecesaria.toFixed(2), "% para llegar a ", euros(objetivoNum), " en ", horizonteSim.toFixed(1), " años."), /*#__PURE__*/React.createElement("div", {
+    className: "mt-1 text-xs"
+  }, "Aportado: ", euros(resRentabilidad.totalAportado), " · Intereses generados: ", euros(resRentabilidad.interesGenerado), ".")))), seleccionado && /*#__PURE__*/React.createElement(Card, {
     className: "p-5"
   }, /*#__PURE__*/React.createElement(Eyebrow, null, "Objetivo seleccionado"), /*#__PURE__*/React.createElement("div", {
     className: "grid grid-cols-2 sm:grid-cols-5 gap-3 mt-3 text-xs"
@@ -996,7 +892,7 @@ export function Simulador({
     colorAportado: C.slate,
     colorInteres: C.salu,
     formatY: v => v.toLocaleString("es-ES") + " €",
-    marcaAnio: anioObjetivoRedondeado
+    marcaAnio: anioMarcaGrafico
   })), /*#__PURE__*/React.createElement("div", {
     className: "flex gap-4 mt-2 text-xs font-bold",
     style: {
@@ -1077,21 +973,7 @@ export function Simulador({
     style: {
       color: C.mej
     }
-  }, "+", euros(d.diferenciaAnterior))))))), /*#__PURE__*/React.createElement(Card, {
-    className: "p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
-  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(Eyebrow, null, "¿Quieres jugar con los números?"), /*#__PURE__*/React.createElement("p", {
-    className: "text-sm mt-1",
-    style: {
-      color: C.ink
-    }
-  }, "Si quieres cambiar la aportación, el plazo o probar otras rentabilidades libremente, usa nuestra calculadora dedicada.")), /*#__PURE__*/React.createElement("button", {
-    onClick: onIrACalculadoras,
-    className: "shrink-0 inline-flex items-center gap-1.5 text-sm font-bold px-4 py-2.5 rounded-xl",
-    style: {
-      backgroundColor: C.sand,
-      color: C.white
-    }
-  }, "Prueba nuestras calculadoras"))));
+  }, "+", euros(d.diferenciaAnterior)))))))));
 }
 
 export function PerfilRiesgo({
@@ -4456,6 +4338,7 @@ export function NavDesktop({
 }) {
   const el = React.createElement;
   const sueltoInicio = ["inicio", "Introducción"];
+  const sueltoSimulador = ["simulador", "Simulador"];
   const sueltoBlog = ["blog", "Blog"];
   const dropdowns = [{
     id: "finanzas",
@@ -4465,10 +4348,6 @@ export function NavDesktop({
     id: "plan",
     titulo: "Plan",
     items: [["estrategia", "Estrategia"], ["plan", "Plan"], ["seguimiento", "Seguimiento"]]
-  }, {
-    id: "herramientas",
-    titulo: "Herramientas",
-    items: [["simulador", "Simulador"], ["calculadoras", "Calculadoras"]]
   }];
   const [menuAbierto, setMenuAbierto] = useState(null);
   const navRef = useRef(null);
@@ -4536,7 +4415,7 @@ export function NavDesktop({
   return el("nav", {
     ref: navRef,
     className: "hidden md:flex items-center gap-1 text-xs font-bold flex-wrap"
-  }, boton(sueltoInicio), dropdowns.map(dropdown), boton(sueltoBlog), el("a", {
+  }, boton(sueltoInicio), dropdowns.map(dropdown), boton(sueltoSimulador), boton(sueltoBlog), el("a", {
     href: "/recursos-y-libros.html",
     className: "px-2.5 py-2 rounded-lg transition-colors hover:bg-white/10 nav-link-muted"
   }, "Recursos y libros"));
