@@ -3,7 +3,7 @@ const { useState, useEffect, useRef, useCallback, useMemo, useId } = React;
 import { C, I, OBJETIVOS_DEF, PATTERN_URI_STATIC, PERFILES_INFO } from './constantes.js';
 import { calcularCapacidadFinanciera, calcularDiagnosticoAmpliado, calcularPerfilMultidimensional, calcularPlanFinanciero, calcularPlanObjetivos, calcularPrioridades, datosVacios, normalizarObjetivos, objetivoLegadoDesdeColeccion, reconstruirEstadoQuiz, totalMensual } from './calculos.js';
 import { useActivosPersistidos, useActivosSync, useAuth, useCloudSync, useCuentasPersistidas, useCuentasSync, useDatosPersistidos, useDebouncedEffect, useDeudasMirrorSync, useInversionesPersistidas, useInversionesSync, useSeguimiento, useToast } from './hooks-datos.js';
-import { AuthModal, ContinuarBar, Eyebrow, FeedbackModal, Toast } from './ui-basicos.js';
+import { AuthModal, Eyebrow, FeedbackModal, Toast } from './ui-basicos.js';
 import { AmortizacionDeuda, Blog, Contacto, Cuentas, Dashboard, Diagnostico, Estrategia, Inversiones, NavDesktop, PaginaLegal, PanelDiagnostico, PanelPrioridad, Patrimonio, PerfilRiesgo, PlanFinanciero, PrintSummary, Seguimiento, Simulador } from './paginas.js';
 import { ConfianzaPrivacidad, HeroSection } from './secciones.js';
 
@@ -378,6 +378,16 @@ export function App() {
     style: {
       background: "radial-gradient(120% 100% at 50% -10%, rgba(49,46,129,0.06) 0%, rgba(49,46,129,0.10) 60%)"
     }
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "fixed inset-0 pointer-events-none",
+    style: {
+      backgroundImage: `url(${PATTERN_URI_STATIC})`,
+      backgroundRepeat: "no-repeat",
+      backgroundSize: "cover",
+      backgroundPosition: "center",
+      opacity: 0.35,
+      mixBlendMode: "multiply"
+    }
   }), /*#__PURE__*/React.createElement("header", {
     className: "glass-nav sticky top-0 z-50",
     style: {
@@ -440,7 +450,22 @@ export function App() {
     title: "Borra tus datos guardados y vuelve a empezar"
   }, /*#__PURE__*/React.createElement(I.trash, {
     size: 13
-  }))))), /*#__PURE__*/React.createElement("main", {
+  })))), /*#__PURE__*/React.createElement("div", {
+    className: "md:hidden flex gap-1 overflow-x-auto pb-2 -mx-1 px-1"
+  }, [["inicio", "Introducción"], ["diagnostico", "Diagnóstico"], ["cuentas", "Cuentas"], ["inversiones", "Inversiones"], ["patrimonio", "Patrimonio"], ["estrategia", "Estrategia"], ["plan", "Plan"], ["seguimiento", "Seguimiento"], ["simulador", "Simulador"], ["blog", "Blog"]].map(([id, label]) => /*#__PURE__*/React.createElement("button", {
+    key: id,
+    onClick: () => setVistaActual(id),
+    className: "whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-bold " + (vistaActual === id ? "nav-link-active" : "nav-link-muted"),
+    style: vistaActual === id ? {
+      backgroundColor: "rgba(79,70,229,.16)",
+      color: C.sand
+    } : {
+      backgroundColor: "rgba(255,255,255,.04)"
+    }
+  }, label)), /*#__PURE__*/React.createElement("a", {
+    href: "/recursos-y-libros.html",
+    className: "whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-bold nav-link-muted"
+}, "Recursos y libros")))), /*#__PURE__*/React.createElement("main", {
     className: "relative z-10"
   }, vistaActual === 'inicio' && /*#__PURE__*/React.createElement("div", {
     key: "inicio",
@@ -463,7 +488,7 @@ export function App() {
       });
     },
     onFinalizar: () => {
-      setVistaActual('cuentas');
+      setVistaActual('estrategia');
     }
   })), vistaActual === 'cuentas' && /*#__PURE__*/React.createElement("div", {
     key: "cuentas",
@@ -473,9 +498,6 @@ export function App() {
     onAgregar: agregarCuenta,
     onActualizar: actualizarCuenta,
     onEliminar: eliminarCuenta
-  }), /*#__PURE__*/React.createElement(ContinuarBar, {
-    label: "Continuar a Inversiones",
-    onClick: () => setVistaActual('inversiones')
   })), vistaActual === 'inversiones' && /*#__PURE__*/React.createElement("div", {
     key: "inversiones",
     className: "fade-switch-enter"
@@ -484,9 +506,6 @@ export function App() {
     onAgregar: agregarInversion,
     onActualizar: actualizarInversion,
     onEliminar: eliminarInversion
-  }), /*#__PURE__*/React.createElement(ContinuarBar, {
-    label: "Continuar a Patrimonio",
-    onClick: () => setVistaActual('patrimonio')
   })), vistaActual === 'patrimonio' && /*#__PURE__*/React.createElement("div", {
     key: "patrimonio",
     className: "fade-switch-enter"
@@ -501,9 +520,6 @@ export function App() {
     onIrACuentas: () => setVistaActual('cuentas'),
     onIrAInversiones: () => setVistaActual('inversiones'),
     onIrADiagnostico: () => setVistaActual('diagnostico')
-  }), /*#__PURE__*/React.createElement(ContinuarBar, {
-    label: "Continuar a Estrategia",
-    onClick: () => setVistaActual('estrategia')
   })), vistaActual === 'estrategia' && /*#__PURE__*/React.createElement("div", {
     key: "estrategia",
     className: "fade-switch-enter"
@@ -593,9 +609,6 @@ export function App() {
     ahorroDisponible: ahorroDisponible,
     datos: datos,
     onSeleccionarObjetivo: setObjetivoSeleccionadoId
-  }), /*#__PURE__*/React.createElement(ContinuarBar, {
-    label: "Continuar a Plan",
-    onClick: () => setVistaActual('plan')
   }))))), vistaActual === 'plan' && /*#__PURE__*/React.createElement("div", {
     key: "plan",
     className: "fade-switch-enter"
@@ -617,9 +630,6 @@ export function App() {
     }
   }, "Prioridad actual, siguiente acción y las fases que vendrán después, calculado con todos tus datos.")), /*#__PURE__*/React.createElement(PlanFinanciero, {
     plan: planFinanciero
-  }), /*#__PURE__*/React.createElement(ContinuarBar, {
-    label: "Continuar a Seguimiento",
-    onClick: () => setVistaActual('seguimiento')
   })))), vistaActual === 'seguimiento' && /*#__PURE__*/React.createElement("div", {
     key: "seguimiento",
     className: "fade-switch-enter"
@@ -811,7 +821,7 @@ export function App() {
     gastoTotal: gastoTotal,
     ahorroDisponible: ahorroDisponible,
     ratioAhorro: ratioAhorro
-  })));
+  }));
 }
 
 export const root = ReactDOM.createRoot(document.getElementById("root"));
