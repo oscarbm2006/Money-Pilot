@@ -378,16 +378,6 @@ export function App() {
     style: {
       background: "radial-gradient(120% 100% at 50% -10%, rgba(49,46,129,0.06) 0%, rgba(49,46,129,0.10) 60%)"
     }
-  }), /*#__PURE__*/React.createElement("div", {
-    className: "fixed inset-0 pointer-events-none",
-    style: {
-      backgroundImage: `url(${PATTERN_URI_STATIC})`,
-      backgroundRepeat: "no-repeat",
-      backgroundSize: "cover",
-      backgroundPosition: "center",
-      opacity: 0.35,
-      mixBlendMode: "multiply"
-    }
   }), /*#__PURE__*/React.createElement("header", {
     className: "glass-nav sticky top-0 z-50",
     style: {
