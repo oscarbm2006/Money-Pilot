@@ -1228,25 +1228,3 @@ export function AuthModal({
     }
   }, modo === "registro" ? "¿Ya tienes cuenta? Inicia sesión" : "¿No tienes cuenta? Regístrate"))));
 }
-
-// Barra de "continuar" para enlazar unas secciones con otras en un orden lógico
-// (Diagnóstico → Cuentas → Inversiones → Patrimonio → Estrategia → Plan → Seguimiento),
-// para que la navegación tenga un hilo conductor y no dependa solo del menú superior.
-export function ContinuarBar({
-  label,
-  onClick
-}) {
-  if (!onClick) return null;
-  return /*#__PURE__*/React.createElement("div", {
-    className: "max-w-3xl mx-auto mt-6 flex justify-end"
-  }, /*#__PURE__*/React.createElement("button", {
-    onClick: onClick,
-    className: "inline-flex items-center gap-2 text-sm font-bold px-5 py-3 rounded-xl transition-transform hover:scale-[1.02]",
-    style: {
-      backgroundColor: C.sand,
-      color: C.white
-    }
-  }, label, /*#__PURE__*/React.createElement(I.chevronRight, {
-    size: 16
-  })));
-}
