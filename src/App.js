@@ -629,7 +629,11 @@ export function App() {
       color: C.muted
     }
   }, "Prioridad actual, siguiente acción y las fases que vendrán después, calculado con todos tus datos.")), /*#__PURE__*/React.createElement(PlanFinanciero, {
-    plan: planFinanciero
+    plan: planFinanciero,
+    datos: datos,
+    setDatos: setDatos,
+    liquidezReal: liquidezReal,
+    cuentas: cuentas
   })))), vistaActual === 'seguimiento' && /*#__PURE__*/React.createElement("div", {
     key: "seguimiento",
     className: "fade-switch-enter"
