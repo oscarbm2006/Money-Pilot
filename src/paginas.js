@@ -4414,7 +4414,7 @@ export function NavDesktop({
   };
   return el("nav", {
     ref: navRef,
-    className: "flex items-center gap-1 text-xs font-bold flex-wrap"
+    className: "hidden md:flex items-center gap-1 text-xs font-bold flex-wrap"
   }, boton(sueltoInicio), dropdowns.map(dropdown), boton(sueltoSimulador), boton(sueltoBlog), el("a", {
     href: "/recursos-y-libros.html",
     className: "px-2.5 py-2 rounded-lg transition-colors hover:bg-white/10 nav-link-muted"
