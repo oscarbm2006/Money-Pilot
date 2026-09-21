@@ -656,14 +656,31 @@ export function Simulador({
   const tieneDatos = !!seleccionado || !!perfil;
   const objetivoNum = seleccionado?.importeObjetivo != null ? Number(seleccionado.importeObjetivo) : null;
 
-  // UX: el simulador ya no pide números al usuario; calcula automáticamente
-  // el escenario que le corresponde a partir de su objetivo guardado y/o su
-  // perfil de riesgo. Si quiere tocar cifras libremente, se le dirige a
-  // la vista de calculadoras, pensada para eso.
-  const inicial = seleccionado ? seleccionado.importeReservadoAplicado ?? 0 : 0;
-  const mensual = seleccionado ? seleccionado.aportacionMensual ?? ahorroDisponible ?? 0 : ahorroDisponible ?? 0;
-  const tasa = perfil ? PERFILES_INFO[perfil].rentabilidad : 4;
-  const horizonte = seleccionado ? seleccionado.horizonteAniosCalculado ?? seleccionado.plazoAnios ?? 10 : 10;
+  // Valores calculados automáticamente a partir del objetivo/perfil del usuario.
+  const inicialAuto = seleccionado ? seleccionado.importeReservadoAplicado ?? 0 : 0;
+  const mensualAuto = seleccionado ? seleccionado.aportacionMensual ?? ahorroDisponible ?? 0 : ahorroDisponible ?? 0;
+  const tasaAuto = perfil ? PERFILES_INFO[perfil].rentabilidad : 4;
+  const horizonteAuto = seleccionado ? seleccionado.horizonteAniosCalculado ?? seleccionado.plazoAnios ?? 10 : 10;
+
+  // Ajuste manual: el usuario puede tocar cualquiera de los 4 campos libremente,
+  // aunque no tenga objetivo ni perfil todavía. Empiezan en null (= "usa el
+  // valor automático"); en cuanto el usuario escribe algo, ese campo pasa a
+  // mandar sobre el valor automático hasta que pulse "Usar mis datos" de nuevo.
+  const [ajusteInicial, setAjusteInicial] = useState(null);
+  const [ajusteMensual, setAjusteMensual] = useState(null);
+  const [ajusteTasa, setAjusteTasa] = useState(null);
+  const [ajusteHorizonte, setAjusteHorizonte] = useState(null);
+  const hayAjusteManual = ajusteInicial != null || ajusteMensual != null || ajusteTasa != null || ajusteHorizonte != null;
+  const restablecerAjuste = () => {
+    setAjusteInicial(null);
+    setAjusteMensual(null);
+    setAjusteTasa(null);
+    setAjusteHorizonte(null);
+  };
+  const inicial = ajusteInicial != null ? ajusteInicial : inicialAuto;
+  const mensual = ajusteMensual != null ? ajusteMensual : mensualAuto;
+  const tasa = ajusteTasa != null ? ajusteTasa : tasaAuto;
+  const horizonte = ajusteHorizonte != null ? ajusteHorizonte : horizonteAuto;
   const horizonteSim = Number(horizonte) > 0 ? Number(horizonte) : 10;
   const serie = useMemo(() => Array.from({
     length: 50
@@ -741,7 +758,37 @@ export function Simulador({
       color: C.muted,
       border: "1px solid " + C.border
     }
-  }, label))), objetivos.length > 0 && /*#__PURE__*/React.createElement(Card, {
+  }, label))), /*#__PURE__*/React.createElement(Card, {
+    className: "p-5"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center justify-between gap-3 mb-4"
+  }, /*#__PURE__*/React.createElement(Eyebrow, null, "Ajusta los números libremente"), hayAjusteManual && /*#__PURE__*/React.createElement("button", {
+    onClick: restablecerAjuste,
+    className: "text-xs font-bold",
+    style: {
+      color: C.muted
+    }
+  }, "Usar mis datos")), /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-2 sm:grid-cols-4 gap-3"
+  }, /*#__PURE__*/React.createElement(NumberField, {
+    label: "Capital inicial",
+    value: inicial,
+    onChange: v => setAjusteInicial(Number(v) || 0)
+  }), /*#__PURE__*/React.createElement(NumberField, {
+    label: "Aportación mensual",
+    value: mensual,
+    onChange: v => setAjusteMensual(Number(v) || 0)
+  }), /*#__PURE__*/React.createElement(NumberField, {
+    label: "Rentabilidad anual",
+    value: tasa,
+    suffix: "%",
+    onChange: v => setAjusteTasa(Number(v) || 0)
+  }), /*#__PURE__*/React.createElement(NumberField, {
+    label: "Horizonte (años)",
+    value: horizonte,
+    suffix: "años",
+    onChange: v => setAjusteHorizonte(Math.max(1, Number(v) || 1))
+  }))), objetivos.length > 0 && /*#__PURE__*/React.createElement(Card, {
     className: "p-5"
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex items-center justify-between gap-3"
@@ -2261,7 +2308,7 @@ export function Diagnostico({
       behavior: "smooth"
     });
   }, [paso]);
-  const [subPasoRedSeguridad, setSubPasoRedSeguridad] = useState(() => datos.deudas.some(d => Number(d.pendiente) > 0 || d.nombre || Number(d.cuota) > 0 || Number(d.tasa) > 0) ? "listaDeudas" : "colchon");
+  const [subPasoRedSeguridad, setSubPasoRedSeguridad] = useState("colchon");
   const cuotasDeuda = calcularCapacidadFinanciera(datos).cuotasDeuda;
   const totalIngresos = (Number(datos.ingresos) || 0) + (Number(datos.otrosIngresos) || 0);
   const gastosFijos = totalMensual(datos.gastosFijos);
@@ -4121,7 +4168,11 @@ export function PanelPrioridad({
 }
 
 export function PlanFinanciero({
-  plan
+  plan,
+  datos,
+  setDatos,
+  liquidezReal,
+  cuentas = []
 }) {
   const el = React.createElement;
   const { fases, resumenSituacion, recomendaciones } = plan;
@@ -4178,7 +4229,21 @@ export function PlanFinanciero({
 
   return el("div", {
     className: "space-y-6"
-  }, el(Card, {
+  }, datos && setDatos && el(Card, {
+    className: "p-5"
+  }, el(Eyebrow, null, "Ahorro actual / Fondo de emergencia"), cuentas.length > 0 ? el("p", {
+    className: "text-sm mt-2",
+    style: { color: C.muted }
+  }, "Estamos usando el saldo real de tus ", el("b", null, "Cuentas"), ": ", euros(liquidezReal ?? 0), ". Si quieres cambiarlo, actualiza el saldo allí.") : el("div", {
+    className: "mt-2 max-w-xs"
+  }, el(NumberField, {
+    label: "Cuánto tienes ahorrado hoy",
+    value: datos.ahorroActual,
+    onChange: v => setDatos({ ...datos, ahorroActual: v })
+  }), el("p", {
+    className: "text-xs mt-1.5",
+    style: { color: C.muted }
+  }, "Si registras tus cuentas reales en \"Cuentas\", usaremos ese saldo en su lugar."))), el(Card, {
     className: "p-5 sm:p-6",
     style: { backgroundColor: C.sandLight, border: "1px solid rgba(79,70,229,.16)" }
   }, el(Eyebrow, null, "Tu plan"), el("h3", {
