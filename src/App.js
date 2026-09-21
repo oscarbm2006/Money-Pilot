@@ -450,7 +450,22 @@ export function App() {
     title: "Borra tus datos guardados y vuelve a empezar"
   }, /*#__PURE__*/React.createElement(I.trash, {
     size: 13
-  }))))), /*#__PURE__*/React.createElement("main", {
+  })))), /*#__PURE__*/React.createElement("div", {
+    className: "md:hidden flex gap-1 overflow-x-auto pb-2 -mx-1 px-1"
+  }, [["inicio", "Introducción"], ["diagnostico", "Diagnóstico"], ["cuentas", "Cuentas"], ["inversiones", "Inversiones"], ["patrimonio", "Patrimonio"], ["estrategia", "Estrategia"], ["plan", "Plan"], ["seguimiento", "Seguimiento"], ["simulador", "Simulador"], ["blog", "Blog"]].map(([id, label]) => /*#__PURE__*/React.createElement("button", {
+    key: id,
+    onClick: () => setVistaActual(id),
+    className: "whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-bold " + (vistaActual === id ? "nav-link-active" : "nav-link-muted"),
+    style: vistaActual === id ? {
+      backgroundColor: "rgba(79,70,229,.16)",
+      color: C.sand
+    } : {
+      backgroundColor: "rgba(255,255,255,.04)"
+    }
+  }, label)), /*#__PURE__*/React.createElement("a", {
+    href: "/recursos-y-libros.html",
+    className: "whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-bold nav-link-muted"
+}, "Recursos y libros")))), /*#__PURE__*/React.createElement("main", {
     className: "relative z-10"
   }, vistaActual === 'inicio' && /*#__PURE__*/React.createElement("div", {
     key: "inicio",
@@ -806,7 +821,7 @@ export function App() {
     gastoTotal: gastoTotal,
     ahorroDisponible: ahorroDisponible,
     ratioAhorro: ratioAhorro
-  })));
+  }));
 }
 
 export const root = ReactDOM.createRoot(document.getElementById("root"));
