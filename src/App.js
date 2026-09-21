@@ -451,7 +451,7 @@ export function App() {
   }, /*#__PURE__*/React.createElement(I.trash, {
     size: 13
   })))), /*#__PURE__*/React.createElement("div", {
-    className: "md:hidden flex gap-1 overflow-x-auto pb-2 -mx-1 px-1"
+    className: "hidden"
   }, [["inicio", "Introducción"], ["diagnostico", "Diagnóstico"], ["cuentas", "Cuentas"], ["inversiones", "Inversiones"], ["patrimonio", "Patrimonio"], ["estrategia", "Estrategia"], ["plan", "Plan"], ["seguimiento", "Seguimiento"], ["simulador", "Simulador"], ["blog", "Blog"]].map(([id, label]) => /*#__PURE__*/React.createElement("button", {
     key: id,
     onClick: () => setVistaActual(id),
