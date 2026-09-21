@@ -204,8 +204,13 @@ export function calcularPerfilMultidimensional(respuestas, datos = {}) {
   // "cuándo invertir", seguimiento del objetivo).
   const capacidadFactores = [qConcentracion, qLiquidezDetalle];
   const capacidadEncuesta = media(capacidadFactores);
-  const capacidadDura = factoresFinancierosDuros.length ? Math.min(...factoresFinancierosDuros) : null;
-  const capacidadRiesgo = a100(capacidadDura == null ? capacidadEncuesta : Math.min(capacidadEncuesta == null ? capacidadDura : capacidadEncuesta, capacidadDura));
+  const capacidadDura = factoresFinancierosDuros.length ? media(factoresFinancierosDuros) : null;
+  // Antes esto encadenaba dos Math.min() (el peor factor "duro" y luego el peor
+  // entre ese y la encuesta), así que un único dato flojo (p.ej. el margen mensual)
+  // hundía todo el resultado aunque el resto fuera excelente. Ahora se pondera:
+  // los datos financieros "duros" (flujo, deuda) cuentan el doble que las
+  // respuestas de la encuesta, pero ya no hay un único factor con veto absoluto.
+  const capacidadRiesgo = a100(capacidadDura == null ? capacidadEncuesta : capacidadEncuesta == null ? capacidadDura : capacidadDura * 2 / 3 + capacidadEncuesta * 1 / 3);
 
   /* Liquidez ya NO incorpora matemáticamente el horizonte. Son dimensiones distintas. */
   const liquidez = a100(qLiquidez);
