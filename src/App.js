@@ -3,7 +3,7 @@ const { useState, useEffect, useRef, useCallback, useMemo, useId } = React;
 import { C, I, OBJETIVOS_DEF, PATTERN_URI_STATIC, PERFILES_INFO } from './constantes.js';
 import { calcularCapacidadFinanciera, calcularDiagnosticoAmpliado, calcularPerfilMultidimensional, calcularPlanFinanciero, calcularPlanObjetivos, calcularPrioridades, datosVacios, normalizarObjetivos, objetivoLegadoDesdeColeccion, reconstruirEstadoQuiz, totalMensual } from './calculos.js';
 import { useActivosPersistidos, useActivosSync, useAuth, useCloudSync, useCuentasPersistidas, useCuentasSync, useDatosPersistidos, useDebouncedEffect, useDeudasMirrorSync, useInversionesPersistidas, useInversionesSync, useSeguimiento, useToast } from './hooks-datos.js';
-import { AuthModal, Eyebrow, FeedbackModal, Toast } from './ui-basicos.js';
+import { AuthModal, ContinuarBar, Eyebrow, FeedbackModal, Toast } from './ui-basicos.js';
 import { AmortizacionDeuda, Blog, Contacto, Cuentas, Dashboard, Diagnostico, Estrategia, Inversiones, NavDesktop, PaginaLegal, PanelDiagnostico, PanelPrioridad, Patrimonio, PerfilRiesgo, PlanFinanciero, PrintSummary, Seguimiento, Simulador } from './paginas.js';
 import { ConfianzaPrivacidad, HeroSection } from './secciones.js';
 
@@ -488,7 +488,7 @@ export function App() {
       });
     },
     onFinalizar: () => {
-      setVistaActual('estrategia');
+      setVistaActual('cuentas');
     }
   })), vistaActual === 'cuentas' && /*#__PURE__*/React.createElement("div", {
     key: "cuentas",
@@ -498,6 +498,9 @@ export function App() {
     onAgregar: agregarCuenta,
     onActualizar: actualizarCuenta,
     onEliminar: eliminarCuenta
+  }), /*#__PURE__*/React.createElement(ContinuarBar, {
+    label: "Continuar a Inversiones",
+    onClick: () => setVistaActual('inversiones')
   })), vistaActual === 'inversiones' && /*#__PURE__*/React.createElement("div", {
     key: "inversiones",
     className: "fade-switch-enter"
@@ -506,6 +509,9 @@ export function App() {
     onAgregar: agregarInversion,
     onActualizar: actualizarInversion,
     onEliminar: eliminarInversion
+  }), /*#__PURE__*/React.createElement(ContinuarBar, {
+    label: "Continuar a Patrimonio",
+    onClick: () => setVistaActual('patrimonio')
   })), vistaActual === 'patrimonio' && /*#__PURE__*/React.createElement("div", {
     key: "patrimonio",
     className: "fade-switch-enter"
@@ -520,6 +526,9 @@ export function App() {
     onIrACuentas: () => setVistaActual('cuentas'),
     onIrAInversiones: () => setVistaActual('inversiones'),
     onIrADiagnostico: () => setVistaActual('diagnostico')
+  }), /*#__PURE__*/React.createElement(ContinuarBar, {
+    label: "Continuar a Estrategia",
+    onClick: () => setVistaActual('estrategia')
   })), vistaActual === 'estrategia' && /*#__PURE__*/React.createElement("div", {
     key: "estrategia",
     className: "fade-switch-enter"
@@ -609,6 +618,9 @@ export function App() {
     ahorroDisponible: ahorroDisponible,
     datos: datos,
     onSeleccionarObjetivo: setObjetivoSeleccionadoId
+  }), /*#__PURE__*/React.createElement(ContinuarBar, {
+    label: "Continuar a Plan",
+    onClick: () => setVistaActual('plan')
   }))))), vistaActual === 'plan' && /*#__PURE__*/React.createElement("div", {
     key: "plan",
     className: "fade-switch-enter"
@@ -634,6 +646,9 @@ export function App() {
     setDatos: setDatos,
     liquidezReal: liquidezReal,
     cuentas: cuentas
+  }), /*#__PURE__*/React.createElement(ContinuarBar, {
+    label: "Continuar a Seguimiento",
+    onClick: () => setVistaActual('seguimiento')
   })))), vistaActual === 'seguimiento' && /*#__PURE__*/React.createElement("div", {
     key: "seguimiento",
     className: "fade-switch-enter"
