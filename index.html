@@ -51,8 +51,9 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
 <link rel="stylesheet" href="/styles.css" />
-<style>
-  html, body { overflow-x: hidden; max-width: 100%; }
+<style id="estilos">
+/* ---- base ---- */
+html, body { overflow-x: hidden; max-width: 100%; }
   body { margin:0; font-family: ui-sans-serif, system-ui, sans-serif; }
   .font-serif { font-family: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif; }
   ::-webkit-scrollbar { height: 6px; width: 6px; }
@@ -99,10 +100,9 @@
   .hover\:bg-indigo-700:hover { background-color:#4338CA !important; }
   .shadow-lg, .shadow-xl { box-shadow:0 8px 24px rgba(30,30,46,.08) !important; }
   @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration:.01ms !important; animation-iteration-count:1 !important; scroll-behavior:auto !important; } }
-</style>
 
-<style id="readability-overrides">
-  .readable-hero-copy{
+/* ---- readability-overrides ---- */
+.readable-hero-copy{
     color:#334155 !important;
     background:rgba(255,255,255,.62);
     border:1px solid rgba(79,70,229,.16);
@@ -123,9 +123,8 @@
     box-shadow:0 3px 10px rgba(49,46,129,.05);
     text-shadow:none;
   }
-</style>
 
-<style id="harmonized-theme">
+/* ---- harmonized-theme ---- */
 :root{
  --bg:#f5f6fa; --surface:#fbfcff; --surface-soft:#f1f3f9;
  --primary:#4f46e5; --primary-dark:#3730a3; --primary-soft:#eef0ff;
@@ -266,9 +265,8 @@ section.section-tinted{
 .quiz-option:hover{border-color:rgba(79,70,229,.38)!important;background:#F2F4FF!important;transform:translateX(2px);box-shadow:0 4px 12px rgba(79,70,229,.07)}
 .chart-interactive{cursor:crosshair}
 .chart-interactive svg text{user-select:none}
-</style>
 
-<style id="final-contrast-fix">
+/* ---- final-contrast-fix ---- */
 .hero-contrast-text, .readable-note, .readable-subtitle {
   color:#1f2937 !important;
   background:#ffffff !important;
@@ -280,9 +278,8 @@ section.section-tinted{
 }
 .readable-subtitle { border-left:4px solid #4f46e5 !important; padding:10px 14px !important; display:inline-block; }
 .readable-note { border-left-color:#10b981 !important; }
-</style>
 
-<style id="phase1-contrast-fixes">
+/* ---- phase1-contrast-fixes ---- */
 /* FASE 1 — Auditoría de contraste WCAG AA */
 .hero-description{
   color:#334155 !important;
@@ -296,9 +293,8 @@ section.section-tinted{
 .nav-menu-text:hover{ color:#FFFFFF !important; }
 .export-menu{ transform-origin: top right; animation: menuPop 200ms cubic-bezier(0.16,1,0.3,1); }
 @keyframes menuPop{ from{ opacity:0; transform:scale(0.94) translateY(-4px); } to{ opacity:1; transform:scale(1) translateY(0); } }
-</style>
 
-<style id="phase2-palette-tokens">
+/* ---- phase2-palette-tokens ---- */
 /* FASE 2 — Paleta consolidada. Fuente de verdad semántica: "seguridad + crecimiento".
    El objeto JS `C` sigue siendo quien pinta los estilos inline (no se ha migrado
    todo a CSS puro para no reescribir ~150 referencias con riesgo de regresión),
