@@ -1286,3 +1286,15 @@ export class ErrorBoundary extends React.Component {
     return this.props.children;
   }
 }
+
+export function BlogLinkCard({ texto, onClick }) {
+  if (!onClick) return null;
+  return /*#__PURE__*/React.createElement("button", {
+    onClick: onClick,
+    className: "w-full text-left rounded-xl p-4 flex items-center justify-between gap-3 transition-colors hover:bg-white/60",
+    style: { backgroundColor: C.sandLight, border: "1px solid rgba(79,70,229,.16)" }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "text-sm font-bold",
+    style: { color: C.ink }
+  }, texto), /*#__PURE__*/React.createElement(I.chevronRight, { size: 16 }));
+}
