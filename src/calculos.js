@@ -298,7 +298,10 @@ export function calcularPerfilMultidimensional(respuestas, datos = {}) {
     if (v == null) return;
     if (v >= 70) factoresPositivos.push(label + " alta");else if (v < 50) factoresNegativos.push(label + " limitada");
   });
-  if (coberturaEmergencia != null && coberturaEmergencia < 3) factoresNegativos.push("El fondo de emergencia todavía es reducido");
+  if (coberturaEmergencia != null && coberturaEmergencia < 3) {
+    const faltaFondo = Math.max(0, gastoTotal * 6 - ahorroActual);
+    factoresNegativos.push(faltaFondo > 0 ? `El fondo de emergencia todavía es reducido (te faltarían ${euros(faltaFondo)} para cubrir 6 meses de gastos)` : "El fondo de emergencia todavía es reducido");
+  }
   if (ratioDeuda != null && ratioDeuda > 0.25) factoresNegativos.push("La carga de deuda reduce la capacidad de asumir pérdidas");
   if (ahorroDisponible <= 0) factoresNegativos.push("No existe ahorro mensual disponible para absorber pérdidas");
   if (qLiquidezDetalle != null && qLiquidezDetalle <= 1) factoresNegativos.push("Podrías necesitar gran parte de la inversión a corto plazo");
