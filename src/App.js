@@ -554,7 +554,8 @@ export function App() {
       color: C.muted
     }
   }, "Aquí se concentran las métricas clave, el perfil de riesgo y las decisiones que puedes tomar a continuación.")), /*#__PURE__*/React.createElement(PanelDiagnostico, {
-    diagnostico: diagnosticoAmpliado
+    diagnostico: diagnosticoAmpliado,
+    onIrABlog: () => setVistaActual('blog')
   }), /*#__PURE__*/React.createElement(PanelPrioridad, {
     prioridad: prioridadActual
   }), /*#__PURE__*/React.createElement(Dashboard, {
@@ -650,7 +651,8 @@ export function App() {
     datos: datos,
     setDatos: setDatos,
     liquidezReal: liquidezReal,
-    cuentas: cuentas
+    cuentas: cuentas,
+    onIrABlog: () => setVistaActual('blog')
   }), /*#__PURE__*/React.createElement(ContinuarBar, {
     label: "Continuar a Seguimiento",
     onClick: () => setVistaActual('seguimiento')
@@ -705,7 +707,8 @@ export function App() {
     objetivoSeleccionadoId: objetivoSeleccionadoId || sim.objetivoId,
     onSeleccionarObjetivo: setObjetivoSeleccionadoId,
     ahorroDisponible: ahorroDisponible,
-    perfil: perfil
+    perfil: perfil,
+    onIrABlog: () => setVistaActual('blog')
   })))), vistaActual === 'blog' && /*#__PURE__*/React.createElement("div", {
     key: "blog",
     className: "fade-switch-enter"
