@@ -1239,3 +1239,50 @@ export function ContinuarBar({ label, onClick }) {
     style: { backgroundColor: C.sand, color: C.white }
   }, label, /*#__PURE__*/React.createElement(I.chevronRight, { size: 16 })));
 }
+
+export class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { error: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { error };
+  }
+  componentDidCatch(error, info) {
+    console.error("Error capturado por ErrorBoundary:", error, info);
+  }
+  render() {
+    if (this.state.error) {
+      return /*#__PURE__*/React.createElement("div", {
+        style: {
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "24px",
+          textAlign: "center",
+          fontFamily: "ui-sans-serif, system-ui, sans-serif"
+        }
+      }, /*#__PURE__*/React.createElement("div", {
+        style: { maxWidth: "420px" }
+      }, /*#__PURE__*/React.createElement("h1", {
+        style: { fontSize: "20px", fontWeight: "700", color: "#312E81", marginBottom: "10px" }
+      }, "Algo ha fallado"), /*#__PURE__*/React.createElement("p", {
+        style: { fontSize: "14px", color: "#6B7280", marginBottom: "18px" }
+      }, "Ha ocurrido un error inesperado. Prueba a recargar la página; si el problema sigue, dínoslo desde \"Evaluar\"."), /*#__PURE__*/React.createElement("button", {
+        onClick: () => window.location.reload(),
+        style: {
+          backgroundColor: "#4F46E5",
+          color: "#fff",
+          border: "none",
+          borderRadius: "10px",
+          padding: "10px 20px",
+          fontWeight: "700",
+          fontSize: "14px",
+          cursor: "pointer"
+        }
+      }, "Recargar página")));
+    }
+    return this.props.children;
+  }
+}
