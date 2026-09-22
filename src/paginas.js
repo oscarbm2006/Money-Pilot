@@ -2,7 +2,7 @@ const { useState, useEffect, useRef, useCallback, useMemo, useId } = React;
 
 import { ACTIVOS_DEF, ASIGNACION, BLOG_ADMIN_EMAIL, C, CUENTA_TIPOS_DEF, I, NOMBRES_FASE_BLOG, OBJETIVOS_DEF, PERFILES_INFO, PRIORIDADES_OBJETIVO, PRIORIDAD_LABEL, QUIZ_DEF, SECCIONES_BLOG, TIPOS_ACTIVO_DEF, TIPOS_INVERSION_DEF, supa } from './constantes.js';
 import { aportacionNecesariaParaObjetivo, calcularCapacidadFinanciera, calcularFondoEmergencia, calcularPerfilMultidimensional, calcularPlanObjetivos, calcularSaludFinanciera, crearIdObjetivo, estadoAhorro, euros, fmtFecha, formatMeses, getNextQuestionId, mdToHtml, normalizarObjetivo, normalizarObjetivos, pct, proyeccionInteres, quizNumero, recomendacionObjetivoPorHorizonte, reconstruirEstadoQuiz, rentabilidadNecesariaParaObjetivo, simularAmortizacion, sincronizarObjetivos, slugify, tiempoNecesarioParaObjetivo, totalMensual } from './calculos.js';
-import { AnimatedNumber, Badge, Card, DesgloseBarra, Eyebrow, FadeSwitch, NumberField, ProgressBar, SimpleAreaChart, SimpleDonut, SimpleStackedBarChart, StatCard, Termometro } from './ui-basicos.js';
+import { AnimatedNumber, Badge, BlogLinkCard, Card, DesgloseBarra, Eyebrow, FadeSwitch, NumberField, ProgressBar, SimpleAreaChart, SimpleDonut, SimpleStackedBarChart, StatCard, Termometro } from './ui-basicos.js';
 import { AcordeonFase, GastosTabs } from './secciones.js';
 
 export function PrintSummary({
@@ -648,7 +648,8 @@ export function Simulador({
   objetivoSeleccionadoId = null,
   onSeleccionarObjetivo,
   ahorroDisponible = 0,
-  perfil = null
+  perfil = null,
+  onIrABlog
 }) {
   const [vista, setVista] = useState("5anos");
   const [modo, setModo] = useState("capital");
@@ -1020,7 +1021,10 @@ export function Simulador({
     style: {
       color: C.mej
     }
-  }, "+", euros(d.diferenciaAnterior)))))))));
+  }, "+", euros(d.diferenciaAnterior))))))), onIrABlog && /*#__PURE__*/React.createElement(BlogLinkCard, {
+    texto: "Aprende más sobre cómo hacer crecer tu ahorro en nuestro blog",
+    onClick: onIrABlog
+  })));
 }
 
 export function PerfilRiesgo({
@@ -4042,7 +4046,8 @@ export function Patrimonio({
 }
 
 export function PanelDiagnostico({
-  diagnostico
+  diagnostico,
+  onIrABlog
 }) {
   const el = React.createElement;
   const {
@@ -4109,7 +4114,12 @@ export function PanelDiagnostico({
     }
   }, "Construido con tus datos de ingresos, gastos, deudas, cuentas, inversiones y objetivos."), el("div", {
     className: "grid grid-cols-1 sm:grid-cols-2 gap-4"
-  }, columnaPositivos, columnaPreocupantes));
+  }, columnaPositivos, columnaPreocupantes), onIrABlog && el("div", {
+    className: "mt-4"
+  }, el(BlogLinkCard, {
+    texto: "Profundiza en estos temas en nuestro blog",
+    onClick: onIrABlog
+  })));
 }
 
 export function PanelPrioridad({
@@ -4185,7 +4195,8 @@ export function PlanFinanciero({
   datos,
   setDatos,
   liquidezReal,
-  cuentas = []
+  cuentas = [],
+  onIrABlog
 }) {
   const el = React.createElement;
   const { fases, resumenSituacion, recomendaciones } = plan;
@@ -4275,7 +4286,10 @@ export function PlanFinanciero({
     className: "space-y-4"
   }, fases.map((f, i) => tarjetaFase(f, i))), el("p", {
     className: "text-[11px] readable-note"
-  }, "El plan se recalcula cada vez que entras, con tus datos actuales. Para ver tu evolución en el tiempo (si avanzas mes a mes) llegará próximamente un apartado de Seguimiento."));
+  }, "El plan se recalcula cada vez que entras, con tus datos actuales. Para ver tu evolución en el tiempo (si avanzas mes a mes) llegará próximamente un apartado de Seguimiento."), onIrABlog && el(BlogLinkCard, {
+    texto: "Lee más guías y análisis en nuestro blog",
+    onClick: onIrABlog
+  }));
 }
 
 export function Seguimiento({
