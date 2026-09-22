@@ -3307,7 +3307,8 @@ export function Cuentas({
       tipo: "Corriente",
       nombre: "",
       saldo: 0,
-      moneda: "EUR"
+      moneda: "EUR",
+      esFondoEmergencia: false
     });
   };
   const abrirEditar = c => {
@@ -3446,7 +3447,19 @@ export function Cuentas({
       ...borrador,
       saldo: v
     })
-  })), /*#__PURE__*/React.createElement("div", {
+  }), /*#__PURE__*/React.createElement("label", {
+    className: "flex items-center gap-2 mt-3 text-xs font-bold cursor-pointer",
+    style: { color: C.ink }
+  }, /*#__PURE__*/React.createElement("input", {
+    type: "checkbox",
+    checked: !!borrador.esFondoEmergencia,
+    onChange: e => setBorrador({
+      ...borrador,
+      esFondoEmergencia: e.target.checked
+    }),
+    className: "w-4 h-4 rounded",
+    style: { accentColor: C.sand }
+  }), "Es mi fondo de emergencia")), /*#__PURE__*/React.createElement("div", {
     className: "flex gap-2 mt-4"
   }, /*#__PURE__*/React.createElement("button", {
     onClick: guardar,
