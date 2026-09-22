@@ -3,7 +3,7 @@ const { useState, useEffect, useRef, useCallback, useMemo, useId } = React;
 import { C, I, OBJETIVOS_DEF, PATTERN_URI_STATIC, PERFILES_INFO } from './constantes.js';
 import { calcularCapacidadFinanciera, calcularDiagnosticoAmpliado, calcularPerfilMultidimensional, calcularPlanFinanciero, calcularPlanObjetivos, calcularPrioridades, datosVacios, normalizarObjetivos, objetivoLegadoDesdeColeccion, reconstruirEstadoQuiz, totalMensual } from './calculos.js';
 import { useActivosPersistidos, useActivosSync, useAuth, useCloudSync, useCuentasPersistidas, useCuentasSync, useDatosPersistidos, useDebouncedEffect, useDeudasMirrorSync, useInversionesPersistidas, useInversionesSync, useSeguimiento, useToast } from './hooks-datos.js';
-import { AuthModal, ContinuarBar, Eyebrow, FeedbackModal, Toast } from './ui-basicos.js';
+import { AuthModal, ContinuarBar, ErrorBoundary, Eyebrow, FeedbackModal, Toast } from './ui-basicos.js';
 import { AmortizacionDeuda, Blog, Contacto, Cuentas, Dashboard, Diagnostico, Estrategia, Inversiones, NavDesktop, PaginaLegal, PanelDiagnostico, PanelPrioridad, Patrimonio, PerfilRiesgo, PlanFinanciero, PrintSummary, Seguimiento, Simulador } from './paginas.js';
 import { ConfianzaPrivacidad, HeroSection } from './secciones.js';
 
@@ -292,7 +292,12 @@ export function App() {
   // escribió a mano en Diagnóstico. Antes esto solo pasaba en Plan/Estrategia; ahora
   // también alimenta el Diagnóstico principal, el Dashboard y el simulador, para que
   // no haya números que no cuadren entre pantallas.
-  const liquidezReal = cuentas.length > 0 ? cuentas.reduce((s, c) => s + (Number(c.saldo) || 0), 0) : Number(datos.ahorroActual) || 0;
+  // Si el usuario ha marcado alguna cuenta como "fondo de emergencia", solo esas
+  // cuentan para el colchón; si no ha marcado ninguna (usuarios que aún no
+  // conocen esta opción), se sigue sumando todo el saldo como antes.
+  const cuentasFondoEmergencia = cuentas.filter(c => c.esFondoEmergencia);
+  const cuentasParaColchon = cuentasFondoEmergencia.length > 0 ? cuentasFondoEmergencia : cuentas;
+  const liquidezReal = cuentas.length > 0 ? cuentasParaColchon.reduce((s, c) => s + (Number(c.saldo) || 0), 0) : Number(datos.ahorroActual) || 0;
   const datosParaCalculo = useMemo(() => ({
     ...datos,
     ahorroActual: liquidezReal
@@ -845,4 +850,4 @@ export function App() {
 
 export const root = ReactDOM.createRoot(document.getElementById("root"));
 
-root.render(/*#__PURE__*/React.createElement(App, null));
+root.render(/*#__PURE__*/React.createElement(ErrorBoundary, null, /*#__PURE__*/React.createElement(App, null)));
