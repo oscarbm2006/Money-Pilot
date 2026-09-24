@@ -1231,13 +1231,25 @@ export function AuthModal({
 
 export function ContinuarBar({ label, onClick }) {
   if (!onClick) return null;
+  // Barra "pegajosa": queda siempre visible en la parte baja de la pantalla mientras
+  // el usuario rellena datos y, al llegar al final de la página, se apoya con
+  // margen suficiente para no rozar el aviso de "Evaluar página".
   return /*#__PURE__*/React.createElement("div", {
-    className: "max-w-3xl mx-auto mt-6 flex justify-end"
+    className: "sticky z-10 no-print",
+    style: {
+      bottom: 0,
+      marginTop: "1.5rem",
+      marginBottom: "3.5rem",
+      padding: "0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom, 0px))",
+      background: "linear-gradient(to top, " + C.paper + " 70%, rgba(255,255,255,0))"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "max-w-3xl mx-auto flex justify-end"
   }, /*#__PURE__*/React.createElement("button", {
     onClick: onClick,
-    className: "inline-flex items-center gap-2 text-sm font-bold px-5 py-3 rounded-xl transition-transform hover:scale-[1.02]",
+    className: "inline-flex items-center gap-2 text-sm font-bold px-5 py-3 rounded-xl transition-transform hover:scale-[1.02] shadow-lg",
     style: { backgroundColor: C.sand, color: C.white }
-  }, label, /*#__PURE__*/React.createElement(I.chevronRight, { size: 16 })));
+  }, label, /*#__PURE__*/React.createElement(I.chevronRight, { size: 16 }))));
 }
 
 export class ErrorBoundary extends React.Component {
