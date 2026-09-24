@@ -4,7 +4,8 @@ import { C, I, OBJETIVOS_DEF, PATTERN_URI_STATIC, PERFILES_INFO } from './consta
 import { calcularCapacidadFinanciera, calcularDiagnosticoAmpliado, calcularPerfilMultidimensional, calcularPlanFinanciero, calcularPlanObjetivos, calcularPrioridades, datosVacios, normalizarObjetivos, objetivoLegadoDesdeColeccion, reconstruirEstadoQuiz, totalMensual } from './calculos.js';
 import { useActivosPersistidos, useActivosSync, useAuth, useCloudSync, useCuentasPersistidas, useCuentasSync, useDatosPersistidos, useDebouncedEffect, useDeudasMirrorSync, useInversionesPersistidas, useInversionesSync, useSeguimiento, useToast } from './hooks-datos.js';
 import { AuthModal, ContinuarBar, ErrorBoundary, Eyebrow, FeedbackModal, Toast } from './ui-basicos.js';
-import { AmortizacionDeuda, Blog, Contacto, Cuentas, Dashboard, Diagnostico, Estrategia, Inversiones, NavDesktop, PaginaLegal, PanelDiagnostico, PanelPrioridad, Patrimonio, PerfilRiesgo, PlanFinanciero, PrintSummary, Seguimiento, Simulador } from './paginas.js';
+import { AmortizacionDeuda, Contacto, Cuentas, Dashboard, Diagnostico, Estrategia, Inversiones, NavDesktop, PaginaLegal, PanelDiagnostico, PanelPrioridad, Patrimonio, PerfilRiesgo, PlanFinanciero, PrintSummary, Seguimiento, Simulador } from './paginas.js';
+const Blog = React.lazy(() => import('./blog.js'));
 import { ConfianzaPrivacidad, HeroSection } from './secciones.js';
 
 export function App() {
@@ -712,9 +713,14 @@ export function App() {
   })))), vistaActual === 'blog' && /*#__PURE__*/React.createElement("div", {
     key: "blog",
     className: "fade-switch-enter"
+  }, /*#__PURE__*/React.createElement(React.Suspense, {
+    fallback: /*#__PURE__*/React.createElement("div", {
+      className: "py-20 text-center text-sm",
+      style: { color: C.muted }
+    }, "Cargando…")
   }, /*#__PURE__*/React.createElement(Blog, {
     user: user
-  })), vistaActual === 'privacidad' && /*#__PURE__*/React.createElement("div", {
+  }))), vistaActual === 'privacidad' && /*#__PURE__*/React.createElement("div", {
     key: "privacidad",
     className: "fade-switch-enter"
   }, /*#__PURE__*/React.createElement(PaginaLegal, {
