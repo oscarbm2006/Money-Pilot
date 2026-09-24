@@ -22,6 +22,7 @@ export function App() {
     signIn,
     signOut
   } = useAuth();
+  const [irADeudas, setIrADeudas] = useState(false);
   const [vistaActual, setVistaActualBase] = useState(() => {
     if (typeof window === "undefined") return "inicio";
     try {
@@ -30,6 +31,9 @@ export function App() {
       return "inicio";
     }
   });
+  useEffect(() => {
+    if (vistaActual !== 'diagnostico') setIrADeudas(false);
+  }, [vistaActual]);
   const setVistaActual = v => {
     setVistaActualBase(v);
     try {
@@ -338,7 +342,7 @@ export function App() {
     liquidez: diagnosticoAmpliado.liquidezReal,
     totalInversiones: inversiones.reduce((s, inv) => s + (Number(inv.valorActual) || 0), 0),
     totalActivos: activos.reduce((s, a) => s + (Number(a.valorActual) || 0), 0),
-    totalDeudas: (datos.deudas || []).filter(d => Number(d.pendiente) > 0).reduce((s, d) => s + Number(d.pendiente || 0), 0),
+    totalDeudas: (datos.deudas || []).filter(d => Number(d.pendiente) > 0).reduce((s, d) => s + Number(d.pendiente || 0), 0) + activos.reduce((s, a) => s + (a.pagada === false ? Number(a.pendientePago) || 0 : 0), 0),
     coberturaMeses: diagnosticoAmpliado.coberturaMeses,
     ratioAhorro: capacidadFinanciera.ingresos > 0 ? capacidadFinanciera.capacidadMensual / capacidadFinanciera.ingresos : null
   }), [diagnosticoAmpliado, inversiones, activos, datos.deudas, capacidadFinanciera]);
@@ -477,11 +481,16 @@ export function App() {
     key: "inicio",
     className: "fade-switch-enter"
   }, /*#__PURE__*/React.createElement(HeroSection, {
-    onStart: () => setVistaActual('diagnostico')
+    onStart: () => {
+      setIrADeudas(false);
+      setVistaActual('diagnostico');
+    }
   }), /*#__PURE__*/React.createElement(ConfianzaPrivacidad, null)), vistaActual === 'diagnostico' && /*#__PURE__*/React.createElement("div", {
     key: "diagnostico",
     className: "fade-switch-enter"
   }, /*#__PURE__*/React.createElement(Diagnostico, {
+    key: irADeudas ? 'diag-deudas' : 'diag',
+    irADeudas: irADeudas,
     datos: datos,
     setDatos: setDatos,
     liquidezReal: liquidezReal,
@@ -531,7 +540,10 @@ export function App() {
     onEliminarActivo: eliminarActivo,
     onIrACuentas: () => setVistaActual('cuentas'),
     onIrAInversiones: () => setVistaActual('inversiones'),
-    onIrADiagnostico: () => setVistaActual('diagnostico')
+    onIrADiagnostico: () => {
+      setIrADeudas(true);
+      setVistaActual('diagnostico');
+    }
   }), /*#__PURE__*/React.createElement(ContinuarBar, {
     label: "Continuar a Estrategia",
     onClick: () => setVistaActual('estrategia')
