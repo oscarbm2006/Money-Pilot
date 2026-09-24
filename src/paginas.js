@@ -2300,11 +2300,12 @@ export function Diagnostico({
   onFinalizar,
   objetivoSeleccionadoId,
   onEliminarSeleccionado,
-  liquidezReal
+  liquidezReal,
+  irADeudas
 }) {
   /* UX: wizard de 3 pasos. Los datos siguen viviendo en `datos` y se persisten
      exactamente por los mecanismos existentes; solo cambia cuándo se muestran. */
-  const [paso, setPaso] = useState(1);
+  const [paso, setPaso] = useState(irADeudas ? 3 : 1);
   useEffect(() => {
     window.scrollTo({
       top: 0,
@@ -2312,7 +2313,7 @@ export function Diagnostico({
       behavior: "smooth"
     });
   }, [paso]);
-  const [subPasoRedSeguridad, setSubPasoRedSeguridad] = useState("colchon");
+  const [subPasoRedSeguridad, setSubPasoRedSeguridad] = useState(irADeudas ? "listaDeudas" : "colchon");
   const cuotasDeuda = calcularCapacidadFinanciera(datos).cuotasDeuda;
   const totalIngresos = (Number(datos.ingresos) || 0) + (Number(datos.otrosIngresos) || 0);
   const gastosFijos = totalMensual(datos.gastosFijos);
@@ -3261,22 +3262,47 @@ export function Inversiones({
       entidad: "",
       ticker: "",
       valorActual: 0,
-      totalAportado: null,
+      totalAportado: 0,
+      rentSigno: "ganancia",
+      rentModo: "eur",
+      rentValor: 0,
       moneda: "EUR"
     });
   };
   const abrirEditar = inv => {
     setEditando(inv.id);
+    const aportado = inv.totalAportado != null && Number(inv.totalAportado) > 0 ? Number(inv.totalAportado) : Number(inv.valorActual) || 0;
+    const dif = (Number(inv.valorActual) || 0) - aportado;
     setBorrador({
-      ...inv
+      ...inv,
+      totalAportado: aportado,
+      rentSigno: dif < 0 ? "perdida" : "ganancia",
+      rentModo: "eur",
+      rentValor: Math.round(Math.abs(dif) * 100) / 100
     });
+  };
+  // Valor actual = aportado + ganancia (o - pérdida). La rentabilidad se escribe en € o en %.
+  const calcularRentabilidad = b => {
+    const aportado = Number(b.totalAportado) || 0;
+    const v = Number(b.rentValor) || 0;
+    const bruta = b.rentModo === "pct" ? aportado * v / 100 : v;
+    return b.rentSigno === "perdida" ? -bruta : bruta;
   };
   const guardar = () => {
     if (!borrador || !borrador.nombre.trim()) return;
+    const aportado = Number(borrador.totalAportado) || 0;
+    const rent = calcularRentabilidad(borrador);
+    const { rentSigno, rentModo, rentValor, ...base } = borrador;
+    const listo = {
+      ...base,
+      moneda: "EUR",
+      totalAportado: aportado > 0 ? aportado : null,
+      valorActual: Math.max(0, Math.round((aportado + rent) * 100) / 100)
+    };
     if (editando) {
-      onActualizar(editando, borrador);
+      onActualizar(editando, listo);
     } else {
-      onAgregar(borrador);
+      onAgregar(listo);
     }
     setEditando(null);
     setBorrador(null);
@@ -3359,7 +3385,7 @@ export function Inversiones({
   }, "Tus inversiones, en un solo sitio"), el("p", {
     className: "text-sm sm:text-base mt-3",
     style: { color: C.muted }
-  }, "Añade manualmente tus acciones, fondos, ETFs, pensiones o cripto para ver el valor total de tu cartera. Los precios no se actualizan solos: tú decides cuándo revisar y actualizar el valor."));
+  }, "Añade tus acciones, fondos, ETFs u otros productos con lo que has aportado y la ganancia o pérdida acumulada; nosotros calculamos el valor actual. Los datos no se actualizan solos: revísalos cuando quieras."));
   const resumenCard = el(Card, {
     className: "p-5 flex items-center justify-between gap-4 flex-wrap"
   }, el("div", {
@@ -3397,19 +3423,45 @@ export function Inversiones({
   }, "Nombre"), el("input", {
     value: borrador.nombre,
     onChange: e => setBorrador({ ...borrador, nombre: e.target.value }),
-    placeholder: "Ej. MSCI World, Apple, Bitcoin...",
+    placeholder: "Ej. MSCI World, Apple, fondo indexado...",
     className: "w-full rounded-lg px-3 py-2 text-sm font-bold border outline-none",
     style: { borderColor: C.border, color: C.ink, backgroundColor: C.paper }
   })), el(NumberField, {
-    label: "Valor actual",
-    value: borrador.valorActual,
-    onChange: v => setBorrador({ ...borrador, valorActual: v })
-  }), el(NumberField, {
-    label: "Total aportado (opcional)",
+    label: "Total aportado",
     value: borrador.totalAportado || 0,
-    onChange: v => setBorrador({ ...borrador, totalAportado: v || null }),
-    hint: "Para calcular la rentabilidad, cuánto has invertido en total."
+    onChange: v => setBorrador({ ...borrador, totalAportado: v }),
+    hint: "Cuánto dinero has puesto en total en este producto (en euros)."
   }), el("div", null, el("label", {
+    className: "block text-xs font-bold mb-1.5",
+    style: { color: C.ink }
+  }, "Ganancia o pérdida acumulada"), el("div", {
+    className: "flex gap-1.5"
+  }, el("select", {
+    value: borrador.rentSigno,
+    onChange: e => setBorrador({ ...borrador, rentSigno: e.target.value }),
+    "aria-label": "Ganancia o pérdida",
+    className: "rounded-lg px-2 py-2 text-sm font-bold border outline-none",
+    style: { borderColor: C.border, color: C.ink, backgroundColor: C.paper }
+  }, el("option", { value: "ganancia" }, "Ganancia"), el("option", { value: "perdida" }, "Pérdida")), el("input", {
+    type: "number",
+    inputMode: "decimal",
+    min: 0,
+    value: borrador.rentValor === 0 ? "" : borrador.rentValor,
+    onChange: e => setBorrador({ ...borrador, rentValor: e.target.value === "" ? 0 : Math.max(0, Number(e.target.value)) }),
+    placeholder: "0",
+    "aria-label": "Importe de la ganancia o pérdida",
+    className: "w-full min-w-0 rounded-lg px-3 py-2 text-sm font-bold border outline-none",
+    style: { borderColor: C.border, color: C.ink, backgroundColor: C.paper }
+  }), el("select", {
+    value: borrador.rentModo,
+    onChange: e => setBorrador({ ...borrador, rentModo: e.target.value }),
+    "aria-label": "Unidad",
+    className: "rounded-lg px-2 py-2 text-sm font-bold border outline-none",
+    style: { borderColor: C.border, color: C.ink, backgroundColor: C.paper }
+  }, el("option", { value: "eur" }, "€"), el("option", { value: "pct" }, "%"))), el("p", {
+    className: "text-xs mt-1 font-bold",
+    style: { color: C.muted }
+  }, "Valor actual estimado: " + euros(Math.max(0, (Number(borrador.totalAportado) || 0) + calcularRentabilidad(borrador))) + (Number(borrador.totalAportado) > 0 ? " (" + (calcularRentabilidad(borrador) >= 0 ? "+" : "") + (calcularRentabilidad(borrador) / Number(borrador.totalAportado) * 100).toFixed(1).replace(".", ",") + " %)" : ""))), el("div", null, el("label", {
     className: "block text-xs font-bold mb-1.5",
     style: { color: C.ink }
   }, "Ticker (opcional)"), el("input", {
@@ -3486,21 +3538,25 @@ export function Patrimonio({
   const totalActivos = activos.reduce((s, a) => s + (Number(a.valorActual) || 0), 0);
   const deudasActivas = (deudas || []).filter(d => Number(d.pendiente) > 0);
   const totalDeudas = deudasActivas.reduce((s, d) => s + Number(d.pendiente || 0), 0);
+  const totalPendienteActivos = activos.reduce((s, a) => s + (a.pagada === false ? Number(a.pendientePago) || 0 : 0), 0);
   const totalActivosGeneral = totalCuentas + totalInversiones + totalActivos;
-  const patrimonioNeto = totalActivosGeneral - totalDeudas;
+  const patrimonioNeto = totalActivosGeneral - totalDeudas - totalPendienteActivos;
 
   const abrirNuevoActivo = () => {
     setEditando(null);
-    setBorrador({ tipo: "Vivienda", nombre: "", valorActual: 0, notas: "" });
+    setBorrador({ tipo: "Vivienda", nombre: "", valorActual: 0, pagada: true, pendientePago: 0, notas: "" });
   };
   const abrirEditarActivo = a => {
     setEditando(a.id);
-    setBorrador({ ...a });
+    setBorrador({ ...a, pagada: a.pagada !== false, pendientePago: Number(a.pendientePago) || 0 });
   };
   const guardarActivo = () => {
     if (!borrador || !borrador.nombre.trim()) return;
-    if (editando) onActualizarActivo(editando, borrador);
-    else onAgregarActivo(borrador);
+    const listo = borrador.pagada === false
+      ? { ...borrador, pendientePago: Number(borrador.pendientePago) || 0 }
+      : { ...borrador, pagada: true, pendientePago: 0 };
+    if (editando) onActualizarActivo(editando, listo);
+    else onAgregarActivo(listo);
     setEditando(null);
     setBorrador(null);
   };
@@ -3556,7 +3612,7 @@ export function Patrimonio({
     style: { color: patrimonioNeto >= 0 ? C.ink : C.crit }
   }, euros(patrimonioNeto)), el("div", {
     className: "space-y-2 mt-4"
-  }, filaResumen("Total en cuentas (liquidez)", totalCuentas, C.exc), filaResumen("Total en inversiones", totalInversiones, C.sand), filaResumen("Total en otros activos", totalActivos, C.mej), filaResumen("Total en deudas pendientes", -totalDeudas, C.crit)))));
+  }, filaResumen("Total en cuentas (liquidez)", totalCuentas, C.exc), filaResumen("Total en inversiones", totalInversiones, C.sand), filaResumen("Total en otros activos", totalActivos, C.mej), filaResumen("Total en deudas pendientes", -totalDeudas, C.crit), totalPendienteActivos > 0 ? filaResumen("Pendiente de pago de tus inmuebles", -totalPendienteActivos, C.crit) : null))));
 
   const seccionCuentas = el(Card, {
     className: "p-5"
@@ -3630,7 +3686,7 @@ export function Patrimonio({
   }, "Nombre"), el("input", {
     value: borrador.nombre,
     onChange: e => setBorrador({ ...borrador, nombre: e.target.value }),
-    placeholder: "Ej. Piso habitual, Coche familiar...",
+    placeholder: "Ej. Piso habitual, Garaje...",
     className: "w-full rounded-lg px-3 py-2 text-sm font-bold border outline-none",
     style: { borderColor: C.border, color: C.ink, backgroundColor: C.paper }
   })), el(NumberField, {
@@ -3638,6 +3694,19 @@ export function Patrimonio({
     value: borrador.valorActual,
     onChange: v => setBorrador({ ...borrador, valorActual: v })
   }), el("div", null, el("label", {
+    className: "block text-xs font-bold mb-1.5",
+    style: { color: C.ink }
+  }, "¿Está pagado por completo?"), el("select", {
+    value: borrador.pagada === false ? "no" : "si",
+    onChange: e => setBorrador({ ...borrador, pagada: e.target.value !== "no", pendientePago: e.target.value === "no" ? borrador.pendientePago : 0 }),
+    className: "w-full rounded-lg px-3 py-2 text-sm font-bold border outline-none",
+    style: { borderColor: C.border, color: C.ink, backgroundColor: C.paper }
+  }, el("option", { value: "si" }, "Sí, está pagado"), el("option", { value: "no" }, "No, aún queda por pagar"))), borrador.pagada === false ? el(NumberField, {
+    label: "Cuánto queda por pagar en total",
+    value: borrador.pendientePago,
+    onChange: v => setBorrador({ ...borrador, pendientePago: v }),
+    hint: "Se descuenta de tu patrimonio neto."
+  }) : null, el("div", null, el("label", {
     className: "block text-xs font-bold mb-1.5",
     style: { color: C.ink }
   }, "Notas (opcional)"), el("input", {
@@ -3677,7 +3746,7 @@ export function Patrimonio({
     }, a.nombre || "Sin nombre"), el("div", {
       className: "text-xs",
       style: { color: C.muted }
-    }, a.tipo))), el("div", {
+    }, a.tipo, a.pagada === false && Number(a.pendientePago) > 0 ? ` · Pendiente ${euros(a.pendientePago)} · Neto ${euros((Number(a.valorActual) || 0) - Number(a.pendientePago))}` : ""))), el("div", {
       className: "flex items-center gap-3 shrink-0"
     }, el("div", {
       className: "text-sm font-bold",
@@ -3700,7 +3769,7 @@ export function Patrimonio({
   }, el("div", null, el(Eyebrow, null, "Otros activos"), el("p", {
     className: "text-xs mt-1",
     style: { color: C.muted }
-  }, "Vivienda, vehículo u otros bienes de valor, estimados por ti.")), el("button", {
+  }, "Vivienda, garaje, trastero, local u otros inmuebles, estimados por ti.")), el("button", {
     onClick: abrirNuevoActivo,
     className: "inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold",
     style: { backgroundColor: C.sand, color: C.navy }
