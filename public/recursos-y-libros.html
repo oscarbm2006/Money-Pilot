@@ -18,6 +18,7 @@
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
 <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
 <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+<script>document.documentElement.classList.add("js");</script>
 <style>
   /* ============================================================
      Misma identidad visual que la app principal de MoneyPilot:
@@ -219,6 +220,44 @@
     .featured-content p{ margin:0 auto; }
     .main-nav{ margin-left:0; width:100%; }
   }
+
+  /* ---- Interacciones ---- */
+  html{ scroll-padding-top:150px; }
+  .reading-path{ position:sticky; top:62px; z-index:40; margin:24px auto 22px; padding:10px 8px 6px; border-radius:16px; background:rgba(245,246,250,0.82); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); border:1px solid rgba(49,46,129,0.08); }
+  .path-stop{ text-decoration:none; }
+  .path-stop .dot{ width:30px; height:30px; margin-bottom:6px; transition:transform .3s cubic-bezier(.16,1,.3,1); }
+  .path-stop::before{ top:15px; }
+  .path-stop .label{ transition:color .25s ease; }
+  .path-stop:hover .dot{ transform:scale(1.1); }
+  .path-stop.active .dot{ transform:scale(1.22); }
+  .path-stop.active .label{ color:var(--text-strong); }
+
+  .finder{ max-width:520px; margin:0 auto 26px; }
+  .finder input{ width:100%; font:inherit; font-size:0.95rem; padding:13px 18px; border-radius:9999px; border:1px solid var(--border); background:#fff; color:var(--text-strong); box-shadow:var(--shadow-soft); transition:border-color .2s ease, box-shadow .2s ease; }
+  .finder input:focus{ outline:none; border-color:#4f46e5; box-shadow:0 0 0 3px rgba(79,70,229,0.15); }
+  .empty-msg{ display:none; text-align:center; color:var(--muted); margin:0 0 40px; }
+  .empty-msg.show{ display:block; }
+  .is-hidden{ display:none !important; }
+
+  section.block[style]{ position:relative; overflow:hidden; }
+  section.block[style]::before{ content:""; position:absolute; width:360px; height:360px; top:-130px; right:-90px; border-radius:50%; background:radial-gradient(circle, var(--accent-line), transparent 70%); animation:drift 16s ease-in-out infinite alternate; pointer-events:none; }
+  section.block[style] > *{ position:relative; z-index:1; }
+  @keyframes drift{ from{ transform:translate(0,0) scale(1); } to{ transform:translate(-70px,50px) scale(1.25); } }
+
+  .card::before{ content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none; opacity:0; transition:opacity .25s ease; background:radial-gradient(240px circle at var(--mx,50%) var(--my,50%), var(--accent-soft), transparent 70%); }
+  .card:hover::before{ opacity:1; }
+  .card > *{ position:relative; z-index:1; }
+  .js .card{ opacity:0; }
+  .js .card.in{ opacity:1; animation:revealUp .6s cubic-bezier(.16,1,.3,1) var(--d,0ms) backwards; }
+  @keyframes revealUp{ from{ opacity:0; transform:translateY(18px); } to{ opacity:1; transform:none; } }
+
+  .why-toggle{ align-self:flex-start; display:inline-flex; align-items:center; gap:5px; margin:-8px 0 14px; padding:2px 0; background:none; border:0; cursor:pointer; font:inherit; font-size:0.82rem; font-weight:700; color:var(--accent-dark); }
+  .why-toggle svg{ transition:transform .3s ease; }
+  .why-toggle[aria-expanded="true"] svg{ transform:rotate(180deg); }
+  .why{ display:grid; grid-template-rows:0fr; transition:grid-template-rows .35s ease; }
+  .why.open{ grid-template-rows:1fr; }
+  .why > div{ overflow:hidden; min-height:0; }
+  .why p{ margin:0 0 16px; padding:10px 12px; border-radius:10px; background:var(--accent-soft); color:#374151; font-size:0.86rem; }
 </style>
 </head>
 <body>
@@ -265,14 +304,16 @@
   </div>
 
   <div class="reading-path">
-    <div class="path-stop" style="--stop-color:#4f46e5"><div class="dot">1</div><div class="label">Mentalidad</div></div>
-    <div class="path-stop" style="--stop-color:#b45309"><div class="dot">2</div><div class="label">Control y deudas</div></div>
-    <div class="path-stop" style="--stop-color:#0d9268"><div class="dot">3</div><div class="label">Inversión</div></div>
-    <div class="path-stop" style="--stop-color:#9333ea"><div class="dot">4</div><div class="label">Libertad y legado</div></div>
+    <a class="path-stop" href="#bloque-1" style="--stop-color:#4f46e5"><div class="dot">1</div><div class="label">Mentalidad</div></a>
+    <a class="path-stop" href="#bloque-2" style="--stop-color:#b45309"><div class="dot">2</div><div class="label">Control y deudas</div></a>
+    <a class="path-stop" href="#bloque-3" style="--stop-color:#0d9268"><div class="dot">3</div><div class="label">Inversión</div></a>
+    <a class="path-stop" href="#bloque-4" style="--stop-color:#9333ea"><div class="dot">4</div><div class="label">Libertad y legado</div></a>
   </div>
 
+  <div class="finder"><input type="search" id="q" placeholder="Buscar por título, autor o tema…" aria-label="Buscar libros" autocomplete="off"></div>
+
   <!-- BLOQUE 01: MENTALIDAD Y HÁBITOS FINANCIEROS -->
-  <section class="block" style="--accent:#4f46e5; --accent-soft:#eef0ff; --accent-dark:#3730a3; --accent-line:rgba(79,70,229,0.25); --tint-a:#f1f2ff; --tint-b:#e2e5fd;">
+  <section class="block" id="bloque-1" style="--accent:#4f46e5; --accent-soft:#eef0ff; --accent-dark:#3730a3; --accent-line:rgba(79,70,229,0.25); --tint-a:#f1f2ff; --tint-b:#e2e5fd;">
     <div class="block-intro">
       <div class="block-kicker"><span class="block-number">01</span><h2 class="block-title">Mentalidad y hábitos financieros</h2></div>
       <p class="block-subtitle">Antes de hablar de números conviene entender cómo pensamos y actuamos con el dinero. Estas lecturas trabajan la mentalidad y los hábitos que sostienen cualquier plan a largo plazo.</p>
@@ -280,35 +321,43 @@
     </div>
     <div class="grid cols-2">
 
-      <div class="card stagger-item">
+      <div class="card" style="--d:0ms">
         <span class="tag">Ahorro</span>
         <h3>El hombre más rico de Babilonia</h3>
         <div class="author">George S. Clason</div>
         <p class="summary">Parábolas ambientadas en la antigua Babilonia que enseñan principios básicos de riqueza, ahorro e inversión. Perfecto si empiezas desde cero.</p>
+        <button type="button" class="why-toggle" aria-expanded="false">Por qué encaja <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
+        <div class="why"><div><p>Es el origen de la idea «págate a ti mismo primero»: la base de cualquier hábito de ahorro.</p></div></div>
         <a href="https://amzn.to/4AutCuP" class="btn-amazon" target="_blank" rel="noopener sponsored">Ver en Amazon <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
       </div>
 
-      <div class="card stagger-item" style="animation-delay:60ms">
+      <div class="card" style="--d:70ms">
         <span class="tag">Comportamiento</span>
         <h3>La psicología del dinero</h3>
         <div class="author">Morgan Housel</div>
         <p class="summary">Explora cómo la psicología pesa más que la inteligencia matemática en el éxito financiero. Ayuda a entender por qué tomamos las decisiones que tomamos.</p>
+        <button type="button" class="why-toggle" aria-expanded="false">Por qué encaja <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
+        <div class="why"><div><p>Muestra por qué el comportamiento pesa más que los ingresos y cómo evitar que tu estilo de vida se coma tu progreso.</p></div></div>
         <a href="https://amzn.to/4h9QFDH" class="btn-amazon" target="_blank" rel="noopener sponsored">Ver en Amazon <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
       </div>
 
-      <div class="card stagger-item" style="animation-delay:120ms">
+      <div class="card" style="--d:140ms">
         <span class="tag">Mentalidad</span>
         <h3>El código del dinero</h3>
         <div class="author">Raimon Samsó</div>
         <p class="summary">Desafía las creencias tradicionales sobre el dinero y propone un cambio de mentalidad para la era actual.</p>
+        <button type="button" class="why-toggle" aria-expanded="false">Por qué encaja <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
+        <div class="why"><div><p>Explica por qué el dinero parado pierde valor y cambia la mentalidad con la que decides qué hacer con él.</p></div></div>
         <a href="https://amzn.to/4ykH0jW" class="btn-amazon" target="_blank" rel="noopener sponsored">Ver en Amazon <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
       </div>
 
-      <div class="card stagger-item">
+      <div class="card" style="--d:0ms">
         <span class="tag">Hábitos</span>
         <h3>El efecto compuesto</h3>
         <div class="author">Darren Hardy</div>
         <p class="summary">Cómo los hábitos diarios, pequeños y constantes, se acumulan con el tiempo hasta producir resultados extraordinarios.</p>
+        <button type="button" class="why-toggle" aria-expanded="false">Por qué encaja <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
+        <div class="why"><div><p>Aunque no es puramente financiero, enseña cómo las acciones pequeñas y constantes producen grandes resultados con el tiempo.</p></div></div>
         <a href="https://amzn.to/4yZh0ug" class="btn-amazon" target="_blank" rel="noopener sponsored">Ver en Amazon <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
       </div>
 
@@ -316,7 +365,7 @@
   </section>
 
   <!-- BLOQUE 02: CONTROL DEL DINERO Y GESTIÓN DE DEUDAS -->
-  <section class="block" style="--accent:#b45309; --accent-soft:#fdf1e0; --accent-dark:#92400e; --accent-line:rgba(180,83,9,0.28); --tint-a:#fef6ea; --tint-b:#fbe8c8;">
+  <section class="block" id="bloque-2" style="--accent:#b45309; --accent-soft:#fdf1e0; --accent-dark:#92400e; --accent-line:rgba(180,83,9,0.28); --tint-a:#fef6ea; --tint-b:#fbe8c8;">
     <div class="block-intro">
       <div class="block-kicker"><span class="block-number">02</span><h2 class="block-title">Control del dinero y gestión de deudas</h2></div>
       <p class="block-subtitle">Ordenar lo que ganas y lo que gastas, y salir de las deudas con un plan. Métodos prácticos que encajan con las herramientas de Bola de nieve y Avalancha del simulador.</p>
@@ -324,43 +373,53 @@
     </div>
     <div class="grid">
 
-      <div class="card stagger-item">
+      <div class="card" style="--d:0ms">
         <span class="tag">Automatización</span>
         <h3>Te enseñaré a ser rico</h3>
         <div class="author">Ramit Sethi</div>
         <p class="summary">Guía práctica de seis semanas para tomar el control de tus finanzas, automatizar el ahorro y disfrutar de tu dinero sin culpa.</p>
+        <button type="button" class="why-toggle" aria-expanded="false">Por qué encaja <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
+        <div class="why"><div><p>Defiende automatizar el ahorro y centrarse en las grandes victorias, como negociar el sueldo, en vez de recortar cafés.</p></div></div>
         <a href="https://amzn.to/4xI6vu2" class="btn-amazon" target="_blank" rel="noopener sponsored">Ver en Amazon <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
       </div>
 
-      <div class="card stagger-item" style="animation-delay:60ms">
+      <div class="card" style="--d:70ms">
         <span class="tag">Presupuesto</span>
         <h3>Kakebo: el arte japonés de ahorrar dinero</h3>
         <div class="author">Fumiko Chiba</div>
         <p class="summary">Método tradicional japonés que usa un diario de cuentas para registrar gastos y fomentar el ahorro consciente.</p>
+        <button type="button" class="why-toggle" aria-expanded="false">Por qué encaja <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
+        <div class="why"><div><p>Sirve para saber en qué gastas de verdad y categorizarlo antes de repartir tu presupuesto.</p></div></div>
         <a href="https://amzn.to/4yhyke2" class="btn-amazon" target="_blank" rel="noopener sponsored">Ver en Amazon <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
       </div>
 
-      <div class="card stagger-item" style="animation-delay:120ms">
+      <div class="card" style="--d:140ms">
         <span class="tag">Salir de deudas</span>
         <h3>La transformación total de su dinero</h3>
         <div class="author">Dave Ramsey</div>
         <p class="summary">Un plan de acción para salir de las deudas, construir seguridad y alcanzar la libertad financiera.</p>
+        <button type="button" class="why-toggle" aria-expanded="false">Por qué encaja <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
+        <div class="why"><div><p>Su primer paso es un fondo de emergencia y popularizó el método de la bola de nieve para pagar deudas.</p></div></div>
         <a href="https://amzn.to/4jjOSNF" class="btn-amazon" target="_blank" rel="noopener sponsored">Ver en Amazon <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
       </div>
 
-      <div class="card stagger-item">
+      <div class="card" style="--d:0ms">
         <span class="tag">Activos y pasivos</span>
         <h3>Padre Rico, Padre Pobre</h3>
         <div class="author">Robert T. Kiyosaki</div>
         <p class="summary">Contrasta la mentalidad financiera de un padre empleado y la de un padre inversor y empresario. Aclara la diferencia entre activos y pasivos.</p>
+        <button type="button" class="why-toggle" aria-expanded="false">Por qué encaja <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
+        <div class="why"><div><p>Su distinción entre activos y pasivos es la base para entender qué deuda ayuda y cuál te hunde.</p></div></div>
         <a href="https://amzn.to/4AOv2AL" class="btn-amazon" target="_blank" rel="noopener sponsored">Ver en Amazon <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
       </div>
 
-      <div class="card stagger-item" style="animation-delay:60ms">
+      <div class="card" style="--d:70ms">
         <span class="tag">Valor del tiempo</span>
         <h3>La bolsa o la vida</h3>
         <div class="author">Vicki Robin</div>
         <p class="summary">Programa de nueve pasos para transformar tu relación con el dinero y alinear tus gastos con lo que realmente valoras.</p>
+        <button type="button" class="why-toggle" aria-expanded="false">Por qué encaja <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
+        <div class="why"><div><p>Te hace medir las compras en horas de vida y es la referencia fundacional del movimiento FIRE.</p></div></div>
         <a href="https://amzn.to/4d1QQyv" class="btn-amazon" target="_blank" rel="noopener sponsored">Ver en Amazon <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
       </div>
 
@@ -368,7 +427,7 @@
   </section>
 
   <!-- BLOQUE 03: ESTRATEGIAS DE INVERSIÓN (DE 0 A AVANZADO) -->
-  <section class="block" style="--accent:#0d9268; --accent-soft:#e6f7f1; --accent-dark:#065f46; --accent-line:rgba(13,146,104,0.28); --tint-a:#eaf8f2; --tint-b:#d3eee1;">
+  <section class="block" id="bloque-3" style="--accent:#0d9268; --accent-soft:#e6f7f1; --accent-dark:#065f46; --accent-line:rgba(13,146,104,0.28); --tint-a:#eaf8f2; --tint-b:#d3eee1;">
     <div class="block-intro">
       <div class="block-kicker"><span class="block-number">03</span><h2 class="block-title">Estrategias de inversión (de 0 a avanzado)</h2></div>
       <p class="block-subtitle">Desde la inversión indexada y a largo plazo hasta el análisis de empresas. Un recorrido por las grandes escuelas de inversión, ordenado de lo más sencillo a lo más avanzado.</p>
@@ -376,59 +435,73 @@
     </div>
     <div class="grid">
 
-      <div class="card stagger-item">
+      <div class="card" style="--d:0ms">
         <span class="tag">Gestión pasiva</span>
         <h3>El pequeño libro de la inversión con sentido común</h3>
         <div class="author">John C. Bogle</div>
         <p class="summary">Defensa de la inversión indexada: costes bajos y largo plazo como estrategia ganadora, por el creador de los fondos indexados.</p>
+        <button type="button" class="why-toggle" aria-expanded="false">Por qué encaja <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
+        <div class="why"><div><p>Bogle creó los fondos indexados: explica por qué la gestión pasiva y los costes bajos ganan a largo plazo.</p></div></div>
         <a href="https://amzn.to/4jlTVNE" class="btn-amazon" target="_blank" rel="noopener sponsored">Ver en Amazon <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
       </div>
 
-      <div class="card stagger-item" style="animation-delay:60ms">
+      <div class="card" style="--d:70ms">
         <span class="tag">Inversión en español</span>
         <h3>Independízate de Papá Estado</h3>
         <div class="author">Carlos Galán</div>
         <p class="summary">Pensado para el ahorrador español: explica el sistema de pensiones y por qué conviene invertir por cuenta propia.</p>
+        <button type="button" class="why-toggle" aria-expanded="false">Por qué encaja <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
+        <div class="why"><div><p>Aterriza la inversión pasiva, los robo-advisors y las pensiones a la realidad y la fiscalidad españolas.</p></div></div>
         <a href="https://amzn.to/4dTrRxu" class="btn-amazon" target="_blank" rel="noopener sponsored">Ver en Amazon <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
       </div>
 
-      <div class="card stagger-item" style="animation-delay:120ms">
+      <div class="card" style="--d:140ms">
         <span class="tag">Análisis fundamental</span>
         <h3>Un paso por delante de Wall Street</h3>
         <div class="author">Peter Lynch</div>
         <p class="summary">Enseña al inversor aficionado a usar su conocimiento cotidiano para encontrar buenas empresas antes que los profesionales.</p>
+        <button type="button" class="why-toggle" aria-expanded="false">Por qué encaja <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
+        <div class="why"><div><p>Enseña a invertir en lo que ya conoces y es la mejor guía inicial si te planteas comprar acciones sueltas.</p></div></div>
         <a href="https://amzn.to/4xKwJMD" class="btn-amazon" target="_blank" rel="noopener sponsored">Ver en Amazon <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
       </div>
 
-      <div class="card stagger-item">
+      <div class="card" style="--d:0ms">
         <span class="tag">Inversión en valor</span>
         <h3>El inversor inteligente</h3>
         <div class="author">Benjamin Graham</div>
         <p class="summary">El clásico de la inversión en valor: gestión del riesgo y disciplina emocional en los mercados.</p>
+        <button type="button" class="why-toggle" aria-expanded="false">Por qué encaja <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
+        <div class="why"><div><p>Obra maestra del value investing: ayuda a ignorar las fluctuaciones y a fijarte en el valor real.</p></div></div>
         <a href="https://amzn.to/3T7bkz7" class="btn-amazon" target="_blank" rel="noopener sponsored">Ver en Amazon <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
       </div>
 
-      <div class="card stagger-item" style="animation-delay:60ms">
+      <div class="card" style="--d:70ms">
         <span class="tag">Eficiencia de mercado</span>
         <h3>Un paseo aleatorio por Wall Street</h3>
         <div class="author">Burton Malkiel</div>
         <p class="summary">Argumenta a favor de los fondos indexados y critica el análisis técnico desde la eficiencia del mercado.</p>
+        <button type="button" class="why-toggle" aria-expanded="false">Por qué encaja <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
+        <div class="why"><div><p>Pilar de la eficiencia de mercado: respalda el núcleo indexado de la cartera y examina otras estrategias.</p></div></div>
         <a href="https://amzn.to/4hcomEL" class="btn-amazon" target="_blank" rel="noopener sponsored">Ver en Amazon <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
       </div>
 
-      <div class="card stagger-item" style="animation-delay:120ms">
+      <div class="card" style="--d:140ms">
         <span class="tag">Ventaja competitiva</span>
         <h3>El pequeño libro que genera riqueza</h3>
         <div class="author">Pat Dorsey</div>
         <p class="summary">Guía para identificar empresas con ventajas competitivas sostenibles que mantienen su rentabilidad a largo plazo.</p>
+        <button type="button" class="why-toggle" aria-expanded="false">Por qué encaja <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
+        <div class="why"><div><p>Ayuda a entender qué hace fuerte a una empresa, útil si quieres añadir inversiones temáticas.</p></div></div>
         <a href="https://amzn.to/4ADdLKH" class="btn-amazon" target="_blank" rel="noopener sponsored">Ver en Amazon <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
       </div>
 
-      <div class="card stagger-item">
+      <div class="card" style="--d:0ms">
         <span class="tag">Visión global</span>
         <h3>Dinero: domina el juego</h3>
         <div class="author">Tony Robbins</div>
         <p class="summary">Basado en entrevistas con algunos de los mejores inversores del mundo, resumido en un plan de siete pasos.</p>
+        <button type="button" class="why-toggle" aria-expanded="false">Por qué encaja <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
+        <div class="why"><div><p>Reúne lo aprendido de grandes inversores buscando el equilibrio entre los números y la tranquilidad.</p></div></div>
         <a href="https://amzn.to/3T7bHtv" class="btn-amazon" target="_blank" rel="noopener sponsored">Ver en Amazon <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
       </div>
 
@@ -436,7 +509,7 @@
   </section>
 
   <!-- BLOQUE 04: LIBERTAD FINANCIERA, FAMILIA Y LEGADO -->
-  <section class="block" style="--accent:#9333ea; --accent-soft:#f3e8fd; --accent-dark:#6b21a8; --accent-line:rgba(147,51,234,0.25); --tint-a:#f6edfe; --tint-b:#e9d8fa;">
+  <section class="block" id="bloque-4" style="--accent:#9333ea; --accent-soft:#f3e8fd; --accent-dark:#6b21a8; --accent-line:rgba(147,51,234,0.25); --tint-a:#f6edfe; --tint-b:#e9d8fa;">
     <div class="block-intro">
       <div class="block-kicker"><span class="block-number">04</span><h2 class="block-title">Libertad financiera, familia y legado</h2></div>
       <p class="block-subtitle">Cuando lo básico está en marcha, llegan las preguntas grandes: qué significa ser libre económicamente, cómo educar a tus hijos en el dinero y qué dejar a la familia.</p>
@@ -444,32 +517,40 @@
     </div>
     <div class="grid">
 
-      <div class="card stagger-item">
+      <div class="card" style="--d:0ms">
         <span class="tag">Patrimonio</span>
         <h3>El millonario de la puerta de al lado</h3>
         <div class="author">Thomas J. Stanley</div>
         <p class="summary">Estudio sobre los millonarios reales, que suelen ser frugales, y sobre cómo mantener hábitos productivos en las siguientes generaciones.</p>
+        <button type="button" class="why-toggle" aria-expanded="false">Por qué encaja <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
+        <div class="why"><div><p>Demuestra que la riqueza real no viene de aparentar y analiza cómo transmitir patrimonio a los hijos.</p></div></div>
         <a href="https://amzn.to/4yWV177" class="btn-amazon" target="_blank" rel="noopener sponsored">Ver en Amazon <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
       </div>
 
-      <div class="card stagger-item" style="animation-delay:60ms">
+      <div class="card" style="--d:70ms">
         <span class="tag">Educación financiera</span>
         <h3>Niño rico, niño listo</h3>
         <div class="author">Robert T. Kiyosaki</div>
         <p class="summary">Guía para que padres y madres complementen la escuela con conocimientos prácticos sobre el dinero desde pequeños.</p>
+        <button type="button" class="why-toggle" aria-expanded="false">Por qué encaja <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
+        <div class="why"><div><p>Pensado para madres y padres que quieren completar la escuela con educación financiera práctica.</p></div></div>
         <a href="https://amzn.to/46JIOXl" class="btn-amazon" target="_blank" rel="noopener sponsored">Ver en Amazon <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
       </div>
 
-      <div class="card stagger-item" style="animation-delay:120ms">
+      <div class="card" style="--d:140ms">
         <span class="tag">Independencia</span>
         <h3>Libertad financiera</h3>
         <div class="author">Sergio Fernández</div>
         <p class="summary">Herramientas y cambios de mentalidad para generar ingresos pasivos y alcanzar la libertad en el contexto hispanohablante.</p>
+        <button type="button" class="why-toggle" aria-expanded="false">Por qué encaja <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
+        <div class="why"><div><p>Adapta la independencia financiera y la regla del 4 % al contexto y la fiscalidad españoles.</p></div></div>
         <a href="https://amzn.to/47lItu4" class="btn-amazon" target="_blank" rel="noopener sponsored">Ver en Amazon <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
       </div>
 
     </div>
   </section>
+
+  <p class="empty-msg" id="empty">No hay libros que coincidan con tu búsqueda.</p>
 
   <!-- BLOQUE 6: TRADE REPUBLIC -->
   <section class="block">
@@ -501,12 +582,44 @@
 </section>
 
 <script>
-  // Al volver a la app desde este menú, abre directamente el apartado elegido.
-  document.addEventListener('click', function (e) {
-    var a = e.target.closest ? e.target.closest('a[data-vista]') : null;
-    if (!a) return;
-    try { window.localStorage.setItem('salud-financiera:ultima-vista', a.getAttribute('data-vista')); } catch (err) {}
-  });
+  (function () {
+    var d = document;
+    // 1) Menú: al volver a la app abre directamente el apartado elegido
+    d.addEventListener('click', function (e) {
+      var a = e.target.closest ? e.target.closest('a[data-vista]') : null;
+      if (a) { try { localStorage.setItem('salud-financiera:ultima-vista', a.getAttribute('data-vista')); } catch (err) {} }
+      var b = e.target.closest ? e.target.closest('.why-toggle') : null;
+      if (b) { var open = b.getAttribute('aria-expanded') !== 'true'; b.setAttribute('aria-expanded', open); b.nextElementSibling.classList.toggle('open', open); }
+    });
+    var cards = [].slice.call(d.querySelectorAll('.card'));
+    // 2) Aparición al hacer scroll
+    if ('IntersectionObserver' in window) {
+      var ro = new IntersectionObserver(function (es) { es.forEach(function (x) { if (x.isIntersecting) { x.target.classList.add('in'); ro.unobserve(x.target); } }); }, { threshold: 0.12 });
+      cards.forEach(function (c) { ro.observe(c); });
+    } else { cards.forEach(function (c) { c.classList.add('in'); }); }
+    // 3) Brillo que sigue al cursor
+    cards.forEach(function (c) {
+      c.addEventListener('pointermove', function (e) { var r = c.getBoundingClientRect(); c.style.setProperty('--mx', (e.clientX - r.left) + 'px'); c.style.setProperty('--my', (e.clientY - r.top) + 'px'); });
+    });
+    // 4) Ruta de lectura: resalta el bloque que estás viendo
+    var stops = [].slice.call(d.querySelectorAll('.path-stop')), blocks = [].slice.call(d.querySelectorAll('section.block[id^="bloque-"]'));
+    if ('IntersectionObserver' in window) {
+      var so = new IntersectionObserver(function (es) { es.forEach(function (x) { if (x.isIntersecting) { stops.forEach(function (s) { s.classList.toggle('active', s.getAttribute('href') === '#' + x.target.id); }); } }); }, { rootMargin: '-30% 0px -60% 0px' });
+      blocks.forEach(function (b) { so.observe(b); });
+    }
+    // 5) Buscador en vivo
+    var q = d.getElementById('q'), empty = d.getElementById('empty');
+    function norm(s) { return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); }
+    q.addEventListener('input', function () {
+      var t = norm(q.value.trim()), total = 0;
+      blocks.forEach(function (b) {
+        var n = 0;
+        [].forEach.call(b.querySelectorAll('.card'), function (c) { var ok = !t || norm(c.textContent).indexOf(t) !== -1; c.classList.toggle('is-hidden', !ok); if (ok) { n++; c.classList.add('in'); } });
+        b.classList.toggle('is-hidden', n === 0); total += n;
+      });
+      empty.classList.toggle('show', total === 0);
+    });
+  })();
 </script>
 
 </body>
