@@ -416,25 +416,20 @@ export function App() {
     className: "flex items-center justify-center",
     style: {
       backgroundColor: "#FFFFFF",
-      borderRadius: "8px",
-      padding: "3px 6px"
+      borderRadius: "10px",
+      padding: "5px 12px"
     }
   }, /*#__PURE__*/React.createElement("img", {
-    src: "/logo-mark.png",
-    alt: "",
-    width: 36,
-    height: 21,
+    src: "/logo-moneypilot.png",
+    alt: "MoneyPilot",
+    width: 158,
+    height: 28,
     style: {
       display: "block",
-      height: "21px",
+      height: "28px",
       width: "auto"
     }
-  })), /*#__PURE__*/React.createElement("span", {
-    className: "font-serif font-bold text-sm",
-    style: {
-      color: C.white
-    }
-  }, "MoneyPilot")), /*#__PURE__*/React.createElement(NavDesktop, {
+  }))), /*#__PURE__*/React.createElement(NavDesktop, {
     vistaActual: vistaActual,
     setVistaActual: setVistaActual
   }), /*#__PURE__*/React.createElement("div", {
