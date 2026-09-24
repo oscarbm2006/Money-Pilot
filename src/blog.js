@@ -4,6 +4,7 @@ import { BLOG_ADMIN_EMAIL, C, NOMBRES_FASE_BLOG, SECCIONES_BLOG, supa } from './
 import { fmtFecha, mdToHtml, slugify } from './calculos.js';
 import { Eyebrow } from './ui-basicos.js';
 import { AcordeonFase } from './secciones.js';
+import { libroParaPost } from './libros-guia.js';
 
 export function Blog({ user }) {
   const [posts, setPosts] = useState([]);
@@ -141,6 +142,39 @@ async function borrar(id) {
   const idxGuia = post && post.categoria_seccion === 'guia' ? guiaSecuencia.findIndex(p => p.id === post.id) : -1;
   const postAnterior = idxGuia > 0 ? guiaSecuencia[idxGuia - 1] : null;
   const postSiguiente = idxGuia >= 0 && idxGuia < guiaSecuencia.length - 1 ? guiaSecuencia[idxGuia + 1] : null;
+  const libroRec = post && post.categoria_seccion === 'guia' ? libroParaPost(post) : null;
+  function libroCard(l) {
+    return /*#__PURE__*/React.createElement("aside", {
+      "aria-label": "Libro recomendado",
+      className: "mt-10 p-5 rounded-2xl border",
+      style: { borderColor: C.border, backgroundColor: C.sandLight }
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "text-xs font-bold mb-2",
+      style: { color: C.sand }
+    }, "📖 Libro recomendado para este artículo"), /*#__PURE__*/React.createElement("div", {
+      className: "font-serif font-bold text-lg",
+      style: { color: C.ink }
+    }, l.titulo), /*#__PURE__*/React.createElement("div", {
+      className: "text-xs mb-2",
+      style: { color: C.muted }
+    }, l.autor), /*#__PURE__*/React.createElement("p", {
+      className: "text-sm mb-4",
+      style: { color: C.ink }
+    }, l.motivo), /*#__PURE__*/React.createElement("div", {
+      className: "flex flex-wrap items-center gap-x-4 gap-y-2"
+    }, /*#__PURE__*/React.createElement("a", {
+      href: l.url, target: "_blank", rel: "noopener sponsored",
+      className: "inline-block text-xs font-bold px-4 py-2 rounded-lg",
+      style: { backgroundColor: C.sand, color: C.white }
+    }, "Ver en Amazon ↗"), /*#__PURE__*/React.createElement("a", {
+      href: "/recursos-y-libros.html",
+      className: "text-xs font-bold underline",
+      style: { color: C.navy }
+    }, "Ver todos los libros")), /*#__PURE__*/React.createElement("p", {
+      className: "text-[11px] mt-3",
+      style: { color: C.muted }
+    }, "Como afiliado de Amazon, obtengo ingresos por las compras adecuadas."));
+  }
   function irAPostGuia(p) {
     setSlugAbierto(p.slug);
     setFaseAbierta(Number(p.fase));
@@ -188,7 +222,7 @@ async function borrar(id) {
       className: "prose-blog",
       style: { color: C.ink, lineHeight: 1.75 },
       dangerouslySetInnerHTML: { __html: mdToHtml(post.content) }
-    }), idxGuia >= 0 && /*#__PURE__*/React.createElement("nav", {
+    }), libroRec && libroCard(libroRec), idxGuia >= 0 && /*#__PURE__*/React.createElement("nav", {
       "aria-label": "Navegación de la guía",
       className: "mt-10"
     }, /*#__PURE__*/React.createElement("div", {
