@@ -9,12 +9,13 @@
   :root{--navy:#312E81;--primary:#4F46E5;--paper:#FAFAFA;--ink:#1E1E2E;--muted:#6B7280;--border:#E5E7EB;}
   *{box-sizing:border-box;}
   body{margin:0;font-family:ui-sans-serif,system-ui,sans-serif;background:var(--paper);color:var(--ink);}
-  main{max-width:520px;margin:0 auto;padding:48px 24px;}
+  main{max-width:640px;margin:0 auto;padding:48px 24px 80px;}
   h1{font-size:1.4rem;margin-bottom:24px;}
+  h2{font-size:1.1rem;margin:40px 0 16px;border-top:1px solid var(--border);padding-top:32px;}
   label{display:block;font-weight:700;font-size:.85rem;margin:18px 0 6px;}
   input[type=text], input[type=password]{width:100%;padding:12px;border:1px solid var(--border);border-radius:10px;font-size:1rem;}
   .tipo-opciones{display:flex;gap:10px;margin-top:6px;flex-wrap:wrap;}
-  .tipo-opciones button{flex:1;min-width:130px;padding:10px;border-radius:10px;border:1px solid var(--border);background:#fff;cursor:pointer;font-weight:600;}
+  .tipo-opciones button{flex:1;min-width:110px;padding:10px;border-radius:10px;border:1px solid var(--border);background:#fff;cursor:pointer;font-weight:600;}
   .tipo-opciones button.activo{background:var(--primary);color:#fff;border-color:var(--primary);}
   #generar{margin-top:28px;width:100%;padding:14px;border:none;border-radius:12px;background:var(--navy);color:#fff;font-weight:800;font-size:1rem;cursor:pointer;}
   #generar:disabled{opacity:.6;cursor:not-allowed;}
@@ -22,6 +23,12 @@
   #estado.ok{display:block;background:#ECFDF5;color:#065F46;}
   #estado.error{display:block;background:#FEF2F2;color:#991B1B;}
   #estado.cargando{display:block;background:#EFF6FF;color:#1E3A8A;}
+  #cargarPosts{width:100%;padding:12px;border:1px solid var(--border);border-radius:10px;background:#fff;font-weight:700;cursor:pointer;}
+  table{width:100%;border-collapse:collapse;margin-top:18px;font-size:.85rem;}
+  th, td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--border);}
+  select{padding:6px 8px;border-radius:8px;border:1px solid var(--border);}
+  .guardar-fila{padding:6px 10px;border:none;border-radius:8px;background:var(--primary);color:#fff;font-weight:700;cursor:pointer;font-size:.8rem;}
+  .fila-estado{font-size:.75rem;color:var(--muted);}
 </style>
 </head>
 <body>
@@ -38,41 +45,50 @@
     <button type="button" id="btnGuia">Guía financiera</button>
   </div>
 
+  <label>CTA final del artículo</label>
+  <div class="tipo-opciones">
+    <button type="button" id="ctaDiagnostico" class="activo">Diagnóstico</button>
+    <button type="button" id="ctaLibro">Libro</button>
+    <button type="button" id="ctaAmbos">Ambos</button>
+  </div>
+
   <label>Ticker o tema</label>
   <input type="text" id="tema" placeholder="Ej: NVDA, sector lujo, qué es el fondo de emergencia..." />
 
   <button id="generar">Generar contenido</button>
 
   <div id="estado"></div>
+
+  <h2>Artículos publicados</h2>
+  <button id="cargarPosts">Cargar artículos</button>
+  <div id="listaEstado" class="fila-estado"></div>
+  <table id="tablaPosts" style="display:none;">
+    <thead>
+      <tr><th>Título</th><th>Sección</th><th>CTA</th><th></th></tr>
+    </thead>
+    <tbody id="tbodyPosts"></tbody>
+  </table>
 </main>
 
 <script>
   let tipo = 'noticia';
-  
+  let ctaTipo = 'diagnostico';
+
   const btnNoticia = document.getElementById('btnNoticia');
   const btnTesis = document.getElementById('btnTesis');
   const btnGuia = document.getElementById('btnGuia');
 
-  btnNoticia.onclick = () => {
-    tipo = 'noticia';
-    btnNoticia.classList.add('activo');
-    btnTesis.classList.remove('activo');
-    btnGuia.classList.remove('activo');
-  };
-  
-  btnTesis.onclick = () => {
-    tipo = 'tesis';
-    btnTesis.classList.add('activo');
-    btnNoticia.classList.remove('activo');
-    btnGuia.classList.remove('activo');
-  };
+  btnNoticia.onclick = () => { tipo = 'noticia'; btnNoticia.classList.add('activo'); btnTesis.classList.remove('activo'); btnGuia.classList.remove('activo'); };
+  btnTesis.onclick = () => { tipo = 'tesis'; btnTesis.classList.add('activo'); btnNoticia.classList.remove('activo'); btnGuia.classList.remove('activo'); };
+  btnGuia.onclick = () => { tipo = 'guia'; btnGuia.classList.add('activo'); btnNoticia.classList.remove('activo'); btnTesis.classList.remove('activo'); };
 
-  btnGuia.onclick = () => {
-    tipo = 'guia';
-    btnGuia.classList.add('activo');
-    btnNoticia.classList.remove('activo');
-    btnTesis.classList.remove('activo');
-  };
+  const ctaDiagnosticoBtn = document.getElementById('ctaDiagnostico');
+  const ctaLibroBtn = document.getElementById('ctaLibro');
+  const ctaAmbosBtn = document.getElementById('ctaAmbos');
+
+  ctaDiagnosticoBtn.onclick = () => { ctaTipo = 'diagnostico'; ctaDiagnosticoBtn.classList.add('activo'); ctaLibroBtn.classList.remove('activo'); ctaAmbosBtn.classList.remove('activo'); };
+  ctaLibroBtn.onclick = () => { ctaTipo = 'libro'; ctaLibroBtn.classList.add('activo'); ctaDiagnosticoBtn.classList.remove('activo'); ctaAmbosBtn.classList.remove('activo'); };
+  ctaAmbosBtn.onclick = () => { ctaTipo = 'ambos'; ctaAmbosBtn.classList.add('activo'); ctaDiagnosticoBtn.classList.remove('activo'); ctaLibroBtn.classList.remove('activo'); };
 
   document.getElementById('generar').onclick = async () => {
     const password = document.getElementById('password').value;
@@ -91,7 +107,7 @@
       const res = await fetch('/api/generar-inversion', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password, tema, tipo }),
+        body: JSON.stringify({ password, tema, tipo, cta_tipo: ctaTipo }),
       });
       const data = await res.json();
 
@@ -108,6 +124,84 @@
       estado.textContent = 'Error de conexión: ' + err.message;
     } finally {
       boton.disabled = false;
+    }
+  };
+
+  const NOMBRES_CTA = { diagnostico: 'Diagnóstico', libro: 'Libro', ambos: 'Ambos' };
+
+  document.getElementById('cargarPosts').onclick = async () => {
+    const password = document.getElementById('password').value;
+    const listaEstado = document.getElementById('listaEstado');
+    const tabla = document.getElementById('tablaPosts');
+    const tbody = document.getElementById('tbodyPosts');
+
+    if (!password) { alert('Escribe la contraseña arriba'); return; }
+
+    listaEstado.textContent = 'Cargando…';
+    try {
+      const res = await fetch('/api/posts-admin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password, action: 'list' }),
+      });
+      const data = await res.json();
+      if (!res.ok) { listaEstado.textContent = 'Error: ' + (data.error || 'algo falló'); return; }
+
+      tbody.innerHTML = '';
+      data.posts.forEach(p => {
+        const tr = document.createElement('tr');
+
+        const tdTitulo = document.createElement('td');
+        tdTitulo.textContent = p.title;
+
+        const tdSeccion = document.createElement('td');
+        tdSeccion.textContent = p.categoria_seccion;
+
+        const tdCta = document.createElement('td');
+        const select = document.createElement('select');
+        ['diagnostico', 'libro', 'ambos'].forEach(v => {
+          const opt = document.createElement('option');
+          opt.value = v; opt.textContent = NOMBRES_CTA[v];
+          if ((p.cta_tipo || 'diagnostico') === v) opt.selected = true;
+          select.appendChild(opt);
+        });
+        tdCta.appendChild(select);
+
+        const tdAccion = document.createElement('td');
+        const btnGuardar = document.createElement('button');
+        btnGuardar.className = 'guardar-fila';
+        btnGuardar.textContent = 'Guardar';
+        btnGuardar.onclick = async () => {
+          btnGuardar.disabled = true;
+          btnGuardar.textContent = '...';
+          try {
+            const r = await fetch('/api/posts-admin', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ password, action: 'update', id: p.id, cta_tipo: select.value }),
+            });
+            const d = await r.json();
+            btnGuardar.textContent = r.ok ? '✅' : 'Error';
+            if (!r.ok) console.error(d);
+          } catch (e) {
+            btnGuardar.textContent = 'Error';
+          } finally {
+            setTimeout(() => { btnGuardar.disabled = false; btnGuardar.textContent = 'Guardar'; }, 1500);
+          }
+        };
+        tdAccion.appendChild(btnGuardar);
+
+        tr.appendChild(tdTitulo);
+        tr.appendChild(tdSeccion);
+        tr.appendChild(tdCta);
+        tr.appendChild(tdAccion);
+        tbody.appendChild(tr);
+      });
+
+      tabla.style.display = data.posts.length ? 'table' : 'none';
+      listaEstado.textContent = data.posts.length ? '' : 'No hay artículos.';
+    } catch (err) {
+      listaEstado.textContent = 'Error de conexión: ' + err.message;
     }
   };
 </script>
