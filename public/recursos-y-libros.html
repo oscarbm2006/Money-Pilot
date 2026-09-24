@@ -134,20 +134,23 @@
   .path-stop .label{ font-size:0.74rem; color:#4b5563; font-weight:600; line-height:1.3; }
   @media (max-width:700px){ .reading-path{ display:none; } }
 
-  .block-intro{
-    display:block; position:relative;
-    padding:1.3rem 1.6rem 1.35rem;
-    border:1px solid var(--border); border-left:5px solid var(--accent);
-    border-radius:0.9rem; background:#fff; box-shadow:var(--shadow-soft);
-    margin-bottom:26px;
-  }
+  .block-intro{ display:block; position:relative; padding:0 0 2px; margin-bottom:24px; }
   .block-kicker{ display:flex; align-items:center; gap:10px; margin-bottom:6px; }
-  .block-number{ font-family:var(--font-serif); font-size:0.82rem; font-weight:700; color:var(--accent); background:var(--accent-soft); border-radius:8px; padding:2px 9px; }
+  .block-number{ font-family:var(--font-serif); font-size:0.82rem; font-weight:700; color:var(--accent-dark); background:#fff; border:1px solid var(--accent-line); border-radius:8px; padding:2px 9px; }
   .block-title{ font-family:var(--font-serif); font-size:1.55rem; font-weight:700; color:var(--text-strong); margin:0; letter-spacing:-0.01em; }
-  .block-subtitle{ color:var(--muted); margin:0 0 12px; font-size:0.95rem; max-width:760px; }
-  .block-profile{ display:inline-flex; align-items:flex-start; gap:8px; background:var(--accent-soft); color:var(--accent); font-size:0.85rem; padding:8px 14px; border-radius:10px; max-width:100%; font-weight:500; }
+  .block-subtitle{ color:#4b5563; margin:0 0 12px; font-size:0.95rem; max-width:760px; }
+  .block-profile{ display:inline-flex; align-items:flex-start; gap:8px; background:rgba(255,255,255,0.78); border:1px solid var(--accent-line); color:var(--accent-dark); font-size:0.85rem; padding:8px 14px; border-radius:10px; max-width:100%; font-weight:500; }
   .block-profile b{ font-weight:700; white-space:nowrap; }
-  section.block{ margin-bottom:52px; }
+  section.block{ margin-bottom:40px; }
+  /* Cada bloque de libros es un panel con su propio fondo suave */
+  section.block[style]{
+    padding:28px;
+    border:1px solid var(--accent-line);
+    border-radius:24px;
+    background:linear-gradient(160deg, var(--tint-a) 0%, var(--tint-b) 100%);
+    box-shadow:0 1px 2px rgba(30,30,46,0.04);
+  }
+  @media (max-width:560px){ section.block[style]{ padding:18px 14px; border-radius:18px; } }
 
   /* ---- Rejilla: las filas incompletas se centran ---- */
   .grid{ display:flex; flex-wrap:wrap; justify-content:center; gap:22px; }
@@ -163,8 +166,7 @@
   /* ---- Tarjetas de libro ---- */
   .card{
     background:var(--surface);
-    border:1px solid var(--border);
-    border-top:6px solid var(--accent);
+    border:1px solid var(--accent-line);
     border-radius:16px;
     padding:26px 24px 24px;
     box-shadow:var(--shadow-soft);
@@ -172,8 +174,8 @@
     transition:transform .25s ease, box-shadow .25s ease, border-color .25s ease;
     position:relative;
   }
-  .card:hover{ transform:translateY(-6px); box-shadow:var(--shadow-soft-hover); }
-  .tag{ display:inline-flex; align-items:center; gap:6px; background:var(--accent-soft); color:var(--accent); font-size:0.72rem; font-weight:700; padding:4px 12px; border-radius:20px; margin-bottom:16px; align-self:flex-start; }
+  .card:hover{ transform:translateY(-6px); box-shadow:var(--shadow-soft-hover); border-color:var(--accent); }
+  .tag{ display:inline-flex; align-items:center; gap:6px; background:var(--accent-soft); color:var(--accent-dark); font-size:0.72rem; font-weight:700; padding:4px 12px; border-radius:20px; margin-bottom:16px; align-self:flex-start; }
   .card h3{ font-family:var(--font-serif); margin:0 0 4px; font-size:1.18rem; font-weight:700; color:var(--text-strong); line-height:1.3; }
   .card .author{ font-size:0.85rem; color:var(--muted); margin-bottom:14px; }
   .card p.summary{ font-size:0.92rem; color:var(--muted); flex-grow:1; margin:0 0 22px; }
@@ -184,8 +186,8 @@
     padding:11px 18px; border-radius:10px;
     transition:transform .2s ease, background .2s ease, box-shadow .2s ease;
   }
-  .btn-amazon{ background:var(--accent); color:#fff; align-self:flex-start; }
-  .btn-amazon:hover{ transform:scale(1.03); filter:brightness(0.92); }
+  .btn-amazon{ background:var(--accent-soft); color:var(--accent-dark); border:1px solid var(--accent-line); align-self:flex-start; }
+  .btn-amazon:hover{ transform:scale(1.03); background:var(--accent); border-color:var(--accent); color:#fff; }
   .btn-amazon svg{ flex-shrink:0; }
 
   /* ---- Tarjeta destacada: Trade Republic ---- */
@@ -270,7 +272,7 @@
   </div>
 
   <!-- BLOQUE 01: MENTALIDAD Y HÁBITOS FINANCIEROS -->
-  <section class="block" style="--accent:#4f46e5; --accent-soft:#eef0ff;">
+  <section class="block" style="--accent:#4f46e5; --accent-soft:#eef0ff; --accent-dark:#3730a3; --accent-line:rgba(79,70,229,0.25); --tint-a:#f1f2ff; --tint-b:#e2e5fd;">
     <div class="block-intro">
       <div class="block-kicker"><span class="block-number">01</span><h2 class="block-title">Mentalidad y hábitos financieros</h2></div>
       <p class="block-subtitle">Antes de hablar de números conviene entender cómo pensamos y actuamos con el dinero. Estas lecturas trabajan la mentalidad y los hábitos que sostienen cualquier plan a largo plazo.</p>
@@ -314,7 +316,7 @@
   </section>
 
   <!-- BLOQUE 02: CONTROL DEL DINERO Y GESTIÓN DE DEUDAS -->
-  <section class="block" style="--accent:#b45309; --accent-soft:#fdf1e0;">
+  <section class="block" style="--accent:#b45309; --accent-soft:#fdf1e0; --accent-dark:#92400e; --accent-line:rgba(180,83,9,0.28); --tint-a:#fef6ea; --tint-b:#fbe8c8;">
     <div class="block-intro">
       <div class="block-kicker"><span class="block-number">02</span><h2 class="block-title">Control del dinero y gestión de deudas</h2></div>
       <p class="block-subtitle">Ordenar lo que ganas y lo que gastas, y salir de las deudas con un plan. Métodos prácticos que encajan con las herramientas de Bola de nieve y Avalancha del simulador.</p>
@@ -366,7 +368,7 @@
   </section>
 
   <!-- BLOQUE 03: ESTRATEGIAS DE INVERSIÓN (DE 0 A AVANZADO) -->
-  <section class="block" style="--accent:#0d9268; --accent-soft:#e6f7f1;">
+  <section class="block" style="--accent:#0d9268; --accent-soft:#e6f7f1; --accent-dark:#065f46; --accent-line:rgba(13,146,104,0.28); --tint-a:#eaf8f2; --tint-b:#d3eee1;">
     <div class="block-intro">
       <div class="block-kicker"><span class="block-number">03</span><h2 class="block-title">Estrategias de inversión (de 0 a avanzado)</h2></div>
       <p class="block-subtitle">Desde la inversión indexada y a largo plazo hasta el análisis de empresas. Un recorrido por las grandes escuelas de inversión, ordenado de lo más sencillo a lo más avanzado.</p>
@@ -434,7 +436,7 @@
   </section>
 
   <!-- BLOQUE 04: LIBERTAD FINANCIERA, FAMILIA Y LEGADO -->
-  <section class="block" style="--accent:#9333ea; --accent-soft:#f3e8fd;">
+  <section class="block" style="--accent:#9333ea; --accent-soft:#f3e8fd; --accent-dark:#6b21a8; --accent-line:rgba(147,51,234,0.25); --tint-a:#f6edfe; --tint-b:#e9d8fa;">
     <div class="block-intro">
       <div class="block-kicker"><span class="block-number">04</span><h2 class="block-title">Libertad financiera, familia y legado</h2></div>
       <p class="block-subtitle">Cuando lo básico está en marcha, llegan las preguntas grandes: qué significa ser libre económicamente, cómo educar a tus hijos en el dinero y qué dejar a la familia.</p>
