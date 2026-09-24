@@ -16,13 +16,15 @@ module.exports = async function handler(req, res) {
     return res.status(405).json({ error: 'Método no permitido' });
   }
 
-  const { password, tema, tipo } = req.body || {};
+  const { password, tema, tipo, cta_tipo } = req.body || {};
   if (!password || password !== process.env.ADMIN_PANEL_PASSWORD) {
     return res.status(401).json({ error: 'Contraseña incorrecta' });
   }
   if (!tema || typeof tema !== 'string') {
     return res.status(400).json({ error: 'Falta el ticker o tema' });
   }
+
+  const ctaTipoFinal = ['diagnostico', 'libro', 'ambos'].includes(cta_tipo) ? cta_tipo : 'diagnostico';
 
   const esTesis = tipo === 'tesis';
   const esGuia = tipo === 'guia';
@@ -140,6 +142,7 @@ Extensión: alrededor de 300 a 400 palabras. Incluye un primer párrafo resumen 
         fase,
         published: true,
         cover_emoji: cover_emoji,
+        cta_tipo: ctaTipoFinal,
       })
       .select()
       .single();
