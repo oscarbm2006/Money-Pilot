@@ -487,7 +487,9 @@ export function mapActivoRemotoALocal(row) {
     nombre: row.nombre || "",
     valorActual: Number(row.valor_actual) || 0,
     notas: row.notas || "",
-    moneda: row.moneda || "EUR"
+    moneda: row.moneda || "EUR",
+    pagada: row.pagada !== false,
+    pendientePago: Number(row.pendiente_pago) || 0
   };
 }
 
@@ -498,7 +500,9 @@ export function mapActivoLocalARemoto(a, userId) {
     nombre: a.nombre || "Sin nombre",
     valor_actual: Number(a.valorActual) || 0,
     notas: a.notas || null,
-    moneda: a.moneda || "EUR"
+    moneda: a.moneda || "EUR",
+    pagada: a.pagada !== false,
+    pendiente_pago: Number(a.pendientePago) || 0
   };
 }
 
@@ -604,6 +608,8 @@ export function useActivosSync({
         if (cambios[k] !== undefined) payload[k] = cambios[k] || null;
       });
       if (cambios.valorActual !== undefined) payload.valor_actual = Number(cambios.valorActual) || 0;
+      if (cambios.pagada !== undefined) payload.pagada = cambios.pagada !== false;
+      if (cambios.pendientePago !== undefined) payload.pendiente_pago = Number(cambios.pendientePago) || 0;
       if (Object.keys(payload).length === 0) return;
       const {
         error
