@@ -135,6 +135,36 @@ async function borrar(id) {
   cargar();
 }
   const post = slugAbierto ? posts.find(p => p.slug === slugAbierto) : null;
+
+  // Guía de educación financiera: recorrido continuo, Fase 1 → Fase 5, en el mismo orden que la lista
+  const guiaSecuencia = [1, 2, 3, 4, 5].flatMap(n => posts.filter(p => p.categoria_seccion === 'guia' && Number(p.fase) === n));
+  const idxGuia = post && post.categoria_seccion === 'guia' ? guiaSecuencia.findIndex(p => p.id === post.id) : -1;
+  const postAnterior = idxGuia > 0 ? guiaSecuencia[idxGuia - 1] : null;
+  const postSiguiente = idxGuia >= 0 && idxGuia < guiaSecuencia.length - 1 ? guiaSecuencia[idxGuia + 1] : null;
+  function irAPostGuia(p) {
+    setSlugAbierto(p.slug);
+    setFaseAbierta(Number(p.fase));
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  }
+  function botonGuia(p, esSiguiente) {
+    if (!p) return /*#__PURE__*/React.createElement("div", null);
+    const cambiaFase = Number(p.fase) !== Number(post.fase);
+    return /*#__PURE__*/React.createElement("button", {
+      type: "button",
+      onClick: () => irAPostGuia(p),
+      className: "border rounded-2xl p-4 " + (esSiguiente ? "text-right" : "text-left"),
+      style: { borderColor: C.border, backgroundColor: C.surface }
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "text-xs font-bold mb-1",
+      style: { color: C.sand }
+    }, esSiguiente ? "Siguiente →" : "← Anterior"), /*#__PURE__*/React.createElement("div", {
+      className: "font-serif font-bold text-sm",
+      style: { color: C.ink }
+    }, p.title), cambiaFase && /*#__PURE__*/React.createElement("div", {
+      className: "text-[11px] mt-1",
+      style: { color: C.muted }
+    }, NOMBRES_FASE_BLOG[Number(p.fase)]));
+  }
   if (post) {
     return /*#__PURE__*/React.createElement("div", {
       className: "max-w-3xl mx-auto px-4 sm:px-6 py-12"
@@ -158,7 +188,15 @@ async function borrar(id) {
       className: "prose-blog",
       style: { color: C.ink, lineHeight: 1.75 },
       dangerouslySetInnerHTML: { __html: mdToHtml(post.content) }
-    }), /*#__PURE__*/React.createElement("div", {
+    }), idxGuia >= 0 && /*#__PURE__*/React.createElement("nav", {
+      "aria-label": "Navegación de la guía",
+      className: "mt-10"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "text-xs text-center mb-3",
+      style: { color: C.muted }
+    }, NOMBRES_FASE_BLOG[Number(post.fase)], " · Artículo ", idxGuia + 1, " de ", guiaSecuencia.length), /*#__PURE__*/React.createElement("div", {
+      className: "grid grid-cols-1 sm:grid-cols-2 gap-3"
+    }, botonGuia(postAnterior, false), botonGuia(postSiguiente, true))), /*#__PURE__*/React.createElement("div", {
       className: "mt-10 p-5 rounded-2xl text-sm",
       style: { backgroundColor: C.sandLight, color: C.navy }
     }, "¿Quieres aplicar esto a tu propio caso? Usa el ", /*#__PURE__*/React.createElement("button", {
