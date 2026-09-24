@@ -416,17 +416,17 @@ export function App() {
     className: "flex items-center justify-center",
     style: {
       backgroundColor: "#FFFFFF",
-      borderRadius: "10px",
-      padding: "5px 12px"
+      borderRadius: "8px",
+      padding: "3px 9px"
     }
   }, /*#__PURE__*/React.createElement("img", {
     src: "/logo-moneypilot.png",
     alt: "MoneyPilot",
-    width: 158,
-    height: 28,
+    width: 113,
+    height: 20,
     style: {
       display: "block",
-      height: "28px",
+      height: "20px",
       width: "auto"
     }
   }))), /*#__PURE__*/React.createElement(NavDesktop, {
