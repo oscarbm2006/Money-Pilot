@@ -596,7 +596,7 @@ export const TIPOS_INVERSION_DEF = ["Acciones", "ETF", "Fondo indexado", "Fondo 
 
 export const ACTIVOS_STORAGE_KEY = "salud-financiera:activos-v1";
 
-export const TIPOS_ACTIVO_DEF = ["Vivienda", "Vehículo", "Otro"];
+export const TIPOS_ACTIVO_DEF = ["Vivienda", "Garaje", "Trastero", "Local", "Otro"];
 
 export const STATS_REALES = [{
   valor: "+82,3%",
