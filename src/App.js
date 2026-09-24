@@ -413,13 +413,22 @@ export function App() {
     onClick: () => setVistaActual('inicio'),
     className: "flex items-center gap-2 shrink-0"
   }, /*#__PURE__*/React.createElement("div", {
-    className: "w-7 h-7 rounded-full flex items-center justify-center",
+    className: "flex items-center justify-center",
     style: {
-      backgroundColor: C.sand
+      backgroundColor: "#FFFFFF",
+      borderRadius: "8px",
+      padding: "3px 6px"
     }
-  }, /*#__PURE__*/React.createElement(I.chartLine, {
-    size: 14,
-    color: C.navy
+  }, /*#__PURE__*/React.createElement("img", {
+    src: "/logo-mark.png",
+    alt: "",
+    width: 36,
+    height: 21,
+    style: {
+      display: "block",
+      height: "21px",
+      width: "auto"
+    }
   })), /*#__PURE__*/React.createElement("span", {
     className: "font-serif font-bold text-sm",
     style: {
