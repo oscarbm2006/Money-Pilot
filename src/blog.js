@@ -1,10 +1,16 @@
-const { useState, useEffect } = React;
+const { useState, useEffect, useRef } = React;
 
 import { BLOG_ADMIN_EMAIL, C, NOMBRES_FASE_BLOG, SECCIONES_BLOG, supa } from './constantes.js';
 import { fmtFecha, mdToHtml, slugify } from './calculos.js';
 import { Eyebrow } from './ui-basicos.js';
 import { AcordeonFase } from './secciones.js';
 import { libroParaPost } from './libros-guia.js';
+
+// Tiempo estimado de lectura (≈200 palabras por minuto), mínimo 1 min
+function minutosLectura(texto) {
+  const palabras = String(texto || '').replace(/[#*_`>\[\]()!-]/g, ' ').split(/\s+/).filter(Boolean).length;
+  return Math.max(1, Math.round(palabras / 200));
+}
 
 export function Blog({ user }) {
   const [posts, setPosts] = useState([]);
@@ -13,6 +19,8 @@ export function Blog({ user }) {
   const [faseAbierta, setFaseAbierta] = useState(1);
   const [slugAbierto, setSlugAbierto] = useState(null);
   const [editando, setEditando] = useState(null);
+  const [progreso, setProgreso] = useState(0);
+  const articuloRef = useRef(null);
   const esAdmin = !!(user && user.email && user.email.toLowerCase() === BLOG_ADMIN_EMAIL.toLowerCase());
   window.__abrirPostBlog = setSlugAbierto;
   async function cargar() {
@@ -27,6 +35,28 @@ let query = supa
     setCargando(false);
   }
   useEffect(() => { cargar(); }, [esAdmin]);
+  // Barra de progreso de lectura: cuánto del artículo has recorrido
+  useEffect(() => {
+    if (!slugAbierto) { setProgreso(0); return; }
+    let raf = 0;
+    const calcular = () => {
+      raf = 0;
+      const el = articuloRef.current;
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      const total = r.height - window.innerHeight;
+      setProgreso(total <= 0 ? 1 : Math.min(1, Math.max(0, -r.top / total)));
+    };
+    const alMover = () => { if (!raf) raf = requestAnimationFrame(calcular); };
+    calcular();
+    window.addEventListener('scroll', alMover, { passive: true });
+    window.addEventListener('resize', alMover);
+    return () => {
+      window.removeEventListener('scroll', alMover);
+      window.removeEventListener('resize', alMover);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, [slugAbierto, posts]);
   async function guardar(e) {
     e.preventDefault();
     const f = e.target;
@@ -142,6 +172,7 @@ async function borrar(id) {
   const idxGuia = post && post.categoria_seccion === 'guia' ? guiaSecuencia.findIndex(p => p.id === post.id) : -1;
   const postAnterior = idxGuia > 0 ? guiaSecuencia[idxGuia - 1] : null;
   const postSiguiente = idxGuia >= 0 && idxGuia < guiaSecuencia.length - 1 ? guiaSecuencia[idxGuia + 1] : null;
+  const minLectura = post ? minutosLectura(post.content) : 0;
   const libroRec = post && post.categoria_seccion === 'guia' ? libroParaPost(post) : null;
   function libroCard(l) {
     return /*#__PURE__*/React.createElement("aside", {
@@ -201,8 +232,16 @@ async function borrar(id) {
   }
   if (post) {
     return /*#__PURE__*/React.createElement("div", {
+      ref: articuloRef,
       className: "max-w-3xl mx-auto px-4 sm:px-6 py-12"
-    }, /*#__PURE__*/React.createElement("button", {
+    }, /*#__PURE__*/React.createElement("div", {
+      role: "progressbar",
+      "aria-label": "Progreso de lectura",
+      "aria-valuemin": 0,
+      "aria-valuemax": 100,
+      "aria-valuenow": Math.round(progreso * 100),
+      style: { position: "fixed", top: 0, left: 0, height: "3px", width: (progreso * 100) + "%", backgroundColor: C.sand, zIndex: 60, pointerEvents: "none" }
+    }), /*#__PURE__*/React.createElement("button", {
       onClick: () => setSlugAbierto(null),
       className: "text-sm font-bold mb-6",
       style: { color: C.sand }
@@ -215,10 +254,10 @@ async function borrar(id) {
     }, post.title), (post.categoria_seccion === 'guia' ? /*#__PURE__*/React.createElement("div", {
   className: "text-xs mb-8",
   style: { color: C.muted }
-}, "Por ", post.author || 'Equipo MoneyPilot') : /*#__PURE__*/React.createElement("div", {
+}, "Por ", post.author || 'Equipo MoneyPilot', " · ", minLectura, " min de lectura") : /*#__PURE__*/React.createElement("div", {
   className: "text-xs mb-8",
   style: { color: C.muted }
-}, "Por ", post.author || 'Equipo MoneyPilot', " · ", fmtFecha(post.created_at))), /*#__PURE__*/React.createElement("div", {
+}, "Por ", post.author || 'Equipo MoneyPilot', " · ", fmtFecha(post.created_at), " · ", minLectura, " min de lectura")), /*#__PURE__*/React.createElement("div", {
       className: "prose-blog",
       style: { color: C.ink, lineHeight: 1.75 },
       dangerouslySetInnerHTML: { __html: mdToHtml(post.content) }
