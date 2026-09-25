@@ -669,6 +669,8 @@ export function App() {
     setDatos: setDatos,
     liquidezReal: liquidezReal,
     cuentas: cuentas,
+    perfil: perfil,
+    ratioAhorro: ratioAhorro,
     onIrABlog: () => setVistaActual('blog')
   }), /*#__PURE__*/React.createElement(ContinuarBar, {
     label: "Continuar a Seguimiento",
