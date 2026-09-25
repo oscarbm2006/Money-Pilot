@@ -4,6 +4,7 @@ import { ACTIVOS_DEF, ASIGNACION, BLOG_ADMIN_EMAIL, C, CUENTA_TIPOS_DEF, I, NOMB
 import { aportacionNecesariaParaObjetivo, calcularCapacidadFinanciera, calcularFondoEmergencia, calcularPerfilMultidimensional, calcularPlanObjetivos, calcularSaludFinanciera, crearIdObjetivo, estadoAhorro, euros, fmtFecha, formatMeses, getNextQuestionId, mdToHtml, normalizarObjetivo, normalizarObjetivos, pct, proyeccionInteres, quizNumero, recomendacionObjetivoPorHorizonte, reconstruirEstadoQuiz, rentabilidadNecesariaParaObjetivo, simularAmortizacion, sincronizarObjetivos, slugify, tiempoNecesarioParaObjetivo, totalMensual } from './calculos.js';
 import { AnimatedNumber, Badge, BlogLinkCard, Card, DesgloseBarra, Eyebrow, FadeSwitch, NumberField, ProgressBar, SimpleAreaChart, SimpleDonut, SimpleStackedBarChart, StatCard, Termometro } from './ui-basicos.js';
 import { AcordeonFase, GastosTabs } from './secciones.js';
+import { LIBROS } from './libros-guia.js';
 
 export function PrintSummary({
   datos,
@@ -3938,16 +3939,78 @@ export function PanelPrioridad({
   }, pasos.map((p, i) => filaPaso(p, i))));
 }
 
+// Libro sugerido para la fase en curso, afinado con más señales de la persona:
+// cuántas deudas tiene, su ritmo de ahorro y su perfil de riesgo (ya calculados en la app).
+function libroParaFase(faseId, { numDeudas = 0, ratioAhorro = null, perfil = null } = {}) {
+  if (faseId === "colchon_inicial") {
+    // Con ahorro muy bajo, antes que automatizar conviene trabajar el comportamiento
+    return ratioAhorro != null && ratioAhorro < 0.05 ? LIBROS.housel : LIBROS.babilonia;
+  }
+  if (faseId === "deuda") {
+    // Varias deudas a la vez: método de la bola de nieve. Una sola: distinguir deuda buena de mala
+    return numDeudas >= 2 ? LIBROS.ramsey : LIBROS.padrerico;
+  }
+  if (faseId === "fondo_emergencia") {
+    // Poca capacidad de ahorro: primero poner el gasto bajo control. Si no, automatizar
+    return ratioAhorro != null && ratioAhorro < 0.10 ? LIBROS.kakebo : LIBROS.sethi;
+  }
+  if (faseId === "inversion") {
+    // El perfil de riesgo, calculado en el cuestionario, decide el estilo de inversión
+    if (perfil === "Agresivo") return LIBROS.lynch;
+    if (perfil === "Muy agresivo") return LIBROS.graham;
+    if (perfil === "Moderado") return LIBROS.malkiel;
+    return LIBROS.bogle; // Conservador y Muy conservador
+  }
+  return null;
+}
+
+function TarjetaLibroPlan({ libro }) {
+  const el = React.createElement;
+  return el("div", {
+    className: "rounded-xl p-4 flex items-start gap-3",
+    style: { backgroundColor: C.sandLight, border: "1px solid rgba(79,70,229,.16)" }
+  }, el("div", {
+    className: "w-9 h-9 rounded-xl flex items-center justify-center shrink-0",
+    style: { backgroundColor: C.surface }
+  }, el(I.bookOpen ? I.bookOpen : I.target, { size: 16, color: C.sand })), el("div", {
+    className: "min-w-0"
+  }, el("p", {
+    className: "text-[11px] font-bold uppercase tracking-wide",
+    style: { color: C.sand }
+  }, "Una lectura para esta etapa"), el("p", {
+    className: "text-sm font-bold mt-0.5",
+    style: { color: C.ink }
+  }, libro.titulo, el("span", { className: "font-normal", style: { color: C.muted } }, " · " + libro.autor)), el("p", {
+    className: "text-xs mt-1",
+    style: { color: C.muted }
+  }, libro.motivo), el("div", {
+    className: "flex flex-wrap gap-x-4 gap-y-1 mt-2"
+  }, el("a", {
+    href: libro.url, target: "_blank", rel: "noopener sponsored",
+    className: "text-xs font-bold underline",
+    style: { color: C.navy }
+  }, "Ver en Amazon ↗"), el("a", {
+    href: "/recursos-y-libros.html",
+    className: "text-xs font-bold underline",
+    style: { color: C.navy }
+  }, "Ver todos los libros"))));
+}
+
 export function PlanFinanciero({
   plan,
   datos,
   setDatos,
   liquidezReal,
   cuentas = [],
+  perfil = null,
+  ratioAhorro = null,
   onIrABlog
 }) {
   const el = React.createElement;
   const { fases, resumenSituacion, recomendaciones } = plan;
+  const faseEnCurso = fases.find(f => f.estado === "en_curso");
+  const numDeudas = (datos?.deudas || []).filter(d => Number(d.pendiente) > 0).length;
+  const libroFase = faseEnCurso ? libroParaFase(faseEnCurso.id, { numDeudas, ratioAhorro, perfil }) : null;
 
   const iconoPorFase = id => id === "colchon_inicial" ? I.shieldCheck : id === "deuda" ? I.trash : id === "fondo_emergencia" ? I.piggy : id === "inversion" ? I.chartLine : I.target;
 
@@ -4032,7 +4095,7 @@ export function PlanFinanciero({
     style: { color: C.navy }
   }, (i + 1) + "."), el("span", null, texto))))), el("div", {
     className: "space-y-4"
-  }, fases.map((f, i) => tarjetaFase(f, i))), el("p", {
+  }, fases.map((f, i) => tarjetaFase(f, i))), libroFase && el(TarjetaLibroPlan, { libro: libroFase }), el("p", {
     className: "text-[11px] readable-note"
   }, "El plan se recalcula cada vez que entras, con tus datos actuales. Para ver tu evolución en el tiempo (si avanzas mes a mes) llegará próximamente un apartado de Seguimiento."), onIrABlog && el(BlogLinkCard, {
     texto: "Lee más guías y análisis en nuestro blog",
