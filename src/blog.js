@@ -1,16 +1,9 @@
-const { useState, useEffect, useRef } = React;
+const { useState, useEffect } = React;
 
 import { BLOG_ADMIN_EMAIL, C, NOMBRES_FASE_BLOG, SECCIONES_BLOG, supa } from './constantes.js';
 import { fmtFecha, mdToHtml, slugify } from './calculos.js';
 import { Eyebrow } from './ui-basicos.js';
 import { AcordeonFase } from './secciones.js';
-import { libroParaPost } from './libros-guia.js';
-
-// Tiempo estimado de lectura (≈200 palabras por minuto), mínimo 1 min
-function minutosLectura(texto) {
-  const palabras = String(texto || '').replace(/[#*_`>\[\]()!-]/g, ' ').split(/\s+/).filter(Boolean).length;
-  return Math.max(1, Math.round(palabras / 200));
-}
 
 export function Blog({ user }) {
   const [posts, setPosts] = useState([]);
@@ -19,8 +12,6 @@ export function Blog({ user }) {
   const [faseAbierta, setFaseAbierta] = useState(1);
   const [slugAbierto, setSlugAbierto] = useState(null);
   const [editando, setEditando] = useState(null);
-  const [progreso, setProgreso] = useState(0);
-  const articuloRef = useRef(null);
   const esAdmin = !!(user && user.email && user.email.toLowerCase() === BLOG_ADMIN_EMAIL.toLowerCase());
   window.__abrirPostBlog = setSlugAbierto;
   async function cargar() {
@@ -35,28 +26,6 @@ let query = supa
     setCargando(false);
   }
   useEffect(() => { cargar(); }, [esAdmin]);
-  // Barra de progreso de lectura: cuánto del artículo has recorrido
-  useEffect(() => {
-    if (!slugAbierto) { setProgreso(0); return; }
-    let raf = 0;
-    const calcular = () => {
-      raf = 0;
-      const el = articuloRef.current;
-      if (!el) return;
-      const r = el.getBoundingClientRect();
-      const total = r.height - window.innerHeight;
-      setProgreso(total <= 0 ? 1 : Math.min(1, Math.max(0, -r.top / total)));
-    };
-    const alMover = () => { if (!raf) raf = requestAnimationFrame(calcular); };
-    calcular();
-    window.addEventListener('scroll', alMover, { passive: true });
-    window.addEventListener('resize', alMover);
-    return () => {
-      window.removeEventListener('scroll', alMover);
-      window.removeEventListener('resize', alMover);
-      if (raf) cancelAnimationFrame(raf);
-    };
-  }, [slugAbierto, posts]);
   async function guardar(e) {
     e.preventDefault();
     const f = e.target;
@@ -98,6 +67,9 @@ let query = supa
       categoria_seccion: f.categoria_seccion.value,
       fase: faseNueva,
       orden: ordenNuevo,
+      cta_texto: f.cta_texto.value.trim() || null,
+      cta_enlace_texto: f.cta_enlace_texto.value.trim() || null,
+      cta_enlace_url: f.cta_enlace_url.value.trim() || null,
       updated_at: new Date().toISOString()
     };
     let error;
@@ -166,82 +138,49 @@ async function borrar(id) {
   cargar();
 }
   const post = slugAbierto ? posts.find(p => p.slug === slugAbierto) : null;
-
-  // Guía de educación financiera: recorrido continuo, Fase 1 → Fase 5, en el mismo orden que la lista
-  const guiaSecuencia = [1, 2, 3, 4, 5].flatMap(n => posts.filter(p => p.categoria_seccion === 'guia' && Number(p.fase) === n));
-  const idxGuia = post && post.categoria_seccion === 'guia' ? guiaSecuencia.findIndex(p => p.id === post.id) : -1;
-  const postAnterior = idxGuia > 0 ? guiaSecuencia[idxGuia - 1] : null;
-  const postSiguiente = idxGuia >= 0 && idxGuia < guiaSecuencia.length - 1 ? guiaSecuencia[idxGuia + 1] : null;
-  const minLectura = post ? minutosLectura(post.content) : 0;
-  const libroRec = post && post.categoria_seccion === 'guia' ? libroParaPost(post) : null;
-  function libroCard(l) {
-    return /*#__PURE__*/React.createElement("aside", {
-      "aria-label": "Libro recomendado",
-      className: "mt-10 p-5 rounded-2xl border",
-      style: { borderColor: C.border, backgroundColor: C.sandLight }
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "text-xs font-bold mb-2",
-      style: { color: C.sand }
-    }, "📖 Libro recomendado para este artículo"), /*#__PURE__*/React.createElement("div", {
-      className: "font-serif font-bold text-lg",
-      style: { color: C.ink }
-    }, l.titulo), /*#__PURE__*/React.createElement("div", {
-      className: "text-xs mb-2",
-      style: { color: C.muted }
-    }, l.autor), /*#__PURE__*/React.createElement("p", {
-      className: "text-sm mb-4",
-      style: { color: C.ink }
-    }, l.motivo), /*#__PURE__*/React.createElement("div", {
-      className: "flex flex-wrap items-center gap-x-4 gap-y-2"
-    }, /*#__PURE__*/React.createElement("a", {
-      href: l.url, target: "_blank", rel: "noopener sponsored",
-      className: "inline-block text-xs font-bold px-4 py-2 rounded-lg",
-      style: { backgroundColor: C.sand, color: C.white }
-    }, "Ver en Amazon ↗"), /*#__PURE__*/React.createElement("a", {
-      href: "/recursos-y-libros.html",
-      className: "text-xs font-bold underline",
-      style: { color: C.navy }
-    }, "Ver todos los libros")), /*#__PURE__*/React.createElement("p", {
-      className: "text-[11px] mt-3",
-      style: { color: C.muted }
-    }, "Como afiliado de Amazon, obtengo ingresos por las compras adecuadas."));
-  }
-  function irAPostGuia(p) {
-    setSlugAbierto(p.slug);
-    setFaseAbierta(Number(p.fase));
-    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
-  }
-  function botonGuia(p, esSiguiente) {
-    if (!p) return /*#__PURE__*/React.createElement("div", null);
-    const cambiaFase = Number(p.fase) !== Number(post.fase);
-    return /*#__PURE__*/React.createElement("button", {
-      type: "button",
-      onClick: () => irAPostGuia(p),
-      className: "border rounded-2xl p-4 " + (esSiguiente ? "text-right" : "text-left"),
-      style: { borderColor: C.border, backgroundColor: C.surface }
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "text-xs font-bold mb-1",
-      style: { color: C.sand }
-    }, esSiguiente ? "Siguiente →" : "← Anterior"), /*#__PURE__*/React.createElement("div", {
-      className: "font-serif font-bold text-sm",
-      style: { color: C.ink }
-    }, p.title), cambiaFase && /*#__PURE__*/React.createElement("div", {
-      className: "text-[11px] mt-1",
-      style: { color: C.muted }
-    }, NOMBRES_FASE_BLOG[Number(p.fase)]));
-  }
   if (post) {
+    const ctaTextoPost = (post.cta_texto || '').trim();
+    const ctaEnlaceTextoPost = (post.cta_enlace_texto || '').trim();
+    const ctaEnlaceUrlPost = (post.cta_enlace_url || '').trim();
+
+    let ctaHijos;
+    if (!ctaTextoPost && !ctaEnlaceTextoPost) {
+      // Mensaje por defecto de siempre, sin cambios.
+      ctaHijos = [
+        "¿Quieres aplicar esto a tu propio caso? Usa el ",
+        /*#__PURE__*/React.createElement("button", {
+          key: "cta-link",
+          onClick: () => setSlugAbierto(null),
+          className: "font-bold underline"
+        }, "diagnóstico gratuito de MoneyPilot"),
+        " arriba en el menú."
+      ];
+    } else {
+      const url = ctaEnlaceUrlPost || '/';
+      const enlace = ctaEnlaceTextoPost
+        ? (url === '/'
+            ? /*#__PURE__*/React.createElement("button", {
+                key: "cta-link",
+                onClick: () => setSlugAbierto(null),
+                className: "font-bold underline"
+              }, ctaEnlaceTextoPost)
+            : /*#__PURE__*/React.createElement("a", {
+                key: "cta-link",
+                href: url,
+                className: "font-bold underline"
+              }, ctaEnlaceTextoPost))
+        : null;
+      ctaHijos = [
+        ctaTextoPost,
+        enlace ? " " : "",
+        enlace,
+        enlace ? "." : ""
+      ];
+    }
+
     return /*#__PURE__*/React.createElement("div", {
-      ref: articuloRef,
       className: "max-w-3xl mx-auto px-4 sm:px-6 py-12"
-    }, /*#__PURE__*/React.createElement("div", {
-      role: "progressbar",
-      "aria-label": "Progreso de lectura",
-      "aria-valuemin": 0,
-      "aria-valuemax": 100,
-      "aria-valuenow": Math.round(progreso * 100),
-      style: { position: "fixed", top: 0, left: 0, height: "3px", width: (progreso * 100) + "%", backgroundColor: C.sand, zIndex: 60, pointerEvents: "none" }
-    }), /*#__PURE__*/React.createElement("button", {
+    }, /*#__PURE__*/React.createElement("button", {
       onClick: () => setSlugAbierto(null),
       className: "text-sm font-bold mb-6",
       style: { color: C.sand }
@@ -254,28 +193,17 @@ async function borrar(id) {
     }, post.title), (post.categoria_seccion === 'guia' ? /*#__PURE__*/React.createElement("div", {
   className: "text-xs mb-8",
   style: { color: C.muted }
-}, "Por ", post.author || 'Equipo MoneyPilot', " · ", minLectura, " min de lectura") : /*#__PURE__*/React.createElement("div", {
+}, "Por ", post.author || 'Equipo MoneyPilot') : /*#__PURE__*/React.createElement("div", {
   className: "text-xs mb-8",
   style: { color: C.muted }
-}, "Por ", post.author || 'Equipo MoneyPilot', " · ", fmtFecha(post.created_at), " · ", minLectura, " min de lectura")), /*#__PURE__*/React.createElement("div", {
+}, "Por ", post.author || 'Equipo MoneyPilot', " · ", fmtFecha(post.created_at))), /*#__PURE__*/React.createElement("div", {
       className: "prose-blog",
       style: { color: C.ink, lineHeight: 1.75 },
       dangerouslySetInnerHTML: { __html: mdToHtml(post.content) }
-    }), libroRec && libroCard(libroRec), idxGuia >= 0 && /*#__PURE__*/React.createElement("nav", {
-      "aria-label": "Navegación de la guía",
-      className: "mt-10"
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "text-xs text-center mb-3",
-      style: { color: C.muted }
-    }, NOMBRES_FASE_BLOG[Number(post.fase)], " · Artículo ", idxGuia + 1, " de ", guiaSecuencia.length), /*#__PURE__*/React.createElement("div", {
-      className: "grid grid-cols-1 sm:grid-cols-2 gap-3"
-    }, botonGuia(postAnterior, false), botonGuia(postSiguiente, true))), /*#__PURE__*/React.createElement("div", {
+    }), /*#__PURE__*/React.createElement.apply(React, ["div", {
       className: "mt-10 p-5 rounded-2xl text-sm",
       style: { backgroundColor: C.sandLight, color: C.navy }
-    }, "¿Quieres aplicar esto a tu propio caso? Usa el ", /*#__PURE__*/React.createElement("button", {
-      onClick: () => setSlugAbierto(null),
-      className: "font-bold underline"
-    }, "diagnóstico gratuito de MoneyPilot"), " arriba en el menú."));
+    }].concat(ctaHijos)));
   }
   const postsTab = posts.filter(p => (p.categoria_seccion || 'actualidad') === tab);
   return /*#__PURE__*/React.createElement("div", {
@@ -313,7 +241,8 @@ async function borrar(id) {
     onClick: () => setEditando({
       title: '', slug: '', excerpt: '', content: '', category: '',
       author: '', cover_emoji: '📊', published: false,
-      categoria_seccion: tab, fase: 1
+      categoria_seccion: tab, fase: 1,
+      cta_texto: '', cta_enlace_texto: '', cta_enlace_url: '/'
     }),
     className: "text-xs font-bold px-3 py-1.5 rounded-lg",
     style: { backgroundColor: C.sand, color: C.white }
@@ -371,6 +300,26 @@ async function borrar(id) {
     placeholder: "Contenido — usa ## para subtítulos y líneas normales para párrafos", rows: "12",
     className: "w-full border rounded-lg px-3 py-2 text-sm font-mono", style: { borderColor: C.border }
   }),
+  /*#__PURE__*/React.createElement("p", {
+    className: "text-[11px] pt-2", style: { color: C.mutedLight }
+  }, "Mensaje que aparece al final del artículo. Déjalo en blanco para usar el mensaje por defecto (\"diagnóstico gratuito de MoneyPilot\")."),
+  /*#__PURE__*/React.createElement("textarea", {
+    name: "cta_texto", defaultValue: editando.cta_texto || '',
+    placeholder: "Mensaje del CTA, ej: ¿Quieres aprender más sobre esto?", rows: "2",
+    className: "w-full border rounded-lg px-3 py-2 text-sm", style: { borderColor: C.border }
+  }),
+  /*#__PURE__*/React.createElement("div", { className: "grid grid-cols-2 gap-3" },
+    /*#__PURE__*/React.createElement("input", {
+      name: "cta_enlace_texto", defaultValue: editando.cta_enlace_texto || '',
+      placeholder: "Texto del enlace, ej: nuestra guía de libros",
+      className: "border rounded-lg px-3 py-2 text-sm", style: { borderColor: C.border }
+    }),
+    /*#__PURE__*/React.createElement("input", {
+      name: "cta_enlace_url", defaultValue: editando.cta_enlace_url || '/',
+      placeholder: "URL del enlace, ej: /recursos-y-libros.html",
+      className: "border rounded-lg px-3 py-2 text-sm", style: { borderColor: C.border }
+    })
+  ),
   /*#__PURE__*/React.createElement("label", {
     className: "flex items-center gap-2 text-sm", style: { color: C.ink }
   }, /*#__PURE__*/React.createElement("input", { type: "checkbox", name: "published", defaultChecked: editando.published }), " Publicado"),
