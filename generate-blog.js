@@ -112,25 +112,34 @@ function tabsHtml(seccionActivaKey) {
   ).join('')}</div>`;
 }
 
+// Construye el bloque de CTA de una guía/noticia a partir del texto libre
+// que el usuario haya escrito en el panel (post.cta_texto / cta_enlace_texto / cta_enlace_url).
+// Si no ha escrito nada, usa el mensaje por defecto de siempre.
+function ctaLibreHtml(post) {
+  const texto = (post.cta_texto || '').trim();
+  const enlaceTexto = (post.cta_enlace_texto || '').trim();
+  const enlaceUrl = (post.cta_enlace_url || '/').trim() || '/';
+
+  if (!texto && !enlaceTexto) {
+    return `<div class="cta">¿Quieres aplicar esto a tu propio caso? Usa el <a href="/">diagnóstico gratuito de MoneyPilot</a>.</div>`;
+  }
+
+  const enlaceHtml = enlaceTexto ? ` <a href="${escHtml(enlaceUrl)}">${escHtml(enlaceTexto)}</a>.` : '';
+  return `<div class="cta">${escHtml(texto)}${enlaceHtml}</div>`;
+}
+
 function postPage(post, seccion) {
   const url = `${SITE_URL}${seccion.urlBase}/${post.slug}.html`;
   const title = `${post.title} – MoneyPilot`;
   const desc = (post.excerpt || post.title || '').slice(0, 160);
   const esInversion = seccion.key === 'tesis' || seccion.key === 'bolsa';
 
-  const ctaDiagnostico = `<div class="cta">¿Quieres aplicar esto a tu propio caso? Usa el <a href="/">diagnóstico gratuito de MoneyPilot</a>.</div>`;
   const ctaLibro = `<div class="cta" style="background:var(--paper);border:1px solid var(--border);">¿Quieres aprender más? Puedes encontrar <a href="/recursos-y-libros.html">aquí algunos libros seleccionados</a> para empezar desde 0 y aprender a administrar tu propio dinero.</div>`;
   const disclaimer = `<div class="disclaimer">⚠️ Contenido meramente informativo y educativo, generado con apoyo de inteligencia artificial. No constituye asesoramiento ni recomendación de inversión personalizada. Antes de invertir, valora tu situación con un profesional cualificado.</div>`;
 
-  let ctaBlock;
-  if (esInversion) {
-    ctaBlock = disclaimer + ctaLibro;
-  } else {
-    const ctaTipo = post.cta_tipo || 'diagnostico';
-    if (ctaTipo === 'libro') ctaBlock = ctaLibro;
-    else if (ctaTipo === 'ambos') ctaBlock = ctaDiagnostico + ctaLibro;
-    else ctaBlock = ctaDiagnostico;
-  }
+  // En tesis/bolsa el disclaimer legal + el CTA de libro se mantienen fijos siempre.
+  // En el resto de secciones (guía, actualidad) se usa el mensaje libre que haya escrito el usuario.
+  const ctaBlock = esInversion ? (disclaimer + ctaLibro) : ctaLibreHtml(post);
 
   return `<!DOCTYPE html>
 <html lang="es">
