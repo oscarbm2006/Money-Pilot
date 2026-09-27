@@ -9,14 +9,16 @@
   :root{--navy:#312E81;--primary:#4F46E5;--paper:#FAFAFA;--ink:#1E1E2E;--muted:#6B7280;--border:#E5E7EB;}
   *{box-sizing:border-box;}
   body{margin:0;font-family:ui-sans-serif,system-ui,sans-serif;background:var(--paper);color:var(--ink);}
-  main{max-width:640px;margin:0 auto;padding:48px 24px 80px;}
+  main{max-width:680px;margin:0 auto;padding:48px 24px 80px;}
   h1{font-size:1.4rem;margin-bottom:24px;}
   h2{font-size:1.1rem;margin:40px 0 16px;border-top:1px solid var(--border);padding-top:32px;}
   label{display:block;font-weight:700;font-size:.85rem;margin:18px 0 6px;}
-  input[type=text], input[type=password]{width:100%;padding:12px;border:1px solid var(--border);border-radius:10px;font-size:1rem;}
+  input[type=text], input[type=password], textarea{width:100%;padding:12px;border:1px solid var(--border);border-radius:10px;font-size:1rem;font-family:inherit;}
+  textarea{resize:vertical;}
   .tipo-opciones{display:flex;gap:10px;margin-top:6px;flex-wrap:wrap;}
   .tipo-opciones button{flex:1;min-width:110px;padding:10px;border-radius:10px;border:1px solid var(--border);background:#fff;cursor:pointer;font-weight:600;}
   .tipo-opciones button.activo{background:var(--primary);color:#fff;border-color:var(--primary);}
+  .ayuda{font-size:.78rem;color:var(--muted);margin-top:4px;}
   #generar{margin-top:28px;width:100%;padding:14px;border:none;border-radius:12px;background:var(--navy);color:#fff;font-weight:800;font-size:1rem;cursor:pointer;}
   #generar:disabled{opacity:.6;cursor:not-allowed;}
   #estado{margin-top:18px;padding:14px;border-radius:10px;font-size:.9rem;display:none;}
@@ -24,11 +26,12 @@
   #estado.error{display:block;background:#FEF2F2;color:#991B1B;}
   #estado.cargando{display:block;background:#EFF6FF;color:#1E3A8A;}
   #cargarPosts{width:100%;padding:12px;border:1px solid var(--border);border-radius:10px;background:#fff;font-weight:700;cursor:pointer;}
-  table{width:100%;border-collapse:collapse;margin-top:18px;font-size:.85rem;}
-  th, td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--border);}
-  select{padding:6px 8px;border-radius:8px;border:1px solid var(--border);}
-  .guardar-fila{padding:6px 10px;border:none;border-radius:8px;background:var(--primary);color:#fff;font-weight:700;cursor:pointer;font-size:.8rem;}
-  .fila-estado{font-size:.75rem;color:var(--muted);}
+  .fila-estado{font-size:.75rem;color:var(--muted);margin-top:8px;}
+  .post-card{border:1px solid var(--border);border-radius:14px;padding:16px;margin-top:14px;background:#fff;}
+  .post-card .titulo{font-weight:800;margin-bottom:2px;}
+  .post-card .seccion{font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px;}
+  .post-card label{margin:10px 0 4px;font-size:.78rem;}
+  .guardar-fila{margin-top:12px;padding:8px 14px;border:none;border-radius:8px;background:var(--primary);color:#fff;font-weight:700;cursor:pointer;font-size:.85rem;}
 </style>
 </head>
 <body>
@@ -45,12 +48,15 @@
     <button type="button" id="btnGuia">Guía financiera</button>
   </div>
 
-  <label>CTA final del artículo</label>
-  <div class="tipo-opciones">
-    <button type="button" id="ctaDiagnostico" class="activo">Diagnóstico</button>
-    <button type="button" id="ctaLibro">Libro</button>
-    <button type="button" id="ctaAmbos">Ambos</button>
-  </div>
+  <label>Mensaje del CTA final (déjalo en blanco para usar el mensaje por defecto)</label>
+  <textarea id="ctaTexto" rows="2" placeholder="Ej: ¿Quieres aplicar esto a tu propio caso? Usa el"></textarea>
+
+  <label>Texto del enlace (opcional)</label>
+  <input type="text" id="ctaEnlaceTexto" placeholder="Ej: diagnóstico gratuito de MoneyPilot" />
+
+  <label>A dónde lleva el enlace</label>
+  <input type="text" id="ctaEnlaceUrl" placeholder="/" value="/" />
+  <div class="ayuda">Se mostrará como: "[mensaje] [texto del enlace subrayado]." No hace falta añadir el punto final.</div>
 
   <label>Ticker o tema</label>
   <input type="text" id="tema" placeholder="Ej: NVDA, sector lujo, qué es el fondo de emergencia..." />
@@ -62,17 +68,11 @@
   <h2>Artículos publicados</h2>
   <button id="cargarPosts">Cargar artículos</button>
   <div id="listaEstado" class="fila-estado"></div>
-  <table id="tablaPosts" style="display:none;">
-    <thead>
-      <tr><th>Título</th><th>Sección</th><th>CTA</th><th></th></tr>
-    </thead>
-    <tbody id="tbodyPosts"></tbody>
-  </table>
+  <div id="listaPosts"></div>
 </main>
 
 <script>
   let tipo = 'noticia';
-  let ctaTipo = 'diagnostico';
 
   const btnNoticia = document.getElementById('btnNoticia');
   const btnTesis = document.getElementById('btnTesis');
@@ -82,17 +82,12 @@
   btnTesis.onclick = () => { tipo = 'tesis'; btnTesis.classList.add('activo'); btnNoticia.classList.remove('activo'); btnGuia.classList.remove('activo'); };
   btnGuia.onclick = () => { tipo = 'guia'; btnGuia.classList.add('activo'); btnNoticia.classList.remove('activo'); btnTesis.classList.remove('activo'); };
 
-  const ctaDiagnosticoBtn = document.getElementById('ctaDiagnostico');
-  const ctaLibroBtn = document.getElementById('ctaLibro');
-  const ctaAmbosBtn = document.getElementById('ctaAmbos');
-
-  ctaDiagnosticoBtn.onclick = () => { ctaTipo = 'diagnostico'; ctaDiagnosticoBtn.classList.add('activo'); ctaLibroBtn.classList.remove('activo'); ctaAmbosBtn.classList.remove('activo'); };
-  ctaLibroBtn.onclick = () => { ctaTipo = 'libro'; ctaLibroBtn.classList.add('activo'); ctaDiagnosticoBtn.classList.remove('activo'); ctaAmbosBtn.classList.remove('activo'); };
-  ctaAmbosBtn.onclick = () => { ctaTipo = 'ambos'; ctaAmbosBtn.classList.add('activo'); ctaDiagnosticoBtn.classList.remove('activo'); ctaLibroBtn.classList.remove('activo'); };
-
   document.getElementById('generar').onclick = async () => {
     const password = document.getElementById('password').value;
     const tema = document.getElementById('tema').value.trim();
+    const cta_texto = document.getElementById('ctaTexto').value.trim();
+    const cta_enlace_texto = document.getElementById('ctaEnlaceTexto').value.trim();
+    const cta_enlace_url = document.getElementById('ctaEnlaceUrl').value.trim();
     const estado = document.getElementById('estado');
     const boton = document.getElementById('generar');
 
@@ -107,7 +102,7 @@
       const res = await fetch('/api/generar-inversion', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password, tema, tipo, cta_tipo: ctaTipo }),
+        body: JSON.stringify({ password, tema, tipo, cta_texto, cta_enlace_texto, cta_enlace_url }),
       });
       const data = await res.json();
 
@@ -118,6 +113,9 @@
         estado.className = 'ok';
         estado.textContent = '✅ Contenido generado: "' + data.post.title + '". Se publicará solo en el próximo despliegue (unos minutos).';
         document.getElementById('tema').value = '';
+        document.getElementById('ctaTexto').value = '';
+        document.getElementById('ctaEnlaceTexto').value = '';
+        document.getElementById('ctaEnlaceUrl').value = '/';
       }
     } catch (err) {
       estado.className = 'error';
@@ -127,17 +125,15 @@
     }
   };
 
-  const NOMBRES_CTA = { diagnostico: 'Diagnóstico', libro: 'Libro', ambos: 'Ambos' };
-
   document.getElementById('cargarPosts').onclick = async () => {
     const password = document.getElementById('password').value;
     const listaEstado = document.getElementById('listaEstado');
-    const tabla = document.getElementById('tablaPosts');
-    const tbody = document.getElementById('tbodyPosts');
+    const contenedor = document.getElementById('listaPosts');
 
     if (!password) { alert('Escribe la contraseña arriba'); return; }
 
     listaEstado.textContent = 'Cargando…';
+    contenedor.innerHTML = '';
     try {
       const res = await fetch('/api/posts-admin', {
         method: 'POST',
@@ -147,27 +143,29 @@
       const data = await res.json();
       if (!res.ok) { listaEstado.textContent = 'Error: ' + (data.error || 'algo falló'); return; }
 
-      tbody.innerHTML = '';
+      if (!data.posts.length) {
+        listaEstado.textContent = 'No hay artículos.';
+        return;
+      }
+      listaEstado.textContent = '';
+
       data.posts.forEach(p => {
-        const tr = document.createElement('tr');
+        const card = document.createElement('div');
+        card.className = 'post-card';
 
-        const tdTitulo = document.createElement('td');
-        tdTitulo.textContent = p.title;
+        const inputTexto = document.createElement('textarea');
+        inputTexto.rows = 2;
+        inputTexto.value = p.cta_texto || '';
+        inputTexto.placeholder = '(usando el mensaje por defecto)';
 
-        const tdSeccion = document.createElement('td');
-        tdSeccion.textContent = p.categoria_seccion;
+        const inputEnlaceTexto = document.createElement('input');
+        inputEnlaceTexto.type = 'text';
+        inputEnlaceTexto.value = p.cta_enlace_texto || '';
 
-        const tdCta = document.createElement('td');
-        const select = document.createElement('select');
-        ['diagnostico', 'libro', 'ambos'].forEach(v => {
-          const opt = document.createElement('option');
-          opt.value = v; opt.textContent = NOMBRES_CTA[v];
-          if ((p.cta_tipo || 'diagnostico') === v) opt.selected = true;
-          select.appendChild(opt);
-        });
-        tdCta.appendChild(select);
+        const inputEnlaceUrl = document.createElement('input');
+        inputEnlaceUrl.type = 'text';
+        inputEnlaceUrl.value = p.cta_enlace_url || '/';
 
-        const tdAccion = document.createElement('td');
         const btnGuardar = document.createElement('button');
         btnGuardar.className = 'guardar-fila';
         btnGuardar.textContent = 'Guardar';
@@ -178,28 +176,45 @@
             const r = await fetch('/api/posts-admin', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ password, action: 'update', id: p.id, cta_tipo: select.value }),
+              body: JSON.stringify({
+                password,
+                action: 'update',
+                id: p.id,
+                cta_texto: inputTexto.value,
+                cta_enlace_texto: inputEnlaceTexto.value,
+                cta_enlace_url: inputEnlaceUrl.value,
+              }),
             });
             const d = await r.json();
-            btnGuardar.textContent = r.ok ? '✅' : 'Error';
+            btnGuardar.textContent = r.ok ? '✅ Guardado' : 'Error';
             if (!r.ok) console.error(d);
           } catch (e) {
             btnGuardar.textContent = 'Error';
           } finally {
-            setTimeout(() => { btnGuardar.disabled = false; btnGuardar.textContent = 'Guardar'; }, 1500);
+            setTimeout(() => { btnGuardar.disabled = false; btnGuardar.textContent = 'Guardar'; }, 1800);
           }
         };
-        tdAccion.appendChild(btnGuardar);
 
-        tr.appendChild(tdTitulo);
-        tr.appendChild(tdSeccion);
-        tr.appendChild(tdCta);
-        tr.appendChild(tdAccion);
-        tbody.appendChild(tr);
+        card.innerHTML = `
+          <div class="titulo">${p.title}</div>
+          <div class="seccion">${p.categoria_seccion}</div>
+          <label>Mensaje del CTA</label>
+        `;
+        card.appendChild(inputTexto);
+
+        const labelEnlaceTexto = document.createElement('label');
+        labelEnlaceTexto.textContent = 'Texto del enlace';
+        card.appendChild(labelEnlaceTexto);
+        card.appendChild(inputEnlaceTexto);
+
+        const labelEnlaceUrl = document.createElement('label');
+        labelEnlaceUrl.textContent = 'A dónde lleva el enlace';
+        card.appendChild(labelEnlaceUrl);
+        card.appendChild(inputEnlaceUrl);
+
+        card.appendChild(btnGuardar);
+        contenedor.appendChild(card);
       });
-
-      tabla.style.display = data.posts.length ? 'table' : 'none';
-      listaEstado.textContent = data.posts.length ? '' : 'No hay artículos.';
     } catch (err) {
       listaEstado.textContent = 'Error de conexión: ' + err.message;
     }
