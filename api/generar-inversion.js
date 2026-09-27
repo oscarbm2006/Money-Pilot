@@ -30,7 +30,7 @@ module.exports = async function handler(req, res) {
   const esGuia = tipo === 'guia';
 
   let prompt = '';
-  
+
   if (esTesis) {
     prompt = `Escribe un Resumen Ejecutivo profesional y detallado para una tesis de inversión sobre: "${tema}".
 Comienza SIEMPRE el texto con un título principal usando un solo "#" (ejemplo: "# Análisis de inversión: ${tema}").
@@ -94,22 +94,22 @@ Extensión: alrededor de 300 a 400 palabras. Incluye un primer párrafo resumen 
 
     const lineas = contenido.split('\n').map(l => l.trim()).filter(l => l.length > 0);
     const primeraLinea = lineas[0] || '';
-    
+
     let defaultPrefix = 'Noticia';
     if (esTesis) defaultPrefix = 'Tesis de inversión';
     if (esGuia) defaultPrefix = 'Guía Financiera';
     let title = `${defaultPrefix}: ${tema}`;
-    
+
     if (primeraLinea.startsWith('# ')) {
       title = primeraLinea.replace(/^#\s*/, '').slice(0, 120);
-      
+
       // NUEVA LÍNEA: Borramos el H1 del contenido para que no se duplique en la web
       contenido = contenido.replace(primeraLinea, '').trim();
     }
 
     const slugBase = slugify(title) || slugify(tema) || `inversion-${Date.now()}`;
     const slug = `${slugBase}-${Date.now().toString().slice(-5)}`;
-    
+
     const excerpt = contenido.replace(/^#+\s*/gm, '').replace(/\n+/g, ' ').slice(0, 160);
 
     let category = 'Noticias de bolsa';
@@ -121,7 +121,7 @@ Extensión: alrededor de 300 a 400 palabras. Incluye un primer párrafo resumen 
       cover_emoji = '📊';
       categoria_seccion = 'tesis';
     } else if (esGuia) {
-      category = 'Educación financiera'; 
+      category = 'Educación financiera';
       cover_emoji = '📚';
       categoria_seccion = 'guia';
       fase = 1;
