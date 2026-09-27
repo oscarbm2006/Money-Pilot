@@ -5,6 +5,42 @@ import { fmtFecha, mdToHtml, slugify } from './calculos.js';
 import { Eyebrow } from './ui-basicos.js';
 import { AcordeonFase } from './secciones.js';
 
+const CTA_PRESETS = [
+  { key: 'diagnostico', label: 'Diagnóstico gratuito' },
+  { key: 'libro', label: 'Libros recomendados' },
+  { key: 'contacto', label: 'Contacto' },
+  { key: 'quienes', label: 'Quiénes somos' },
+  { key: 'ninguno', label: 'Sin CTA' },
+  { key: 'personalizado', label: 'Personalizado' },
+];
+
+const CTA_PRESETS_INFO = {
+  diagnostico: {
+    texto: "¿Quieres aplicar esto a tu propio caso? Usa el",
+    enlaceTexto: "diagnóstico gratuito de MoneyPilot",
+    url: "/",
+    sufijo: " arriba en el menú."
+  },
+  libro: {
+    texto: "¿Quieres aprender más? Puedes encontrar",
+    enlaceTexto: "aquí algunos libros seleccionados",
+    url: "/recursos-y-libros.html",
+    sufijo: " para empezar desde 0."
+  },
+  contacto: {
+    texto: "¿Tienes dudas sobre esto?",
+    enlaceTexto: "Escríbenos",
+    url: "/contacto.html",
+    sufijo: " y te ayudamos."
+  },
+  quienes: {
+    texto: "¿Quieres saber quién hay detrás de MoneyPilot?",
+    enlaceTexto: "Conócenos aquí",
+    url: "/quienes-somos.html",
+    sufijo: "."
+  },
+};
+
 export function Blog({ user }) {
   const [posts, setPosts] = useState([]);
   const [cargando, setCargando] = useState(true);
@@ -12,8 +48,14 @@ export function Blog({ user }) {
   const [faseAbierta, setFaseAbierta] = useState(1);
   const [slugAbierto, setSlugAbierto] = useState(null);
   const [editando, setEditando] = useState(null);
+  const [ctaPresetSel, setCtaPresetSel] = useState('diagnostico');
   const esAdmin = !!(user && user.email && user.email.toLowerCase() === BLOG_ADMIN_EMAIL.toLowerCase());
   window.__abrirPostBlog = setSlugAbierto;
+
+  useEffect(() => {
+    if (editando) setCtaPresetSel(editando.cta_preset || 'diagnostico');
+  }, [editando]);
+
   async function cargar() {
     setCargando(true);
 let query = supa
@@ -67,9 +109,10 @@ let query = supa
       categoria_seccion: f.categoria_seccion.value,
       fase: faseNueva,
       orden: ordenNuevo,
-      cta_texto: f.cta_texto.value.trim() || null,
-      cta_enlace_texto: f.cta_enlace_texto.value.trim() || null,
-      cta_enlace_url: f.cta_enlace_url.value.trim() || null,
+      cta_preset: f.cta_preset.value,
+      cta_texto: f.cta_texto ? (f.cta_texto.value.trim() || null) : null,
+      cta_enlace_texto: f.cta_enlace_texto ? (f.cta_enlace_texto.value.trim() || null) : null,
+      cta_enlace_url: f.cta_enlace_url ? (f.cta_enlace_url.value.trim() || null) : null,
       updated_at: new Date().toISOString()
     };
     let error;
@@ -139,43 +182,45 @@ async function borrar(id) {
 }
   const post = slugAbierto ? posts.find(p => p.slug === slugAbierto) : null;
   if (post) {
-    const ctaTextoPost = (post.cta_texto || '').trim();
-    const ctaEnlaceTextoPost = (post.cta_enlace_texto || '').trim();
-    const ctaEnlaceUrlPost = (post.cta_enlace_url || '').trim();
+    const preset = post.cta_preset || 'diagnostico';
+    let ctaHijos = null;
 
-    let ctaHijos;
-    if (!ctaTextoPost && !ctaEnlaceTextoPost) {
-      // Mensaje por defecto de siempre, sin cambios.
-      ctaHijos = [
-        "¿Quieres aplicar esto a tu propio caso? Usa el ",
-        /*#__PURE__*/React.createElement("button", {
-          key: "cta-link",
-          onClick: () => setSlugAbierto(null),
-          className: "font-bold underline"
-        }, "diagnóstico gratuito de MoneyPilot"),
-        " arriba en el menú."
-      ];
+    if (preset === 'ninguno') {
+      ctaHijos = null;
+    } else if (preset === 'personalizado') {
+      const ctaTextoPost = (post.cta_texto || '').trim();
+      const ctaEnlaceTextoPost = (post.cta_enlace_texto || '').trim();
+      const ctaEnlaceUrlPost = (post.cta_enlace_url || '').trim() || '/';
+      if (!ctaTextoPost && !ctaEnlaceTextoPost) {
+        ctaHijos = [
+          CTA_PRESETS_INFO.diagnostico.texto + " ",
+          /*#__PURE__*/React.createElement("button", {
+            key: "cta-link", onClick: () => setSlugAbierto(null), className: "font-bold underline"
+          }, CTA_PRESETS_INFO.diagnostico.enlaceTexto),
+          CTA_PRESETS_INFO.diagnostico.sufijo
+        ];
+      } else {
+        const enlace = ctaEnlaceTextoPost
+          ? (ctaEnlaceUrlPost === '/'
+              ? /*#__PURE__*/React.createElement("button", {
+                  key: "cta-link", onClick: () => setSlugAbierto(null), className: "font-bold underline"
+                }, ctaEnlaceTextoPost)
+              : /*#__PURE__*/React.createElement("a", {
+                  key: "cta-link", href: ctaEnlaceUrlPost, className: "font-bold underline"
+                }, ctaEnlaceTextoPost))
+          : null;
+        ctaHijos = [ctaTextoPost, enlace ? " " : "", enlace, enlace ? "." : ""];
+      }
     } else {
-      const url = ctaEnlaceUrlPost || '/';
-      const enlace = ctaEnlaceTextoPost
-        ? (url === '/'
-            ? /*#__PURE__*/React.createElement("button", {
-                key: "cta-link",
-                onClick: () => setSlugAbierto(null),
-                className: "font-bold underline"
-              }, ctaEnlaceTextoPost)
-            : /*#__PURE__*/React.createElement("a", {
-                key: "cta-link",
-                href: url,
-                className: "font-bold underline"
-              }, ctaEnlaceTextoPost))
-        : null;
-      ctaHijos = [
-        ctaTextoPost,
-        enlace ? " " : "",
-        enlace,
-        enlace ? "." : ""
-      ];
+      const info = CTA_PRESETS_INFO[preset] || CTA_PRESETS_INFO.diagnostico;
+      const enlace = info.url === '/'
+        ? /*#__PURE__*/React.createElement("button", {
+            key: "cta-link", onClick: () => setSlugAbierto(null), className: "font-bold underline"
+          }, info.enlaceTexto)
+        : /*#__PURE__*/React.createElement("a", {
+            key: "cta-link", href: info.url, className: "font-bold underline"
+          }, info.enlaceTexto);
+      ctaHijos = [info.texto + " ", enlace, info.sufijo];
     }
 
     return /*#__PURE__*/React.createElement("div", {
@@ -200,7 +245,7 @@ async function borrar(id) {
       className: "prose-blog",
       style: { color: C.ink, lineHeight: 1.75 },
       dangerouslySetInnerHTML: { __html: mdToHtml(post.content) }
-    }), /*#__PURE__*/React.createElement.apply(React, ["div", {
+    }), ctaHijos && /*#__PURE__*/React.createElement.apply(React, ["div", {
       className: "mt-10 p-5 rounded-2xl text-sm",
       style: { backgroundColor: C.sandLight, color: C.navy }
     }].concat(ctaHijos)));
@@ -242,7 +287,7 @@ async function borrar(id) {
       title: '', slug: '', excerpt: '', content: '', category: '',
       author: '', cover_emoji: '📊', published: false,
       categoria_seccion: tab, fase: 1,
-      cta_texto: '', cta_enlace_texto: '', cta_enlace_url: '/'
+      cta_preset: 'diagnostico', cta_texto: '', cta_enlace_texto: '', cta_enlace_url: '/'
     }),
     className: "text-xs font-bold px-3 py-1.5 rounded-lg",
     style: { backgroundColor: C.sand, color: C.white }
@@ -302,23 +347,30 @@ async function borrar(id) {
   }),
   /*#__PURE__*/React.createElement("p", {
     className: "text-[11px] pt-2", style: { color: C.mutedLight }
-  }, "Mensaje que aparece al final del artículo. Déjalo en blanco para usar el mensaje por defecto (\"diagnóstico gratuito de MoneyPilot\")."),
-  /*#__PURE__*/React.createElement("textarea", {
-    name: "cta_texto", defaultValue: editando.cta_texto || '',
-    placeholder: "Mensaje del CTA, ej: ¿Quieres aprender más sobre esto?", rows: "2",
+  }, "Mensaje que aparece al final del artículo."),
+  /*#__PURE__*/React.createElement("select", {
+    name: "cta_preset", value: ctaPresetSel, onChange: e => setCtaPresetSel(e.target.value),
     className: "w-full border rounded-lg px-3 py-2 text-sm", style: { borderColor: C.border }
-  }),
-  /*#__PURE__*/React.createElement("div", { className: "grid grid-cols-2 gap-3" },
-    /*#__PURE__*/React.createElement("input", {
-      name: "cta_enlace_texto", defaultValue: editando.cta_enlace_texto || '',
-      placeholder: "Texto del enlace, ej: nuestra guía de libros",
-      className: "border rounded-lg px-3 py-2 text-sm", style: { borderColor: C.border }
+  }, CTA_PRESETS.map(o => /*#__PURE__*/React.createElement("option", { key: o.key, value: o.key }, o.label))),
+
+  ctaPresetSel === 'personalizado' && /*#__PURE__*/React.createElement("div", { className: "space-y-3" },
+    /*#__PURE__*/React.createElement("textarea", {
+      name: "cta_texto", defaultValue: editando.cta_texto || '',
+      placeholder: "Mensaje del CTA, ej: ¿Quieres aprender más sobre esto?", rows: "2",
+      className: "w-full border rounded-lg px-3 py-2 text-sm", style: { borderColor: C.border }
     }),
-    /*#__PURE__*/React.createElement("input", {
-      name: "cta_enlace_url", defaultValue: editando.cta_enlace_url || '/',
-      placeholder: "URL del enlace, ej: /recursos-y-libros.html",
-      className: "border rounded-lg px-3 py-2 text-sm", style: { borderColor: C.border }
-    })
+    /*#__PURE__*/React.createElement("div", { className: "grid grid-cols-2 gap-3" },
+      /*#__PURE__*/React.createElement("input", {
+        name: "cta_enlace_texto", defaultValue: editando.cta_enlace_texto || '',
+        placeholder: "Texto del enlace, ej: nuestra guía de libros",
+        className: "border rounded-lg px-3 py-2 text-sm", style: { borderColor: C.border }
+      }),
+      /*#__PURE__*/React.createElement("input", {
+        name: "cta_enlace_url", defaultValue: editando.cta_enlace_url || '/',
+        placeholder: "URL del enlace, ej: /recursos-y-libros.html",
+        className: "border rounded-lg px-3 py-2 text-sm", style: { borderColor: C.border }
+      })
+    )
   ),
   /*#__PURE__*/React.createElement("label", {
     className: "flex items-center gap-2 text-sm", style: { color: C.ink }
