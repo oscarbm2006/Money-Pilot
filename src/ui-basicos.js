@@ -1,6 +1,6 @@
 const { useState, useEffect, useRef, useCallback, useMemo, useId } = React;
 
-import { C, FRECUENCIAS, I, supa } from './constantes.js';
+import { C, FRECUENCIAS, I, supa, MAX_IMPORTE } from './constantes.js';
 import { euros, niceTicks, traducirErrorAuth } from './calculos.js';
 import { PrivacyNotice } from './secciones.js';
 
@@ -124,9 +124,11 @@ export function NumberField({
   value,
   onChange,
   hint,
-  suffix = "€"
+  suffix = "€",
+  max = MAX_IMPORTE
 }) {
   const id = useId();
+  const alcanzaMax = Number(value) >= max;
   return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
     htmlFor: id,
     className: "block text-sm font-bold mb-1.5",
@@ -142,12 +144,12 @@ export function NumberField({
     value: value === 0 ? "" : value,
     onChange: e => {
       const v = e.target.value;
-      onChange(v === "" ? 0 : Math.max(0, Number(v)));
+      onChange(v === "" ? 0 : Math.min(max, Math.max(0, Number(v))));
     },
     placeholder: "0",
     className: "w-full rounded-lg px-3 py-2 text-sm font-bold border outline-none",
     style: {
-      borderColor: C.border,
+      borderColor: alcanzaMax ? C.crit : C.border,
       color: C.ink,
       backgroundColor: C.paper
     }
@@ -156,7 +158,12 @@ export function NumberField({
     style: {
       color: C.muted
     }
-  }, suffix)), hint && /*#__PURE__*/React.createElement("p", {
+  }, suffix)), alcanzaMax ? /*#__PURE__*/React.createElement("p", {
+    className: "text-xs mt-1 font-bold",
+    style: {
+      color: C.crit
+    }
+  }, "Máximo permitido: " + max.toLocaleString("es-ES") + (suffix ? " " + suffix : "")) : hint && /*#__PURE__*/React.createElement("p", {
     className: "text-xs mt-1",
     style: {
       color: C.muted
@@ -206,7 +213,7 @@ export function FreqField({
       const v = e.target.value;
       onChange({
         ...data,
-        valor: v === "" ? 0 : Math.max(0, Number(v))
+        valor: v === "" ? 0 : Math.min(MAX_IMPORTE, Math.max(0, Number(v)))
       });
     },
     onKeyDown: e => {
