@@ -38,8 +38,7 @@
 <main>
   <h1>Generar contenido con IA</h1>
 
-  <label>Contraseña</label>
-  <input type="password" id="password" placeholder="Contraseña del panel" />
+  <div id="sesion" class="fila-estado">Comprobando sesión…</div>
 
   <label>Tipo de contenido</label>
   <div class="tipo-opciones">
@@ -71,7 +70,36 @@
   <div id="listaPosts"></div>
 </main>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
 <script>
+  // Misma configuración pública que la app (la clave "anon" es pública por diseño).
+  // El panel reutiliza la sesión de MoneyPilot: no hay contraseña propia.
+  const SUPABASE_URL = 'https://yhxebtkxagxowrvrqssf.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InloeGVidGt4YWd4b3dydnJxc3NmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc1MTc0MTMsImV4cCI6MjEwMzA5MzQxM30.Mt9vWxpTP-YnZp38qtBAuZVmMMKmIxIKyXA4ni4WZzM';
+  const supa = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  async function cabeceras() {
+    const { data } = await supa.auth.getSession();
+    const token = data && data.session ? data.session.access_token : null;
+    if (!token) return null;
+    return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token };
+  }
+
+  (async () => {
+    const sesionDiv = document.getElementById('sesion');
+    const { data } = await supa.auth.getSession();
+    if (data && data.session) {
+      sesionDiv.textContent = 'Sesión iniciada como ' + data.session.user.email;
+    } else {
+      sesionDiv.textContent = '';
+      const enlace = document.createElement('a');
+      enlace.href = '/';
+      enlace.textContent = 'Inicia sesión en MoneyPilot con tu cuenta de administrador';
+      sesionDiv.appendChild(enlace);
+      sesionDiv.appendChild(document.createTextNode(' y vuelve a esta página.'));
+    }
+  })();
+
   let tipo = 'noticia';
 
   const btnNoticia = document.getElementById('btnNoticia');
@@ -83,7 +111,6 @@
   btnGuia.onclick = () => { tipo = 'guia'; btnGuia.classList.add('activo'); btnNoticia.classList.remove('activo'); btnTesis.classList.remove('activo'); };
 
   document.getElementById('generar').onclick = async () => {
-    const password = document.getElementById('password').value;
     const tema = document.getElementById('tema').value.trim();
     const cta_texto = document.getElementById('ctaTexto').value.trim();
     const cta_enlace_texto = document.getElementById('ctaEnlaceTexto').value.trim();
@@ -91,7 +118,8 @@
     const estado = document.getElementById('estado');
     const boton = document.getElementById('generar');
 
-    if (!password) { alert('Escribe la contraseña'); return; }
+    const headers = await cabeceras();
+    if (!headers) { alert('Primero inicia sesión en MoneyPilot como administrador'); return; }
     if (!tema) { alert('Escribe un ticker o tema'); return; }
 
     boton.disabled = true;
@@ -101,8 +129,8 @@
     try {
       const res = await fetch('/api/generar-inversion', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password, tema, tipo, cta_texto, cta_enlace_texto, cta_enlace_url }),
+        headers,
+        body: JSON.stringify({ tema, tipo, cta_texto, cta_enlace_texto, cta_enlace_url }),
       });
       const data = await res.json();
 
@@ -126,19 +154,19 @@
   };
 
   document.getElementById('cargarPosts').onclick = async () => {
-    const password = document.getElementById('password').value;
     const listaEstado = document.getElementById('listaEstado');
     const contenedor = document.getElementById('listaPosts');
 
-    if (!password) { alert('Escribe la contraseña arriba'); return; }
+    const headers = await cabeceras();
+    if (!headers) { alert('Primero inicia sesión en MoneyPilot como administrador'); return; }
 
     listaEstado.textContent = 'Cargando…';
     contenedor.innerHTML = '';
     try {
       const res = await fetch('/api/posts-admin', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password, action: 'list' }),
+        headers,
+        body: JSON.stringify({ action: 'list' }),
       });
       const data = await res.json();
       if (!res.ok) { listaEstado.textContent = 'Error: ' + (data.error || 'algo falló'); return; }
@@ -175,9 +203,8 @@
           try {
             const r = await fetch('/api/posts-admin', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              headers: (await cabeceras()) || headers,
               body: JSON.stringify({
-                password,
                 action: 'update',
                 id: p.id,
                 cta_texto: inputTexto.value,
@@ -195,11 +222,17 @@
           }
         };
 
-        card.innerHTML = `
-          <div class="titulo">${p.title}</div>
-          <div class="seccion">${p.categoria_seccion}</div>
-          <label>Mensaje del CTA</label>
-        `;
+        const tituloDiv = document.createElement('div');
+        tituloDiv.className = 'titulo';
+        tituloDiv.textContent = p.title;
+        const seccionDiv = document.createElement('div');
+        seccionDiv.className = 'seccion';
+        seccionDiv.textContent = p.categoria_seccion;
+        const labelTexto = document.createElement('label');
+        labelTexto.textContent = 'Mensaje del CTA';
+        card.appendChild(tituloDiv);
+        card.appendChild(seccionDiv);
+        card.appendChild(labelTexto);
         card.appendChild(inputTexto);
 
         const labelEnlaceTexto = document.createElement('label');
