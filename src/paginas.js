@@ -9,6 +9,16 @@ import { LIBROS } from './libros-guia.js';
 // ISIN: 2 letras de país + 9 caracteres alfanuméricos + 1 dígito de control.
 const ISIN_RE = /^[A-Z]{2}[A-Z0-9]{9}[0-9]$/;
 
+// Ejemplo de nombre que se muestra según el tipo de inversión elegido.
+const EJEMPLO_NOMBRE_INVERSION = {
+  "Acciones": "Ej. Apple, Inditex, Microsoft",
+  "ETF": "Ej. iShares MSCI ACWI, Vanguard FTSE All-World",
+  "Fondo indexado": "Ej. Vanguard Global Stock Index, Fidelity MSCI World Index",
+  "Fondo de pensiones": "Ej. Plan de pensiones indexado global",
+  "Criptomoneda": "Ej. Bitcoin, Ethereum",
+  "Otro": "Ej. Letras del Tesoro, oro, bonos"
+};
+
 export function PrintSummary({
   datos,
   liquidezReal,
@@ -3294,16 +3304,18 @@ export function Inversiones({
     return b.rentSigno === "perdida" ? -bruta : bruta;
   };
   const guardar = () => {
-    if (!borrador || !borrador.nombre.trim()) return;
+    if (!borrador) return;
     const requiereIsin = borrador.tipo === "ETF" || borrador.tipo === "Fondo indexado";
     const isinLimpio = String(borrador.isin || "").trim().toUpperCase();
-    if (requiereIsin && !ISIN_RE.test(isinLimpio)) {
-      setBorrador({ ...borrador, _errIsin: true });
+    const falta = !borrador.nombre.trim();
+    const isinMal = requiereIsin && !ISIN_RE.test(isinLimpio);
+    if (falta || isinMal) {
+      setBorrador({ ...borrador, _errNombre: falta, _errIsin: isinMal });
       return;
     }
     const aportado = Number(borrador.totalAportado) || 0;
     const rent = calcularRentabilidad(borrador);
-    const { rentSigno, rentModo, rentValor, _errIsin, ...base } = borrador;
+    const { rentSigno, rentModo, rentValor, _errIsin, _errNombre, ...base } = borrador;
     const listo = {
       ...base,
       isin: isinLimpio,
@@ -3434,11 +3446,14 @@ export function Inversiones({
     style: { color: C.ink }
   }, "Nombre"), el("input", {
     value: borrador.nombre,
-    onChange: e => setBorrador({ ...borrador, nombre: e.target.value }),
-    placeholder: "Ej. MSCI World, Apple, fondo indexado...",
+    onChange: e => setBorrador({ ...borrador, nombre: e.target.value, _errNombre: false }),
+    placeholder: EJEMPLO_NOMBRE_INVERSION[borrador.tipo] || "Nombre de la inversión",
     className: "w-full rounded-lg px-3 py-2 text-sm font-bold border outline-none",
-    style: { borderColor: C.border, color: C.ink, backgroundColor: C.paper }
-  })), el(NumberField, {
+    style: { borderColor: borrador._errNombre ? C.crit : C.border, color: C.ink, backgroundColor: C.paper }
+  }), borrador._errNombre ? el("p", {
+    className: "text-xs mt-1 font-bold",
+    style: { color: C.crit }
+  }, "Escribe el nombre de la inversión para poder guardarla.") : null), el(NumberField, {
     label: "Total aportado",
     value: borrador.totalAportado || 0,
     onChange: v => setBorrador({ ...borrador, totalAportado: v }),
@@ -3504,7 +3519,10 @@ export function Inversiones({
   }), el("p", {
     className: "text-xs mt-1 font-bold",
     style: { color: borrador._errIsin ? C.crit : C.muted }
-  }, borrador._errIsin ? "Introduce un ISIN válido: 12 caracteres (2 letras, 9 letras o números y 1 dígito)." : "Lo encontrarás en la ficha del fondo o ETF en tu broker.")) : null), el("div", {
+  }, borrador._errIsin ? "Introduce un ISIN válido: 12 caracteres (2 letras, 9 letras o números y 1 dígito)." : "Lo encontrarás en la ficha del fondo o ETF en tu broker.")) : null), (borrador._errNombre || borrador._errIsin) ? el("p", {
+    className: "text-xs font-bold mt-3",
+    style: { color: C.crit }
+  }, "Faltan datos obligatorios: revisa los campos marcados en rojo.") : null, el("div", {
     className: "flex gap-2 mt-4"
   }, el("button", {
     onClick: guardar,
