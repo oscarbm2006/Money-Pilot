@@ -5,7 +5,8 @@
 //   'actualidad' -> /blog/actualidad
 //   'tesis'      -> /blog/tesis
 //   'guia'       -> /blog/guia  (agrupada por "fase" en vez de por fecha)
-// Se ejecuta automáticamente en cada despliegue de Vercel (Build Command).
+// Se ejecuta en cada despliegue: `npm run build` lo lanza antes de `vite build`.
+// Escribe en public/blog y regenera public/sitemap.xml con todos los artículos.
 
 const { createClient } = require('@supabase/supabase-js');
 const fs = require('fs');
@@ -13,8 +14,12 @@ const path = require('path');
 
 const SUPABASE_URL = "https://yhxebtkxagxowrvrqssf.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InloeGVidGt4YWd4b3dydnJxc3NmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc1MTc0MTMsImV4cCI6MjEwMzA5MzQxM30.Mt9vWxpTP-YnZp38qtBAuZVmMMKmIxIKyXA4ni4WZzM";
-const SITE_URL = "https://money-pilot-seven-orpin.vercel.app";
-const BASE_DIR = path.join(__dirname, 'blog');
+// Si más adelante tienes dominio propio, define SITE_URL en Vercel (Settings > Environment Variables)
+// o cambia el valor por defecto de aquí.
+const SITE_URL = (process.env.SITE_URL || "https://money-pilot-seven-orpin.vercel.app").replace(/\/+$/, '');
+// Se escribe dentro de public/ para que Vite lo copie tal cual a dist/ al compilar.
+const PUBLIC_DIR = path.join(__dirname, 'public');
+const BASE_DIR = path.join(PUBLIC_DIR, 'blog');
 
 const supa = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -283,6 +288,47 @@ function generarSeccion(posts, seccion) {
   }
 }
 
+// Páginas fijas del sitio que siempre van en el sitemap.
+const PAGINAS_FIJAS = [
+  { loc: '/', changefreq: 'weekly', priority: '1.0' },
+  { loc: '/recursos-y-libros.html', changefreq: 'monthly', priority: '0.7' },
+  { loc: '/quienes-somos.html', changefreq: 'monthly', priority: '0.6' },
+  { loc: '/contacto.html', changefreq: 'monthly', priority: '0.5' },
+  { loc: '/privacidad.html', changefreq: 'yearly', priority: '0.3' },
+  { loc: '/aviso-legal.html', changefreq: 'yearly', priority: '0.3' },
+];
+
+function fechaIso(d) {
+  try { return new Date(d).toISOString().slice(0, 10); } catch (e) { return null; }
+}
+
+function generarSitemap(postsPorSeccion) {
+  const urls = PAGINAS_FIJAS.map(p => ({ ...p }));
+  for (const seccion of SECCIONES) {
+    urls.push({ loc: `${seccion.urlBase}/index.html`, changefreq: 'weekly', priority: '0.8' });
+    for (const post of postsPorSeccion[seccion.key] || []) {
+      if (!post.slug) continue;
+      urls.push({
+        loc: `${seccion.urlBase}/${post.slug}.html`,
+        lastmod: fechaIso(post.updated_at || post.created_at),
+        changefreq: 'monthly',
+        priority: seccion.key === 'guia' ? '0.8' : '0.6',
+      });
+    }
+  }
+  const cuerpo = urls.map(u => [
+    '  <url>',
+    `    <loc>${SITE_URL}${u.loc}</loc>`,
+    u.lastmod ? `    <lastmod>${u.lastmod}</lastmod>` : null,
+    `    <changefreq>${u.changefreq}</changefreq>`,
+    `    <priority>${u.priority}</priority>`,
+    '  </url>',
+  ].filter(Boolean).join('\n')).join('\n');
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${cuerpo}\n</urlset>\n`;
+  fs.writeFileSync(path.join(PUBLIC_DIR, 'sitemap.xml'), xml);
+  return urls.length;
+}
+
 async function main() {
   console.log('Generando páginas estáticas del blog…');
   const { data: posts, error } = await supa
@@ -292,19 +338,31 @@ async function main() {
     .order('created_at', { ascending: true });
 
   if (error) {
+    // Falla el build a propósito: así Vercel mantiene el despliegue anterior
+    // (con su blog) en vez de publicar una web sin artículos sin avisarte.
     console.error('Error al leer posts de Supabase:', error.message);
-    process.exit(0);
+    process.exit(1);
   }
 
   const todos = posts || [];
 
+  // Limpia lo generado en el build anterior (por si algún artículo se ha despublicado).
+  fs.rmSync(BASE_DIR, { recursive: true, force: true });
+
+  const postsPorSeccion = {};
   for (const seccion of SECCIONES) {
     const posts_de_seccion = todos.filter(p => p.categoria_seccion === seccion.key);
+    postsPorSeccion[seccion.key] = posts_de_seccion;
     generarSeccion(posts_de_seccion, seccion);
     console.log(`  ${seccion.key}: ${posts_de_seccion.length} artículo(s)`);
   }
 
+  const total = generarSitemap(postsPorSeccion);
+  console.log(`  sitemap.xml: ${total} URL(s)`);
   console.log('Listo.');
 }
 
-main();
+main().catch(err => {
+  console.error('Error inesperado generando el blog:', err);
+  process.exit(1);
+});
