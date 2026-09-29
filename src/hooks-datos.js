@@ -312,10 +312,38 @@ export function esIdInversionLocal(id) {
   return typeof id === "string" && id.startsWith("local_inv_");
 }
 
+// La base de datos solo acepta estos códigos de tipo; la app muestra etiquetas en español.
+// "Criptomoneda" se guarda como "otro" y se recuerda en metadatos para recuperarla al leer.
+const TIPO_INV_A_DB = {
+  "Acciones": "accion",
+  "ETF": "etf",
+  "Fondo indexado": "fondo",
+  "Fondo de pensiones": "plan_pensiones",
+  "Criptomoneda": "otro",
+  "Otro": "otro"
+};
+const TIPO_INV_DESDE_DB = {
+  accion: "Acciones",
+  etf: "ETF",
+  fondo: "Fondo indexado",
+  plan_pensiones: "Fondo de pensiones",
+  otro: "Otro"
+};
+export function tipoInversionADb(t) {
+  return TIPO_INV_A_DB[t] || "otro";
+}
+export function metadatosInversion(t) {
+  return t === "Criptomoneda" ? { tipo_ui: "Criptomoneda" } : {};
+}
+export function isinADb(v) {
+  const limpio = String(v || "").trim().toUpperCase();
+  return limpio || null;
+}
 export function mapInversionRemotaALocal(row) {
   return {
     id: row.id,
-    tipo: row.tipo || "Otro",
+    tipo: row.tipo === "otro" && row.metadatos && row.metadatos.tipo_ui === "Criptomoneda" ? "Criptomoneda" : TIPO_INV_DESDE_DB[row.tipo] || "Otro",
+    isin: row.isin || "",
     nombre: row.nombre || "",
     entidad: row.entidad || "",
     ticker: row.ticker || "",
@@ -328,7 +356,9 @@ export function mapInversionRemotaALocal(row) {
 export function mapInversionLocalARemota(inv, userId) {
   return {
     user_id: userId,
-    tipo: inv.tipo || "Otro",
+    tipo: tipoInversionADb(inv.tipo),
+    metadatos: metadatosInversion(inv.tipo),
+    isin: isinADb(inv.isin),
     nombre: inv.nombre || "Sin nombre",
     entidad: inv.entidad || null,
     ticker: inv.ticker || null,
@@ -437,7 +467,6 @@ export function useInversionesSync({
     if (user && cloudReady && !esIdInversionLocal(id)) {
       const payload = {};
       const mapaColumnas = {
-        tipo: "tipo",
         nombre: "nombre",
         entidad: "entidad",
         ticker: "ticker",
@@ -446,6 +475,11 @@ export function useInversionesSync({
       Object.entries(mapaColumnas).forEach(([campo, columna]) => {
         if (cambios[campo] !== undefined) payload[columna] = cambios[campo] || null;
       });
+      if (cambios.tipo !== undefined) {
+        payload.tipo = tipoInversionADb(cambios.tipo);
+        payload.metadatos = metadatosInversion(cambios.tipo);
+      }
+      if (cambios.isin !== undefined) payload.isin = isinADb(cambios.isin);
       if (cambios.valorActual !== undefined) payload.valor_actual = numOrNull(cambios.valorActual);
       if (cambios.totalAportado !== undefined) payload.total_aportado = numOrNull(cambios.totalAportado);
       if (Object.keys(payload).length === 0) return;
