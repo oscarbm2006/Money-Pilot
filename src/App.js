@@ -34,12 +34,35 @@ export function App() {
   useEffect(() => {
     if (vistaActual !== 'diagnostico') setIrADeudas(false);
   }, [vistaActual]);
+  const vistaRef = useRef(vistaActual);
+  vistaRef.current = vistaActual;
   const setVistaActual = v => {
+    if (v === vistaRef.current) return;
     setVistaActualBase(v);
     try {
       window.localStorage.setItem("salud-financiera:ultima-vista", v);
     } catch (e) {}
+    // Cada cambio de pantalla crea una entrada en el historial del navegador,
+    // para que el botón "atrás" del navegador vuelva a la pantalla anterior.
+    try {
+      window.history.pushState({ mpVista: v }, "");
+    } catch (e) {}
   };
+  useEffect(() => {
+    try {
+      window.history.replaceState({ mpVista: vistaRef.current }, "");
+    } catch (e) {}
+    const onPop = e => {
+      const v = e.state && e.state.mpVista;
+      if (!v) return;
+      setVistaActualBase(v);
+      try {
+        window.localStorage.setItem("salud-financiera:ultima-vista", v);
+      } catch (err) {}
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
   useEffect(() => {
     if ("scrollRestoration" in window.history) window.history.scrollRestoration = "manual";
     window.scrollTo({
@@ -334,7 +357,9 @@ export function App() {
     historial: historialSeguimiento,
     cargando: cargandoSeguimiento,
     registrarSnapshot,
-    registrarSiHaceFalta
+    registrarSiHaceFalta,
+    eliminarRegistro,
+    borrarHistorial
   } = useSeguimiento({
     user
   });
@@ -519,7 +544,9 @@ export function App() {
     onEliminar: eliminarCuenta
   }), /*#__PURE__*/React.createElement(ContinuarBar, {
     label: "Continuar a Inversiones",
-    onClick: () => setVistaActual('inversiones')
+    onClick: () => setVistaActual('inversiones'),
+    backLabel: "Volver a Diagnóstico",
+    onBack: () => setVistaActual('diagnostico')
   })), vistaActual === 'inversiones' && /*#__PURE__*/React.createElement("div", {
     key: "inversiones",
     className: "fade-switch-enter"
@@ -530,7 +557,9 @@ export function App() {
     onEliminar: eliminarInversion
   }), /*#__PURE__*/React.createElement(ContinuarBar, {
     label: "Continuar a Patrimonio",
-    onClick: () => setVistaActual('patrimonio')
+    onClick: () => setVistaActual('patrimonio'),
+    backLabel: "Volver a Cuentas",
+    onBack: () => setVistaActual('cuentas')
   })), vistaActual === 'patrimonio' && /*#__PURE__*/React.createElement("div", {
     key: "patrimonio",
     className: "fade-switch-enter"
@@ -550,7 +579,9 @@ export function App() {
     }
   }), /*#__PURE__*/React.createElement(ContinuarBar, {
     label: "Continuar a Estrategia",
-    onClick: () => setVistaActual('estrategia')
+    onClick: () => setVistaActual('estrategia'),
+    backLabel: "Volver a Inversiones",
+    onBack: () => setVistaActual('inversiones')
   })), vistaActual === 'estrategia' && /*#__PURE__*/React.createElement("div", {
     key: "estrategia",
     className: "fade-switch-enter"
@@ -643,7 +674,9 @@ export function App() {
     onSeleccionarObjetivo: setObjetivoSeleccionadoId
   }), /*#__PURE__*/React.createElement(ContinuarBar, {
     label: "Continuar a Plan",
-    onClick: () => setVistaActual('plan')
+    onClick: () => setVistaActual('plan'),
+    backLabel: "Volver a Patrimonio",
+    onBack: () => setVistaActual('patrimonio')
   }))))), vistaActual === 'plan' && /*#__PURE__*/React.createElement("div", {
     key: "plan",
     className: "fade-switch-enter"
@@ -674,7 +707,9 @@ export function App() {
     onIrABlog: () => setVistaActual('blog')
   }), /*#__PURE__*/React.createElement(ContinuarBar, {
     label: "Continuar a Seguimiento",
-    onClick: () => setVistaActual('seguimiento')
+    onClick: () => setVistaActual('seguimiento'),
+    backLabel: "Volver a Estrategia",
+    onBack: () => setVistaActual('estrategia')
   })))), vistaActual === 'seguimiento' && /*#__PURE__*/React.createElement("div", {
     key: "seguimiento",
     className: "fade-switch-enter"
@@ -699,7 +734,18 @@ export function App() {
     historial: historialSeguimiento,
     cargando: cargandoSeguimiento,
     onRegistrar: () => registrarSnapshot(valoresSnapshotActual, "manual"),
+    onEliminar: async id => {
+      const r = await eliminarRegistro(id);
+      showToast(r.ok ? "Registro eliminado" : "No se pudo eliminar el registro", r.ok ? "ok" : "error");
+    },
+    onBorrarTodo: async () => {
+      const r = await borrarHistorial();
+      showToast(r.ok ? "Histórico borrado. Puedes empezar desde cero." : "No se pudo borrar el histórico", r.ok ? "ok" : "error");
+    },
     onOpenAuth: () => setShowAuthModal(true)
+  }), /*#__PURE__*/React.createElement(ContinuarBar, {
+    backLabel: "Volver a Plan",
+    onBack: () => setVistaActual('plan')
   })))), vistaActual === 'simulador' && /*#__PURE__*/React.createElement("div", {
     key: "simulador",
     className: "fade-switch-enter"
