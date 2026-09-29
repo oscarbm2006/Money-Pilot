@@ -6,6 +6,9 @@ import { AnimatedNumber, Badge, BlogLinkCard, Card, DesgloseBarra, Eyebrow, Fade
 import { AcordeonFase, GastosTabs } from './secciones.js';
 import { LIBROS } from './libros-guia.js';
 
+// ISIN: 2 letras de país + 9 caracteres alfanuméricos + 1 dígito de control.
+const ISIN_RE = /^[A-Z]{2}[A-Z0-9]{9}[0-9]$/;
+
 export function PrintSummary({
   datos,
   liquidezReal,
@@ -3262,6 +3265,7 @@ export function Inversiones({
       nombre: "",
       entidad: "",
       ticker: "",
+      isin: "",
       valorActual: 0,
       totalAportado: 0,
       rentSigno: "ganancia",
@@ -3291,11 +3295,18 @@ export function Inversiones({
   };
   const guardar = () => {
     if (!borrador || !borrador.nombre.trim()) return;
+    const requiereIsin = borrador.tipo === "ETF" || borrador.tipo === "Fondo indexado";
+    const isinLimpio = String(borrador.isin || "").trim().toUpperCase();
+    if (requiereIsin && !ISIN_RE.test(isinLimpio)) {
+      setBorrador({ ...borrador, _errIsin: true });
+      return;
+    }
     const aportado = Number(borrador.totalAportado) || 0;
     const rent = calcularRentabilidad(borrador);
-    const { rentSigno, rentModo, rentValor, ...base } = borrador;
+    const { rentSigno, rentModo, rentValor, _errIsin, ...base } = borrador;
     const listo = {
       ...base,
+      isin: isinLimpio,
       moneda: "EUR",
       totalAportado: aportado > 0 ? aportado : null,
       valorActual: Math.max(0, Math.round((aportado + rent) * 100) / 100)
@@ -3480,7 +3491,20 @@ export function Inversiones({
     placeholder: "Ej. Trade Republic, MyInvestor",
     className: "w-full rounded-lg px-3 py-2 text-sm font-bold border outline-none",
     style: { borderColor: C.border, color: C.ink, backgroundColor: C.paper }
-  }))), el("div", {
+  })), (borrador.tipo === "ETF" || borrador.tipo === "Fondo indexado") ? el("div", null, el("label", {
+    className: "block text-xs font-bold mb-1.5",
+    style: { color: C.ink }
+  }, "ISIN (obligatorio en ETF y fondos)"), el("input", {
+    value: borrador.isin || "",
+    onChange: e => setBorrador({ ...borrador, isin: e.target.value.toUpperCase(), _errIsin: false }),
+    maxLength: 12,
+    placeholder: "Ej. IE00B4L5Y983",
+    className: "w-full rounded-lg px-3 py-2 text-sm font-bold border outline-none",
+    style: { borderColor: borrador._errIsin ? C.crit : C.border, color: C.ink, backgroundColor: C.paper }
+  }), el("p", {
+    className: "text-xs mt-1 font-bold",
+    style: { color: borrador._errIsin ? C.crit : C.muted }
+  }, borrador._errIsin ? "Introduce un ISIN válido: 12 caracteres (2 letras, 9 letras o números y 1 dígito)." : "Lo encontrarás en la ficha del fondo o ETF en tu broker.")) : null), el("div", {
     className: "flex gap-2 mt-4"
   }, el("button", {
     onClick: guardar,
