@@ -4174,10 +4174,15 @@ export function Seguimiento({
   historial,
   cargando,
   onRegistrar,
+  onEliminar,
+  onBorrarTodo,
   onOpenAuth
 }) {
   const el = React.createElement;
   const [registrando, setRegistrando] = useState(false);
+  const [confirmarId, setConfirmarId] = useState(null);
+  const [confirmarTodo, setConfirmarTodo] = useState(false);
+  const [borrando, setBorrando] = useState(false);
 
   if (!user) {
     return el(Card, {
@@ -4293,10 +4298,69 @@ export function Seguimiento({
   }, el("span", {
     className: "text-xs font-bold",
     style: { color: C.muted }
-  }, fechaFmt(h.registrado_at), h.origen === "auto" ? " · automático" : ""), el("span", {
+  }, fechaFmt(h.registrado_at), h.origen === "auto" ? " · automático" : ""), el("div", {
+    className: "flex items-center gap-3"
+  }, el("span", {
     className: "text-sm font-bold",
     style: { color: C.ink }
-  }, euros(h.patrimonio_neto)))))), el("p", {
+  }, euros(h.patrimonio_neto)), confirmarId === h.id ? el("span", {
+    className: "inline-flex items-center gap-1.5"
+  }, el("button", {
+    type: "button",
+    onClick: async () => {
+      setBorrando(true);
+      await onEliminar(h.id);
+      setBorrando(false);
+      setConfirmarId(null);
+    },
+    disabled: borrando,
+    className: "text-[11px] font-bold px-2 py-1 rounded-md disabled:opacity-60",
+    style: { backgroundColor: C.crit, color: "#fff" }
+  }, "Borrar"), el("button", {
+    type: "button",
+    onClick: () => setConfirmarId(null),
+    className: "text-[11px] font-bold px-2 py-1 rounded-md border",
+    style: { borderColor: C.border, color: C.muted }
+  }, "Cancelar")) : el("button", {
+    type: "button",
+    onClick: () => setConfirmarId(h.id),
+    "aria-label": "Borrar este registro",
+    title: "Borrar este registro",
+    className: "w-7 h-7 rounded-md flex items-center justify-center hover:opacity-70",
+    style: { color: C.muted }
+  }, el(I.trash, { size: 14 })))))), el("div", {
+    className: "mt-4 pt-4 flex items-center justify-between gap-3 flex-wrap",
+    style: { borderTop: "1px solid " + C.border }
+  }, el("p", {
+    className: "text-[11px]",
+    style: { color: C.muted }
+  }, "¿Quieres empezar de cero? Borra todo tu histórico de seguimiento."), confirmarTodo ? el("span", {
+    className: "inline-flex items-center gap-2"
+  }, el("span", {
+    className: "text-xs font-bold",
+    style: { color: C.ink }
+  }, "¿Seguro? No se puede deshacer."), el("button", {
+    type: "button",
+    onClick: async () => {
+      setBorrando(true);
+      await onBorrarTodo();
+      setBorrando(false);
+      setConfirmarTodo(false);
+    },
+    disabled: borrando,
+    className: "text-xs font-bold px-3 py-1.5 rounded-lg disabled:opacity-60",
+    style: { backgroundColor: C.crit, color: "#fff" }
+  }, "Sí, borrar todo"), el("button", {
+    type: "button",
+    onClick: () => setConfirmarTodo(false),
+    className: "text-xs font-bold px-3 py-1.5 rounded-lg border",
+    style: { borderColor: C.border, color: C.muted }
+  }, "Cancelar")) : el("button", {
+    type: "button",
+    onClick: () => setConfirmarTodo(true),
+    className: "inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg border",
+    style: { borderColor: C.border, color: C.crit }
+  }, el(I.trash, { size: 13 }), "Borrar todo y empezar de cero"))), el("p", {
     className: "text-[11px] readable-note"
   }, "Cada registro guarda tu liquidez, inversiones, otros activos, deudas y fondo de emergencia de ese momento. Se genera automáticamente como mucho una vez al día, o cuando pulsas «Registrar mi avance»."));
 }
