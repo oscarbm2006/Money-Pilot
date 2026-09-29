@@ -1,7 +1,7 @@
 const { useState, useEffect, useRef, useCallback, useMemo, useId } = React;
 
 import { C, GASTOS_DISC_DEF, GASTOS_FIJOS_DEF, GASTOS_HORMIGA_EJEMPLOS, I, STATS_REALES, TASA_INDICE_GLOBAL } from './constantes.js';
-import { Card, EvidenciaModal, Eyebrow, FadeSwitch, FreqField, NumberField, SimpleAreaChart } from './ui-basicos.js';
+import { Card, EvidenciaModal, Eyebrow, FadeSwitch, FreqField, NumberField, SimpleAreaChart, SimpleStackedBarChart } from './ui-basicos.js';
 import { euros, proyeccionInteres, totalMensual } from './calculos.js';
 
 export function AnimatedStatValue({
@@ -140,9 +140,9 @@ export function GastoHormigaSection() {
       const a = i + 1;
       const p = proyeccionInteres(0, gasto, TASA_INDICE_GLOBAL, a);
       return {
-        anio: "Año " + a,
+        anio: a,
         aportado: Math.round(p.totalAportado),
-        valorFuturo: Math.round(p.valorFuturo)
+        interesGenerado: Math.max(0, Math.round(p.valorFuturo - p.totalAportado))
       };
     });
   }, [gasto, anios]);
@@ -240,21 +240,15 @@ export function GastoHormigaSection() {
       color: C.sand
     }
   }, euros(proyeccion.valorFuturo)), ".")), /*#__PURE__*/React.createElement("div", {
-    className: "h-56"
-  }, /*#__PURE__*/React.createElement(SimpleAreaChart, {
+    className: "mt-1"
+  }, /*#__PURE__*/React.createElement(SimpleStackedBarChart, {
     data: serie,
     xKey: "anio",
-    series: [{
-      key: "valorFuturo",
-      label: "Con interés compuesto",
-      color: C.sand,
-      opacity: 0.35
-    }, {
-      key: "aportado",
-      label: "Aportado",
-      color: C.slate,
-      opacity: 0.85
-    }],
+    aportadoKey: "aportado",
+    interesKey: "interesGenerado",
+    height: 280,
+    colorAportado: C.slate,
+    colorInteres: C.salu,
     formatY: v => v.toLocaleString("es-ES") + " €"
   })), /*#__PURE__*/React.createElement("div", {
     className: "flex gap-4 text-xs font-bold",
@@ -264,18 +258,18 @@ export function GastoHormigaSection() {
   }, /*#__PURE__*/React.createElement("span", {
     className: "inline-flex items-center gap-1.5"
   }, /*#__PURE__*/React.createElement("span", {
-    className: "w-2.5 h-2.5 rounded-full inline-block",
+    className: "w-2.5 h-2.5 rounded-sm inline-block",
     style: {
       backgroundColor: C.slate
     }
   }), "Aportado"), /*#__PURE__*/React.createElement("span", {
     className: "inline-flex items-center gap-1.5"
   }, /*#__PURE__*/React.createElement("span", {
-    className: "w-2.5 h-2.5 rounded-full inline-block",
+    className: "w-2.5 h-2.5 rounded-sm inline-block",
     style: {
-      backgroundColor: C.sand
+      backgroundColor: C.salu
     }
-  }), "Con interés compuesto")), /*#__PURE__*/React.createElement("p", {
+  }), "Intereses generados")), /*#__PURE__*/React.createElement("p", {
     className: "text-[11px] readable-note"
   }, "Proyección educativa con la rentabilidad histórica media de un índice global. Rentabilidades pasadas no garantizan resultados futuros.")));
 }
