@@ -659,3 +659,6 @@ export const NOMBRES_FASE_BLOG = {
   4: 'Fase 4: Optimización y Estrategia Avanzada',
   5: 'Fase 5: Objetivos Vitales y Legado',
 };
+
+// Tope de seguridad para importes en euros (1.000 millones): evita cifras absurdas que rompen cálculos y gráficos.
+export const MAX_IMPORTE = 1000000000;
