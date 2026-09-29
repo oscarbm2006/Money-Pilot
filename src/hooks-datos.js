@@ -746,6 +746,21 @@ export function useSeguimiento({
     };
   }, [user]);
 
+  const eliminarRegistro = useCallback(async id => {
+    if (!user) return { ok: false };
+    const { error } = await supa.from("seguimiento").delete().eq("id", id).eq("user_id", user.id);
+    if (error) return { ok: false, error };
+    setHistorial(prev => prev.filter(h => h.id !== id));
+    return { ok: true };
+  }, [user]);
+  const borrarHistorial = useCallback(async () => {
+    if (!user) return { ok: false };
+    const { error } = await supa.from("seguimiento").delete().eq("user_id", user.id);
+    if (error) return { ok: false, error };
+    setHistorial([]);
+    return { ok: true };
+  }, [user]);
+
   // Registro automático: como mucho una vez al día, en silencio, para que
   // el histórico vaya creciendo aunque el usuario no pulse nada.
   const registrarSiHaceFalta = useCallback(async valores => {
@@ -760,7 +775,9 @@ export function useSeguimiento({
     cargando,
     cargado,
     registrarSnapshot,
-    registrarSiHaceFalta
+    registrarSiHaceFalta,
+    eliminarRegistro,
+    borrarHistorial
   };
 }
 
