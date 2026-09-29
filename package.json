@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "node generate-blog.js && vite build",
     "preview": "vite preview",
     "blog": "node generate-blog.js"
   },
