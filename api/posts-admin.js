@@ -1,17 +1,18 @@
 // api/posts-admin.js
-const { createClient } = require('@supabase/supabase-js');
+const { verificarAdmin, urlSegura } = require('../lib/verificar-admin');
 
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Método no permitido' });
   }
 
-  const { password, action, id, cta_texto, cta_enlace_texto, cta_enlace_url } = req.body || {};
-  if (!password || password !== process.env.ADMIN_PANEL_PASSWORD) {
-    return res.status(401).json({ error: 'Contraseña incorrecta' });
+  const auth = await verificarAdmin(req);
+  if (!auth.ok) {
+    return res.status(auth.status).json({ error: auth.error });
   }
+  const supa = auth.supa;
 
-  const supa = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
+  const { action, id, cta_texto, cta_enlace_texto, cta_enlace_url } = req.body || {};
 
   if (action === 'list') {
     const { data, error } = await supa
@@ -34,7 +35,7 @@ module.exports = async function handler(req, res) {
       .update({
         cta_texto: (cta_texto || '').trim() || null,
         cta_enlace_texto: (cta_enlace_texto || '').trim() || null,
-        cta_enlace_url: (cta_enlace_url || '').trim() || '/',
+        cta_enlace_url: urlSegura(cta_enlace_url),
       })
       .eq('id', id);
 
