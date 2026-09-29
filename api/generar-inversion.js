@@ -1,5 +1,5 @@
 // api/generar-inversion.js
-const { createClient } = require('@supabase/supabase-js');
+const { verificarAdmin, urlSegura } = require('../lib/verificar-admin');
 
 function slugify(texto) {
   return (texto || '')
@@ -16,12 +16,17 @@ module.exports = async function handler(req, res) {
     return res.status(405).json({ error: 'Método no permitido' });
   }
 
-  const { password, tema, tipo, cta_texto, cta_enlace_texto, cta_enlace_url } = req.body || {};
-  if (!password || password !== process.env.ADMIN_PANEL_PASSWORD) {
-    return res.status(401).json({ error: 'Contraseña incorrecta' });
+  const auth = await verificarAdmin(req);
+  if (!auth.ok) {
+    return res.status(auth.status).json({ error: auth.error });
   }
+
+  const { tema, tipo, cta_texto, cta_enlace_texto, cta_enlace_url } = req.body || {};
   if (!tema || typeof tema !== 'string') {
     return res.status(400).json({ error: 'Falta el ticker o tema' });
+  }
+  if (tema.length > 200) {
+    return res.status(400).json({ error: 'El ticker o tema es demasiado largo (máximo 200 caracteres)' });
   }
 
   const esTesis = tipo === 'tesis';
@@ -125,7 +130,7 @@ Extensión: alrededor de 300 a 400 palabras. Incluye un primer párrafo resumen 
       fase = 1;
     }
 
-    const supa = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
+    const supa = auth.supa;
 
     const { data, error } = await supa
       .from('posts')
@@ -142,7 +147,7 @@ Extensión: alrededor de 300 a 400 palabras. Incluye un primer párrafo resumen 
         cover_emoji: cover_emoji,
         cta_texto: (cta_texto || '').trim() || null,
         cta_enlace_texto: (cta_enlace_texto || '').trim() || null,
-        cta_enlace_url: (cta_enlace_url || '').trim() || '/',
+        cta_enlace_url: urlSegura(cta_enlace_url),
       })
       .select()
       .single();
