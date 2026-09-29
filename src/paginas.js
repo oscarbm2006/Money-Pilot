@@ -3016,11 +3016,18 @@ export function Cuentas({
     });
   };
   const guardar = () => {
-    if (!borrador || !borrador.banco.trim() || !borrador.nombre.trim()) return;
+    if (!borrador) return;
+    const faltaBanco = !borrador.banco.trim();
+    const faltaNombre = !borrador.nombre.trim();
+    if (faltaBanco || faltaNombre) {
+      setBorrador({ ...borrador, _errBanco: faltaBanco, _errNombre: faltaNombre });
+      return;
+    }
+    const { _errBanco, _errNombre, ...limpio } = borrador;
     if (editando) {
-      onActualizar(editando, borrador);
+      onActualizar(editando, limpio);
     } else {
-      onAgregar(borrador);
+      onAgregar(limpio);
     }
     setEditando(null);
     setBorrador(null);
@@ -3091,16 +3098,20 @@ export function Cuentas({
     value: borrador.banco,
     onChange: e => setBorrador({
       ...borrador,
-      banco: e.target.value
+      banco: e.target.value,
+      _errBanco: false
     }),
     placeholder: "Ej. CaixaBank",
     className: "w-full rounded-lg px-3 py-2 text-sm font-bold border outline-none",
     style: {
-      borderColor: C.border,
+      borderColor: borrador._errBanco ? C.crit : C.border,
       color: C.ink,
       backgroundColor: C.paper
     }
-  })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+  }), borrador._errBanco ? /*#__PURE__*/React.createElement("p", {
+    className: "text-xs mt-1 font-bold",
+    style: { color: C.crit }
+  }, "Escribe el nombre del banco para poder guardar la cuenta.") : null), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
     className: "block text-xs font-bold mb-1.5",
     style: {
       color: C.ink
@@ -3129,16 +3140,20 @@ export function Cuentas({
     value: borrador.nombre,
     onChange: e => setBorrador({
       ...borrador,
-      nombre: e.target.value
+      nombre: e.target.value,
+      _errNombre: false
     }),
     placeholder: "Ej. Cuenta nómina",
     className: "w-full rounded-lg px-3 py-2 text-sm font-bold border outline-none",
     style: {
-      borderColor: C.border,
+      borderColor: borrador._errNombre ? C.crit : C.border,
       color: C.ink,
       backgroundColor: C.paper
     }
-  })), /*#__PURE__*/React.createElement(NumberField, {
+  }), borrador._errNombre ? /*#__PURE__*/React.createElement("p", {
+    className: "text-xs mt-1 font-bold",
+    style: { color: C.crit }
+  }, "Escribe un nombre para la cuenta (por ejemplo, Cuenta nómina).") : null), /*#__PURE__*/React.createElement(NumberField, {
     label: "Saldo actual",
     value: borrador.saldo,
     onChange: v => setBorrador({
@@ -3157,7 +3172,10 @@ export function Cuentas({
     }),
     className: "w-4 h-4 rounded",
     style: { accentColor: C.sand }
-  }), "Es mi fondo de emergencia")), /*#__PURE__*/React.createElement("div", {
+  }), "Es mi fondo de emergencia")), (borrador._errBanco || borrador._errNombre) ? /*#__PURE__*/React.createElement("p", {
+    className: "text-xs font-bold mt-3",
+    style: { color: C.crit }
+  }, "Faltan datos obligatorios: revisa los campos marcados en rojo.") : null, /*#__PURE__*/React.createElement("div", {
     className: "flex gap-2 mt-4"
   }, /*#__PURE__*/React.createElement("button", {
     onClick: guardar,
