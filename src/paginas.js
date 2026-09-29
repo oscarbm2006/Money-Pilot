@@ -1,6 +1,6 @@
 const { useState, useEffect, useRef, useCallback, useMemo, useId } = React;
 
-import { ACTIVOS_DEF, ASIGNACION, BLOG_ADMIN_EMAIL, C, CUENTA_TIPOS_DEF, I, NOMBRES_FASE_BLOG, OBJETIVOS_DEF, PERFILES_INFO, PRIORIDADES_OBJETIVO, PRIORIDAD_LABEL, QUIZ_DEF, SECCIONES_BLOG, TIPOS_ACTIVO_DEF, TIPOS_INVERSION_DEF, supa } from './constantes.js';
+import { ACTIVOS_DEF, ASIGNACION, BLOG_ADMIN_EMAIL, C, CUENTA_TIPOS_DEF, I, NOMBRES_FASE_BLOG, OBJETIVOS_DEF, PERFILES_INFO, PRIORIDADES_OBJETIVO, PRIORIDAD_LABEL, QUIZ_DEF, SECCIONES_BLOG, TIPOS_ACTIVO_DEF, TIPOS_INVERSION_DEF, supa, MAX_IMPORTE } from './constantes.js';
 import { aportacionNecesariaParaObjetivo, calcularCapacidadFinanciera, calcularFondoEmergencia, calcularPerfilMultidimensional, calcularPlanObjetivos, calcularSaludFinanciera, crearIdObjetivo, estadoAhorro, euros, fmtFecha, formatMeses, getNextQuestionId, mdToHtml, normalizarObjetivo, normalizarObjetivos, pct, proyeccionInteres, quizNumero, recomendacionObjetivoPorHorizonte, reconstruirEstadoQuiz, rentabilidadNecesariaParaObjetivo, simularAmortizacion, sincronizarObjetivos, slugify, tiempoNecesarioParaObjetivo, totalMensual } from './calculos.js';
 import { AnimatedNumber, Badge, BlogLinkCard, Card, DesgloseBarra, Eyebrow, FadeSwitch, NumberField, ProgressBar, SimpleAreaChart, SimpleDonut, SimpleStackedBarChart, StatCard, Termometro } from './ui-basicos.js';
 import { AcordeonFase, GastosTabs } from './secciones.js';
@@ -797,11 +797,13 @@ export function Simulador({
     label: "Rentabilidad anual",
     value: tasa,
     suffix: "%",
+    max: 100,
     onChange: v => setAjusteTasa(Number(v) || 0)
   }), /*#__PURE__*/React.createElement(NumberField, {
     label: "Horizonte (años)",
     value: horizonte,
     suffix: "años",
+    max: 100,
     onChange: v => setAjusteHorizonte(Math.max(1, Number(v) || 1))
   }))), objetivos.length > 0 && /*#__PURE__*/React.createElement(Card, {
     className: "p-5"
@@ -1934,6 +1936,7 @@ export function ObjetivosFinancieros({
   }), /*#__PURE__*/React.createElement(NumberField, {
     label: "¿En cuánto tiempo quieres conseguirlo?",
     suffix: "años",
+    max: 60,
     value: borrador.plazoAnios,
     onChange: v => setBorrador({
       ...borrador,
@@ -2777,15 +2780,18 @@ export function Diagnostico({
       type: "number",
       inputMode: "decimal",
       value: d[field] === 0 ? "" : d[field],
-      onChange: e => updateDeuda(originalIndex, field, e.target.value === "" ? 0 : Math.max(0, Number(e.target.value))),
+      onChange: e => updateDeuda(originalIndex, field, e.target.value === "" ? 0 : Math.min(field === "tasa" ? 100 : MAX_IMPORTE, Math.max(0, Number(e.target.value)))),
       placeholder: "0",
       className: "w-full rounded-lg px-2 py-2 text-sm font-bold border outline-none",
       style: {
-        borderColor: C.border,
+        borderColor: Number(d[field]) >= (field === "tasa" ? 100 : MAX_IMPORTE) ? C.crit : C.border,
         color: C.ink,
         backgroundColor: C.paper
       }
-    })))));
+    }), Number(d[field]) >= (field === "tasa" ? 100 : MAX_IMPORTE) ? /*#__PURE__*/React.createElement("p", {
+      className: "text-[10px] mt-1 font-bold",
+      style: { color: C.crit }
+    }, "Máximo permitido: " + (field === "tasa" ? "100 %" : "1.000.000.000 €")) : null))));
   })), datos.deudas.filter(d => Number(d.pendiente) > 0 || d.nombre || Number(d.cuota) > 0 || Number(d.tasa) > 0).length === 0 && /*#__PURE__*/React.createElement("div", {
     className: "rounded-xl p-4 text-xs mt-3",
     style: {
@@ -3492,7 +3498,7 @@ export function Inversiones({
     inputMode: "decimal",
     min: 0,
     value: borrador.rentValor === 0 ? "" : borrador.rentValor,
-    onChange: e => setBorrador({ ...borrador, rentValor: e.target.value === "" ? 0 : Math.max(0, Number(e.target.value)) }),
+    onChange: e => setBorrador({ ...borrador, rentValor: e.target.value === "" ? 0 : Math.min(MAX_IMPORTE, Math.max(0, Number(e.target.value))) }),
     placeholder: "0",
     "aria-label": "Importe de la ganancia o pérdida",
     className: "w-full min-w-0 rounded-lg px-3 py-2 text-sm font-bold border outline-none",
