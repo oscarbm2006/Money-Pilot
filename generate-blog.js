@@ -7,6 +7,8 @@
 //   'guia'       -> /blog/guia  (agrupada por "fase" en vez de por fecha)
 // Se ejecuta en cada despliegue: `npm run build` lo lanza antes de `vite build`.
 // Escribe en public/blog y regenera public/sitemap.xml con todos los artículos.
+// El orden de los artículos es el mismo que en la web: primero la columna `orden`
+// (los que no la tienen, al final) y después la fecha de creación.
 
 const { createClient } = require('@supabase/supabase-js');
 const fs = require('fs');
@@ -27,26 +29,46 @@ function escHtml(s) {
   return (s || '').replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
 }
 
+// Formato en línea: **negrita**, *cursiva* y [texto](enlace).
+function inline(texto) {
+  let t = escHtml(texto);
+  t = t.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+  t = t.replace(/(^|[^*])\*([^*\s][^*]*?)\*(?!\*)/g, '$1<i>$2</i>');
+  t = t.replace(/\[([^\]]+)\]\(((?:https?:\/\/|\/)[^)\s"'<>]*)\)/g, (m, txt, url) => {
+    const externo = /^https?:\/\//.test(url);
+    return `<a href="${url}"${externo ? ' rel="noopener" target="_blank"' : ''}>${txt}</a>`;
+  });
+  return t;
+}
+
 function mdToHtml(md) {
   const lineas = (md || '').split('\n');
-  let html = ''; let enLista = false;
-  for (let raw of lineas) {
+  let html = '';
+  let lista = null; // 'ul' | 'ol' | null
+  const cerrar = () => { if (lista) { html += `</${lista}>`; lista = null; } };
+  for (const raw of lineas) {
     const linea = raw.trim();
-    const encabezado = linea.match(/^#{1,6}\s*(.+)$/);
+    const encabezado = linea.match(/^(#{1,6})\s*(.+)$/);
+    const viñeta = linea.match(/^[-*]\s+(.+)$/);
+    const numerada = linea.match(/^\d+[.)]\s+(.+)$/);
     if (encabezado) {
-      if (enLista) { html += '</ul>'; enLista = false; }
-      html += `<h2>${escHtml(encabezado[1])}</h2>`;
-    } else if (linea.startsWith('- ')) {
-      if (!enLista) { html += '<ul>'; enLista = true; }
-      html += `<li>${escHtml(linea.slice(2)).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')}</li>`;
+      cerrar();
+      const tag = encabezado[1].length >= 3 ? 'h3' : 'h2';
+      html += `<${tag}>${inline(encabezado[2])}</${tag}>`;
+    } else if (viñeta) {
+      if (lista !== 'ul') { cerrar(); html += '<ul>'; lista = 'ul'; }
+      html += `<li>${inline(viñeta[1])}</li>`;
+    } else if (numerada) {
+      if (lista !== 'ol') { cerrar(); html += '<ol>'; lista = 'ol'; }
+      html += `<li>${inline(numerada[1])}</li>`;
     } else if (linea === '') {
-      if (enLista) { html += '</ul>'; enLista = false; }
+      cerrar();
     } else {
-      if (enLista) { html += '</ul>'; enLista = false; }
-      html += `<p>${escHtml(linea).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')}</p>`;
+      cerrar();
+      html += `<p>${inline(linea)}</p>`;
     }
   }
-  if (enLista) html += '</ul>';
+  cerrar();
   return html;
 }
 
@@ -55,47 +77,120 @@ function fmtFecha(d) {
   catch (e) { return ''; }
 }
 
+function minutosLectura(texto) {
+  const palabras = (texto || '').split(/\s+/).filter(Boolean).length;
+  return Math.max(1, Math.round(palabras / 200));
+}
+
+// Mismo criterio que la web: primero `orden` (los que no lo tienen, al final) y luego fecha.
+function ordenar(posts) {
+  const num = p => (p.orden === null || p.orden === undefined || p.orden === '' ? Infinity : Number(p.orden));
+  return [...posts].sort((a, b) => {
+    const oa = num(a), ob = num(b);
+    if (oa !== ob) return oa < ob ? -1 : 1;
+    return new Date(a.created_at) - new Date(b.created_at);
+  });
+}
+
 const STYLE = `
-  :root{--navy:#312E81;--primary:#4F46E5;--primary-light:rgba(79,70,229,.10);--paper:#FAFAFA;--ink:#1E1E2E;--muted:#6B7280;--border:#E5E7EB;}
+  :root{--bg:#f5f6fa;--surface:#fff;--primary:#4f46e5;--primary-soft:rgba(79,70,229,.10);--navy:#312e81;--ink:#1e1e2e;--strong:#1e1b4b;--text:#374151;--muted:#6b7280;--border:#e5e7eb;--amber:#d97706;--serif:ui-serif,Georgia,Cambria,"Times New Roman",Times,serif;--sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;--shadow:0 1px 3px rgba(30,30,46,.05),0 8px 24px rgba(30,30,46,.05);--shadow-hover:0 10px 28px -8px rgba(30,30,46,.22);}
   *{box-sizing:border-box;}
-  body{margin:0;font-family:ui-sans-serif,system-ui,sans-serif;background:var(--paper);color:var(--ink);line-height:1.6;}
-  header{background:var(--navy);padding:18px 24px;}
-  header a{color:#fff;text-decoration:none;font-weight:800;font-size:1.1rem;}
-  main{max-width:760px;margin:0 auto;padding:48px 24px 80px;}
-  h1{font-size:1.9rem;font-weight:800;color:var(--ink);margin-bottom:8px;}
-  h2{font-size:1.3rem;font-weight:800;color:var(--ink);margin:28px 0 12px;}
-  p{margin:0 0 18px;}
-  .meta{color:var(--muted);font-size:.85rem;margin-bottom:28px;}
-  .category{color:var(--primary);font-weight:800;font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;}
-  .cta{margin-top:40px;padding:20px;border-radius:16px;background:var(--primary-light);color:var(--navy);font-size:.9rem;}
-  .cta a{color:var(--navy);font-weight:800;}
-  .disclaimer{margin-top:16px;padding:16px 20px;border-radius:12px;background:#FFFBEB;border:1px solid #FDE68A;color:#92400E;font-size:.82rem;}
-  a.back{display:inline-block;margin-top:8px;margin-bottom:24px;color:var(--primary);font-weight:700;text-decoration:none;}
-  a.back:hover{text-decoration:underline;}
-  footer{border-top:1px solid var(--border);padding:24px;text-align:center;color:var(--muted);font-size:.8rem;}
-  .list-item{display:block;padding:20px 0;border-bottom:1px solid var(--border);text-decoration:none;color:inherit;}
-  .list-item:hover h2{color:var(--primary);}
-  .list-item h2{margin:4px 0 6px;font-size:1.25rem;}
-  .list-item p{color:var(--muted);margin:0;font-size:.92rem;}
-  .tabs{display:flex;gap:8px;flex-wrap:wrap;margin:18px 0 8px;}
-  .tabs a{padding:8px 14px;border-radius:999px;border:1px solid var(--border);text-decoration:none;color:var(--ink);font-size:.82rem;font-weight:700;}
+  html{scroll-behavior:smooth;}
+  body{margin:0;min-height:100vh;display:flex;flex-direction:column;font-family:var(--sans);background:linear-gradient(180deg,#f1f3f9 0%,#f5f6fa 22%,#f8f9fc 52%,#f3f5fa 100%);color:var(--text);line-height:1.6;}
+  a{color:var(--primary);}
+  a:focus-visible,summary:focus-visible{outline:2px solid var(--primary);outline-offset:2px;border-radius:6px;}
+
+  /* Cabecera igual que la de la app */
+  .site-header{position:sticky;top:0;z-index:50;background:rgba(6,10,19,.92);border-bottom:1px solid var(--border);box-shadow:0 8px 24px -12px rgba(0,0,0,.6);backdrop-filter:blur(18px) saturate(140%);-webkit-backdrop-filter:blur(18px) saturate(140%);}
+  .nav-inner{max-width:72rem;margin:0 auto;padding:.5rem 1rem;display:flex;align-items:center;flex-wrap:wrap;gap:.5rem 1rem;}
+  @media(min-width:640px){.nav-inner{padding-left:1.5rem;padding-right:1.5rem;}}
+  .logo-pill{display:flex;align-items:center;background:#fff;border-radius:8px;padding:3px 9px;text-decoration:none;}
+  .logo-pill img{display:block;height:20px;width:auto;}
+  .main-nav{margin-left:auto;display:flex;align-items:center;flex-wrap:wrap;gap:4px;font-size:.75rem;font-weight:700;}
+  .main-nav a{padding:.5rem .625rem;border-radius:8px;color:#94a3b8;text-decoration:none;transition:background-color .15s,color .25s;}
+  .main-nav a:hover{color:#e2e8f0;background:rgba(255,255,255,.10);}
+  .main-nav a.active{color:#fff;background:rgba(79,70,229,.45);}
+  .main-nav a.cta-nav{background:var(--primary);color:#fff;}
+  .main-nav a.cta-nav:hover{background:#4338ca;}
+
+  main{flex:1;width:100%;max-width:48rem;margin:0 auto;padding:44px 20px 72px;}
+  main.wide{max-width:56rem;}
+  .eyebrow{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.16em;color:var(--primary);margin:0 0 10px;}
+  h1{font-family:var(--serif);font-size:clamp(1.9rem,5vw,2.6rem);font-weight:700;color:var(--strong);letter-spacing:-.01em;line-height:1.2;margin:0 0 12px;}
+  .lead{font-size:1.02rem;color:var(--muted);margin:0 0 24px;}
+
+  /* Pestañas de sección */
+  .tabs{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 28px;}
+  .tabs a{padding:8px 16px;border-radius:999px;border:1px solid var(--border);background:var(--bg);text-decoration:none;color:var(--ink);font-size:.78rem;font-weight:700;transition:border-color .2s,transform .2s;}
+  .tabs a:hover{border-color:var(--primary);transform:translateY(-1px);}
   .tabs a.active{background:var(--primary);color:#fff;border-color:var(--primary);}
-  details.fase{border:1px solid var(--border);border-radius:14px;margin-bottom:14px;background:#fff;overflow:hidden;}
-  details.fase summary{cursor:pointer;padding:16px 18px;font-weight:800;font-size:1.02rem;list-style:none;}
+
+  /* Tarjetas de artículo */
+  .cards{display:grid;gap:16px;}
+  .card{display:flex;gap:16px;align-items:flex-start;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:20px;text-decoration:none;color:inherit;box-shadow:var(--shadow);transition:box-shadow .25s,border-color .25s,transform .25s;}
+  .card:hover{border-color:rgba(79,70,229,.45);box-shadow:var(--shadow-hover);transform:translateY(-2px);}
+  .card .emoji{font-size:1.9rem;line-height:1;}
+  .card .cat{font-size:.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--amber);margin-bottom:4px;}
+  .card h2{font-family:var(--serif);font-size:1.15rem;line-height:1.3;color:var(--strong);margin:0 0 6px;}
+  .card p{margin:0;font-size:.9rem;color:var(--muted);}
+  .card .by{margin-top:10px;font-size:.75rem;color:#9ca3af;}
+  .empty{background:var(--surface);border:1px dashed var(--border);border-radius:16px;padding:28px;text-align:center;color:var(--muted);}
+
+  /* Guía: fases desplegables */
+  details.fase{background:var(--surface);border:1px solid var(--border);border-radius:16px;margin-bottom:12px;overflow:hidden;box-shadow:var(--shadow);}
+  details.fase summary{cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;font-family:var(--serif);font-weight:700;font-size:1.02rem;color:var(--strong);}
   details.fase summary::-webkit-details-marker{display:none;}
-  details.fase summary:before{content:"▸ ";color:var(--primary);}
-  details.fase[open] summary:before{content:"▾ ";}
-  details.fase .fase-items{padding:0 18px 12px;}
+  details.fase summary .count{margin-left:auto;font-family:var(--sans);font-size:.7rem;font-weight:700;color:var(--muted);background:var(--bg);border:1px solid var(--border);border-radius:999px;padding:2px 10px;}
+  details.fase summary:after{content:"";width:8px;height:8px;border-right:2px solid var(--primary);border-bottom:2px solid var(--primary);transform:rotate(45deg);transition:transform .2s;margin:-4px 2px 0 4px;}
+  details.fase[open] summary{background:var(--primary-soft);}
+  details.fase[open] summary:after{transform:rotate(-135deg);margin-top:4px;}
+  .fase-items{padding:4px 20px 10px;}
+  .fase-item{display:block;padding:12px 0;border-bottom:1px solid var(--border);text-decoration:none;color:inherit;}
+  .fase-item:last-child{border-bottom:0;}
+  .fase-item strong{display:block;font-size:.95rem;color:var(--ink);}
+  .fase-item span{display:block;font-size:.8rem;color:var(--muted);margin-top:2px;}
+  .fase-item:hover strong{color:var(--primary);}
+  .fase-vacia{font-size:.82rem;color:var(--muted);padding:10px 0;margin:0;}
+
+  /* Artículo */
+  .breadcrumb{font-size:.78rem;color:var(--muted);margin:0 0 18px;}
+  .breadcrumb a{color:var(--primary);text-decoration:none;font-weight:700;}
+  .breadcrumb a:hover{text-decoration:underline;}
+  .article-cat{font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--amber);margin-bottom:8px;}
+  .meta{font-size:.82rem;color:var(--muted);margin:0 0 30px;padding-bottom:22px;border-bottom:1px solid var(--border);}
+  .prose{font-size:1.05rem;line-height:1.8;color:var(--text);}
+  .prose h2{font-family:var(--serif);font-size:1.5rem;color:var(--strong);margin:2.2rem 0 .8rem;line-height:1.3;}
+  .prose h3{font-family:var(--serif);font-size:1.2rem;color:var(--strong);margin:1.8rem 0 .6rem;}
+  .prose p{margin:0 0 1.15rem;}
+  .prose ul,.prose ol{margin:0 0 1.3rem;padding-left:1.4rem;}
+  .prose li{margin-bottom:.45rem;}
+  .prose b{color:var(--ink);}
+  .cta{margin-top:40px;padding:20px 22px;border-radius:16px;background:var(--primary-soft);color:var(--navy);font-size:.92rem;}
+  .cta a{color:var(--navy);font-weight:800;}
+  .cta.soft{background:var(--surface);border:1px solid var(--border);}
+  .disclaimer{margin-top:28px;padding:16px 20px;border-radius:12px;background:#fffbeb;border:1px solid #fde68a;color:#92400e;font-size:.82rem;}
+  .pager{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:36px;}
+  .pager a{display:block;padding:14px 16px;border:1px solid var(--border);border-radius:14px;background:var(--surface);text-decoration:none;color:var(--ink);box-shadow:var(--shadow);transition:border-color .2s,transform .2s;}
+  .pager a:hover{border-color:var(--primary);transform:translateY(-1px);}
+  .pager small{display:block;font-size:.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--primary);margin-bottom:3px;}
+  .pager .next{text-align:right;grid-column:2;}
+  .pager .prev{grid-column:1;}
+  @media(max-width:520px){.pager{grid-template-columns:1fr;}.pager .next,.pager .prev{grid-column:1;text-align:left;}}
+
+  footer{border-top:1px solid var(--border);padding:24px;text-align:center;color:var(--muted);font-size:.8rem;background:rgba(255,255,255,.6);}
+  footer a{color:var(--muted);margin:0 8px;text-decoration:none;}
+  footer a:hover{color:var(--primary);text-decoration:underline;}
+  @media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important;}}
 `;
 
 const FOOTER = `<footer>
-  <a href="/privacidad.html" style="color:var(--muted);margin:0 8px;">Privacidad</a> ·
-  <a href="/aviso-legal.html" style="color:var(--muted);margin:0 8px;">Aviso Legal</a> ·
-  <a href="/quienes-somos.html" style="color:var(--muted);margin:0 8px;">Quiénes somos</a> ·
-  <a href="/contacto.html" style="color:var(--muted);margin:0 8px;">Contacto</a>
+  <a href="/privacidad.html">Privacidad</a> ·
+  <a href="/aviso-legal.html">Aviso Legal</a> ·
+  <a href="/quienes-somos.html">Quiénes somos</a> ·
+  <a href="/contacto.html">Contacto</a>
 </footer>`;
 
-// Definición de las 4 secciones/pestañas del blog.
+// Definición de las 4 secciones/pestañas del blog (mismo orden que en la web).
 const SECCIONES = [
   { key: 'bolsa', urlBase: '/blog/bolsa', nombreTab: 'Noticias de bolsa', tituloIndex: 'Noticias de bolsa', descIndex: 'Actualidad de mercados y empresas cotizadas.' },
   { key: 'actualidad', urlBase: '/blog/actualidad', nombreTab: 'Noticias de actualidad', tituloIndex: 'Noticias de actualidad', descIndex: 'Novedades económicas y financieras de actualidad.' },
@@ -111,40 +206,79 @@ const NOMBRES_FASE = {
   5: 'Fase 5: Objetivos Vitales y Legado',
 };
 
+// Textos de llamada a la acción: los mismos que usa la web.
+const CTA_PRESETS = {
+  diagnostico: { texto: '¿Quieres aplicar esto a tu propio caso? Usa el', enlaceTexto: 'diagnóstico gratuito de MoneyPilot', url: '/', sufijo: '.' },
+  libro: { texto: '¿Quieres aprender más? Puedes encontrar', enlaceTexto: 'aquí algunos libros seleccionados', url: '/recursos-y-libros.html', sufijo: ' para empezar desde 0.' },
+  contacto: { texto: '¿Tienes dudas sobre esto?', enlaceTexto: 'Escríbenos', url: '/contacto.html', sufijo: ' y te ayudamos.' },
+  quienes: { texto: '¿Quieres saber quién hay detrás de MoneyPilot?', enlaceTexto: 'Conócenos aquí', url: '/quienes-somos.html', sufijo: '.' },
+};
+
+function headerHtml(activo) {
+  const item = (href, texto, clave, extra) => {
+    const clases = [activo === clave ? 'active' : '', extra || ''].filter(Boolean).join(' ');
+    return `<a href="${href}"${clases ? ` class="${clases}"` : ''}>${texto}</a>`;
+  };
+  return `<header class="site-header">
+  <div class="nav-inner">
+    <a href="/" class="logo-pill" aria-label="MoneyPilot, ir al inicio"><img src="/logo-moneypilot.png" alt="MoneyPilot" width="113" height="20"></a>
+    <nav class="main-nav" aria-label="Navegación principal">
+      ${item('/', 'Introducción', 'inicio')}
+      ${item('/blog/guia/index.html', 'Blog', 'blog')}
+      ${item('/recursos-y-libros.html', 'Recursos y libros', 'recursos')}
+      ${item('/', 'Hacer mi diagnóstico', 'diag', 'cta-nav')}
+    </nav>
+  </div>
+</header>`;
+}
+
 function tabsHtml(seccionActivaKey) {
-  return `<div class="tabs">${SECCIONES.map(s =>
+  return `<nav class="tabs" aria-label="Secciones del blog">${SECCIONES.map(s =>
     `<a href="${s.urlBase}/index.html" class="${s.key === seccionActivaKey ? 'active' : ''}">${escHtml(s.nombreTab)}</a>`
-  ).join('')}</div>`;
+  ).join('')}</nav>`;
 }
 
-// Construye el bloque de CTA de una guía/noticia a partir del texto libre
-// que el usuario haya escrito en el panel (post.cta_texto / cta_enlace_texto / cta_enlace_url).
-// Si no ha escrito nada, usa el mensaje por defecto de siempre.
-function ctaLibreHtml(post) {
-  const texto = (post.cta_texto || '').trim();
-  const enlaceTexto = (post.cta_enlace_texto || '').trim();
-  const enlaceUrl = (post.cta_enlace_url || '/').trim() || '/';
-
-  if (!texto && !enlaceTexto) {
-    return `<div class="cta">¿Quieres aplicar esto a tu propio caso? Usa el <a href="/">diagnóstico gratuito de MoneyPilot</a>.</div>`;
+function ctaHtml(post) {
+  let preset = post.cta_preset || 'diagnostico';
+  if (preset === 'ninguno') return '';
+  if (preset === 'personalizado') {
+    const texto = (post.cta_texto || '').trim();
+    const enlaceTexto = (post.cta_enlace_texto || '').trim();
+    const enlaceUrl = (post.cta_enlace_url || '/').trim() || '/';
+    if (texto || enlaceTexto) {
+      const enlaceHtml = enlaceTexto ? ` <a href="${escHtml(enlaceUrl)}">${escHtml(enlaceTexto)}</a>.` : '';
+      return `<div class="cta">${escHtml(texto)}${enlaceHtml}</div>`;
+    }
+    preset = 'diagnostico'; // personalizado pero vacío: se usa el mensaje por defecto
   }
-
-  const enlaceHtml = enlaceTexto ? ` <a href="${escHtml(enlaceUrl)}">${escHtml(enlaceTexto)}</a>.` : '';
-  return `<div class="cta">${escHtml(texto)}${enlaceHtml}</div>`;
+  const info = CTA_PRESETS[preset] || CTA_PRESETS.diagnostico;
+  return `<div class="cta">${escHtml(info.texto)} <a href="${info.url}">${escHtml(info.enlaceTexto)}</a>${escHtml(info.sufijo)}</div>`;
 }
 
-function postPage(post, seccion) {
+function postPage(post, seccion, anterior, siguiente) {
   const url = `${SITE_URL}${seccion.urlBase}/${post.slug}.html`;
   const title = `${post.title} – MoneyPilot`;
   const desc = (post.excerpt || post.title || '').slice(0, 160);
   const esInversion = seccion.key === 'tesis' || seccion.key === 'bolsa';
+  const esGuia = seccion.key === 'guia';
+  const categoria = post.category || (esGuia ? (NOMBRES_FASE[post.fase] || 'Guía') : 'General');
+  const autor = post.author || 'Equipo MoneyPilot';
 
-  const ctaLibro = `<div class="cta" style="background:var(--paper);border:1px solid var(--border);">¿Quieres aprender más? Puedes encontrar <a href="/recursos-y-libros.html">aquí algunos libros seleccionados</a> para empezar desde 0 y aprender a administrar tu propio dinero.</div>`;
+  const ctaLibro = `<div class="cta soft">¿Quieres aprender más? Puedes encontrar <a href="/recursos-y-libros.html">aquí algunos libros seleccionados</a> para empezar desde 0 y aprender a administrar tu propio dinero.</div>`;
   const disclaimer = `<div class="disclaimer">⚠️ Contenido meramente informativo y educativo, generado con apoyo de inteligencia artificial. No constituye asesoramiento ni recomendación de inversión personalizada. Antes de invertir, valora tu situación con un profesional cualificado.</div>`;
 
   // En tesis/bolsa el disclaimer legal + el CTA de libro se mantienen fijos siempre.
-  // En el resto de secciones (guía, actualidad) se usa el mensaje libre que haya escrito el usuario.
-  const ctaBlock = esInversion ? (disclaimer + ctaLibro) : ctaLibreHtml(post);
+  // En el resto de secciones se usa la llamada a la acción que se eligió en el panel.
+  const ctaBlock = esInversion ? (disclaimer + ctaLibro) : ctaHtml(post);
+
+  const pager = (anterior || siguiente) ? `<nav class="pager" aria-label="Más artículos">
+    ${anterior ? `<a class="prev" href="${seccion.urlBase}/${anterior.slug}.html"><small>← Anterior</small>${escHtml(anterior.title)}</a>` : ''}
+    ${siguiente ? `<a class="next" href="${seccion.urlBase}/${siguiente.slug}.html"><small>Siguiente →</small>${escHtml(siguiente.title)}</a>` : ''}
+  </nav>` : '';
+
+  const meta = esGuia
+    ? `Por ${escHtml(autor)} · ${minutosLectura(post.content)} min de lectura`
+    : `Por ${escHtml(autor)} · ${fmtFecha(post.created_at)} · ${minutosLectura(post.content)} min de lectura`;
 
   return `<!DOCTYPE html>
 <html lang="es">
@@ -171,77 +305,91 @@ ${JSON.stringify({
     "headline": post.title,
     "datePublished": post.created_at,
     "dateModified": post.updated_at || post.created_at,
-    "author": { "@type": "Person", "name": post.author || "Equipo MoneyPilot" },
+    "author": { "@type": "Person", "name": autor },
+    "publisher": { "@type": "Organization", "name": "MoneyPilot", "logo": { "@type": "ImageObject", "url": `${SITE_URL}/apple-touch-icon.png` } },
+    "mainEntityOfPage": url,
+    "image": `${SITE_URL}/og-image.png`,
+    "inLanguage": "es",
     "description": desc
   }, null, 2)}
 </script>
 <style>${STYLE}</style>
 </head>
 <body>
-<header><a href="/">MoneyPilot</a></header>
+${headerHtml('blog')}
 <main>
-  ${tabsHtml(seccion.key)}
-  <a class="back" href="${seccion.urlBase}/index.html">← Volver a ${escHtml(seccion.nombreTab)}</a>
-  <div class="category">${escHtml(post.category || (seccion.key === 'guia' ? (NOMBRES_FASE[post.fase] || 'Guía') : 'General'))}</div>
-  <h1>${escHtml(post.title)}</h1>
-  <div class="meta">Por ${escHtml(post.author || 'Equipo MoneyPilot')} · ${fmtFecha(post.created_at)}</div>
-  <div class="content">${mdToHtml(post.content)}</div>
-  ${ctaBlock}
+  <p class="breadcrumb"><a href="/">Inicio</a> › <a href="${seccion.urlBase}/index.html">${escHtml(seccion.nombreTab)}</a></p>
+  <article>
+    <div class="article-cat">${escHtml(categoria)}</div>
+    <h1>${escHtml(post.title)}</h1>
+    <p class="meta">${meta}</p>
+    <div class="prose">${mdToHtml(post.content)}</div>
+    ${ctaBlock}
+  </article>
+  ${pager}
 </main>
 ${FOOTER}
 </body>
 </html>`;
 }
 
-// Índice normal (cronológico): usado por bolsa, actualidad y tesis.
-function indexPageCronologico(posts, seccion) {
-  const items = posts.map(p => `
-  <a class="list-item" href="${seccion.urlBase}/${p.slug}.html">
-    <div class="category">${escHtml(p.category || 'General')}</div>
-    <h2>${escHtml(p.title)}</h2>
-    <p>${escHtml(p.excerpt || '')}</p>
-  </a>`).join('\n');
+function tarjetaHtml(p, seccion) {
+  return `
+  <a class="card" href="${seccion.urlBase}/${p.slug}.html">
+    <div class="emoji" aria-hidden="true">${escHtml(p.cover_emoji || '📊')}</div>
+    <div>
+      <div class="cat">${escHtml(p.category || 'General')}</div>
+      <h2>${escHtml(p.title)}</h2>
+      <p>${escHtml(p.excerpt || '')}</p>
+      <div class="by">${escHtml(p.author || 'Equipo MoneyPilot')} · ${fmtFecha(p.created_at)}</div>
+    </div>
+  </a>`;
+}
 
+// Índice normal: usado por bolsa, actualidad y tesis.
+function indexPageCronologico(posts, seccion) {
+  const items = posts.filter(p => p.slug).map(p => tarjetaHtml(p, seccion)).join('\n');
   return paginaBase(seccion, `
+  <div class="eyebrow">Educación financiera</div>
   <h1>${escHtml(seccion.tituloIndex)}</h1>
-  <p class="meta">${escHtml(seccion.descIndex)}</p>
-  ${items || '<p>Todavía no hay artículos publicados.</p>'}
+  <p class="lead">${escHtml(seccion.descIndex)}</p>
+  ${tabsHtml(seccion.key)}
+  ${items ? `<div class="cards">${items}</div>` : '<div class="empty">Muy pronto publicaremos aquí nuevos artículos.</div>'}
   `);
 }
 
-// Índice especial de la Guía: acordeones agrupados por fase (1 a 5), NO por fecha.
+// Índice de la Guía: fases desplegables (1 a 5), igual que en la web.
 function indexPageGuia(posts, seccion) {
   const porFase = {};
   for (const p of posts) {
+    if (!p.slug) continue;
     const f = Number(p.fase) || 0;
     if (!porFase[f]) porFase[f] = [];
     porFase[f].push(p);
   }
+  const fila = p => `
+      <a class="fase-item" href="${seccion.urlBase}/${p.slug}.html">
+        <strong>${escHtml(p.title)}</strong>
+        ${p.excerpt ? `<span>${escHtml(p.excerpt)}</span>` : ''}
+      </a>`;
 
   const bloques = [1, 2, 3, 4, 5].map(n => {
-    const items = (porFase[n] || []).map(p => `
-      <a class="list-item" href="${seccion.urlBase}/${p.slug}.html">
-        <h2>${escHtml(p.title)}</h2>
-        <p>${escHtml(p.excerpt || '')}</p>
-      </a>`).join('\n');
+    const lista = porFase[n] || [];
     return `
     <details class="fase" ${n === 1 ? 'open' : ''}>
-      <summary>${escHtml(NOMBRES_FASE[n])}</summary>
-      <div class="fase-items">${items || '<p>Todavía no hay artículos en esta fase.</p>'}</div>
+      <summary>${escHtml(NOMBRES_FASE[n])}<span class="count">${lista.length} ${lista.length === 1 ? 'artículo' : 'artículos'}</span></summary>
+      <div class="fase-items">${lista.length ? lista.map(fila).join('\n') : '<p class="fase-vacia">Todavía no hay artículos en esta fase.</p>'}</div>
     </details>`;
   }).join('\n');
 
-  const sinFase = (porFase[0] || []).map(p => `
-    <a class="list-item" href="${seccion.urlBase}/${p.slug}.html">
-      <h2>${escHtml(p.title)}</h2>
-      <p>${escHtml(p.excerpt || '')}</p>
-    </a>`).join('\n');
-
+  const sinFase = porFase[0] || [];
   return paginaBase(seccion, `
+  <div class="eyebrow">Educación financiera</div>
   <h1>${escHtml(seccion.tituloIndex)}</h1>
-  <p class="meta">${escHtml(seccion.descIndex)}</p>
+  <p class="lead">${escHtml(seccion.descIndex)}</p>
+  ${tabsHtml(seccion.key)}
   ${bloques}
-  ${sinFase ? `<h2>Otros artículos de la guía</h2>${sinFase}` : ''}
+  ${sinFase.length ? `<h2 style="font-family:var(--serif);color:var(--strong);margin:28px 0 12px;">Otros artículos de la guía</h2><div class="cards">${sinFase.map(p => tarjetaHtml(p, seccion)).join('\n')}</div>` : ''}
   `);
 }
 
@@ -267,9 +415,8 @@ function paginaBase(seccion, cuerpoHtml) {
 <style>${STYLE}</style>
 </head>
 <body>
-<header><a href="/">MoneyPilot</a></header>
-<main>
-  ${tabsHtml(seccion.key)}
+${headerHtml('blog')}
+<main class="wide">
   ${cuerpoHtml}
 </main>
 ${FOOTER}
@@ -282,10 +429,18 @@ function generarSeccion(posts, seccion) {
   fs.mkdirSync(outDir, { recursive: true });
   const index = seccion.key === 'guia' ? indexPageGuia(posts, seccion) : indexPageCronologico(posts, seccion);
   fs.writeFileSync(path.join(outDir, 'index.html'), index);
-  for (const post of posts) {
-    if (!post.slug) continue;
-    fs.writeFileSync(path.join(outDir, `${post.slug}.html`), postPage({ ...post, __seccionKey: seccion.key }, seccion));
-  }
+
+  // Orden de lectura para los botones anterior/siguiente. En la guía se lee fase a fase.
+  const conSlug = posts.filter(p => p.slug);
+  const lectura = seccion.key === 'guia'
+    ? [...conSlug].sort((a, b) => (Number(a.fase) || 99) - (Number(b.fase) || 99))
+    : conSlug;
+  lectura.forEach((post, i) => {
+    fs.writeFileSync(
+      path.join(outDir, `${post.slug}.html`),
+      postPage(post, seccion, lectura[i - 1] || null, lectura[i + 1] || null)
+    );
+  });
 }
 
 // Páginas fijas del sitio que siempre van en el sitemap.
@@ -344,14 +499,15 @@ async function main() {
     process.exit(1);
   }
 
-  const todos = posts || [];
+  const todos = ordenar(posts || []);
 
   // Limpia lo generado en el build anterior (por si algún artículo se ha despublicado).
   fs.rmSync(BASE_DIR, { recursive: true, force: true });
 
   const postsPorSeccion = {};
   for (const seccion of SECCIONES) {
-    const posts_de_seccion = todos.filter(p => p.categoria_seccion === seccion.key);
+    // Igual que la web: un artículo sin sección cuenta como "actualidad".
+    const posts_de_seccion = todos.filter(p => (p.categoria_seccion || 'actualidad') === seccion.key);
     postsPorSeccion[seccion.key] = posts_de_seccion;
     generarSeccion(posts_de_seccion, seccion);
     console.log(`  ${seccion.key}: ${posts_de_seccion.length} artículo(s)`);
