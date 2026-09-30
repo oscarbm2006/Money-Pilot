@@ -1,6 +1,6 @@
 const { useState, useEffect, useRef, useCallback, useMemo, useId } = React;
 
-import { C, I, OBJETIVOS_DEF, PATTERN_URI_STATIC, PERFILES_INFO } from './constantes.js';
+import { BLOG_ADMIN_EMAIL, C, I, OBJETIVOS_DEF, PATTERN_URI_STATIC, PERFILES_INFO } from './constantes.js';
 import { calcularCapacidadFinanciera, calcularDiagnosticoAmpliado, calcularPerfilMultidimensional, calcularPlanFinanciero, calcularPlanObjetivos, calcularPrioridades, datosVacios, normalizarObjetivos, objetivoLegadoDesdeColeccion, reconstruirEstadoQuiz, totalMensual } from './calculos.js';
 import { useActivosPersistidos, useActivosSync, useAuth, useCloudSync, useCuentasPersistidas, useCuentasSync, useDatosPersistidos, useDebouncedEffect, useDeudasMirrorSync, useInversionesPersistidas, useInversionesSync, useSeguimiento, useToast } from './hooks-datos.js';
 import { AuthModal, ContinuarBar, ErrorBoundary, Eyebrow, FeedbackModal, Toast } from './ui-basicos.js';
@@ -63,6 +63,14 @@ export function App() {
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
   }, []);
+  // El blog público son páginas HTML reales (mejor para Google y para AdSense).
+  // El administrador sigue entrando al blog interno para poder crear y editar artículos.
+  const esAdminBlog = !!(user && user.email && user.email === BLOG_ADMIN_EMAIL);
+  const blogHref = esAdminBlog ? null : "/blog/guia/index.html";
+  const irAlBlog = () => {
+    if (blogHref) window.location.assign(blogHref);
+    else setVistaActual('blog');
+  };
   useEffect(() => {
     if ("scrollRestoration" in window.history) window.history.scrollRestoration = "manual";
     window.scrollTo({
@@ -456,7 +464,8 @@ export function App() {
     }
   }))), /*#__PURE__*/React.createElement(NavDesktop, {
     vistaActual: vistaActual,
-    setVistaActual: setVistaActual
+    setVistaActual: setVistaActual,
+    blogHref: blogHref
   }), /*#__PURE__*/React.createElement("div", {
     className: "flex items-center gap-1.5 shrink-0"
   }, authReady && (user ? /*#__PURE__*/React.createElement("div", {
@@ -603,7 +612,7 @@ export function App() {
     }
   }, "Aquí se concentran las métricas clave, el perfil de riesgo y las decisiones que puedes tomar a continuación.")), /*#__PURE__*/React.createElement(PanelDiagnostico, {
     diagnostico: diagnosticoAmpliado,
-    onIrABlog: () => setVistaActual('blog')
+    onIrABlog: irAlBlog
   }), /*#__PURE__*/React.createElement(PanelPrioridad, {
     prioridad: prioridadActual
   }), /*#__PURE__*/React.createElement(Dashboard, {
@@ -704,7 +713,7 @@ export function App() {
     cuentas: cuentas,
     perfil: perfil,
     ratioAhorro: ratioAhorro,
-    onIrABlog: () => setVistaActual('blog')
+    onIrABlog: irAlBlog
   }), /*#__PURE__*/React.createElement(ContinuarBar, {
     label: "Continuar a Seguimiento",
     onClick: () => setVistaActual('seguimiento'),
@@ -773,7 +782,7 @@ export function App() {
     onSeleccionarObjetivo: setObjetivoSeleccionadoId,
     ahorroDisponible: ahorroDisponible,
     perfil: perfil,
-    onIrABlog: () => setVistaActual('blog')
+    onIrABlog: irAlBlog
   })))), vistaActual === 'blog' && /*#__PURE__*/React.createElement("div", {
     key: "blog",
     className: "fade-switch-enter"
@@ -869,7 +878,13 @@ export function App() {
     }
   }, /*#__PURE__*/React.createElement("span", null, "© ", new Date().getFullYear(), " MoneyPilot"), /*#__PURE__*/React.createElement("div", {
     className: "flex flex-wrap items-center justify-center gap-4"
-  }, /*#__PURE__*/React.createElement("button", {
+  }, /*#__PURE__*/React.createElement(blogHref ? "a" : "button", blogHref ? {
+    href: blogHref,
+    className: "hover:underline",
+    style: {
+      color: C.mutedLight
+    }
+  } : {
     onClick: () => setVistaActual('blog'),
     className: "hover:underline",
     style: {
