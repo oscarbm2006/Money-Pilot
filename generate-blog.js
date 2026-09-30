@@ -25,6 +25,10 @@ const BASE_DIR = path.join(PUBLIC_DIR, 'blog');
 
 const supa = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+// Secciones que tienen al menos un artículo publicado. Las vacías no salen en las
+// pestañas, no entran en el sitemap y su página lleva "noindex" hasta que tengan contenido.
+let SECCIONES_ACTIVAS = new Set();
+
 function escHtml(s) {
   return (s || '').replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
 }
@@ -169,6 +173,8 @@ const STYLE = `
   .cta a{color:var(--navy);font-weight:800;}
   .cta.soft{background:var(--surface);border:1px solid var(--border);}
   .disclaimer{margin-top:28px;padding:16px 20px;border-radius:12px;background:#fffbeb;border:1px solid #fde68a;color:#92400e;font-size:.82rem;}
+  .related{margin-top:44px;}
+  .related h2{font-family:var(--serif);font-size:1.3rem;color:var(--strong);margin:0 0 14px;}
   .pager{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:36px;}
   .pager a{display:block;padding:14px 16px;border:1px solid var(--border);border-radius:14px;background:var(--surface);text-decoration:none;color:var(--ink);box-shadow:var(--shadow);transition:border-color .2s,transform .2s;}
   .pager a:hover{border-color:var(--primary);transform:translateY(-1px);}
@@ -233,7 +239,9 @@ function headerHtml(activo) {
 }
 
 function tabsHtml(seccionActivaKey) {
-  return `<nav class="tabs" aria-label="Secciones del blog">${SECCIONES.map(s =>
+  const visibles = SECCIONES.filter(s => SECCIONES_ACTIVAS.has(s.key) || s.key === seccionActivaKey);
+  if (visibles.length < 2) return '';
+  return `<nav class="tabs" aria-label="Secciones del blog">${visibles.map(s =>
     `<a href="${s.urlBase}/index.html" class="${s.key === seccionActivaKey ? 'active' : ''}">${escHtml(s.nombreTab)}</a>`
   ).join('')}</nav>`;
 }
@@ -255,7 +263,15 @@ function ctaHtml(post) {
   return `<div class="cta">${escHtml(info.texto)} <a href="${info.url}">${escHtml(info.enlaceTexto)}</a>${escHtml(info.sufijo)}</div>`;
 }
 
-function postPage(post, seccion, anterior, siguiente) {
+// Hasta 3 artículos para "Sigue leyendo": primero los de la misma fase (guía) y luego los más cercanos.
+function elegirRelacionados(post, lista) {
+  const otros = lista.filter(p => p.slug && p.slug !== post.slug);
+  const misma = otros.filter(p => post.fase && p.fase === post.fase);
+  const resto = otros.filter(p => !misma.includes(p));
+  return [...misma, ...resto].slice(0, 3);
+}
+
+function postPage(post, seccion, anterior, siguiente, relacionados) {
   const url = `${SITE_URL}${seccion.urlBase}/${post.slug}.html`;
   const title = `${post.title} – MoneyPilot`;
   const desc = (post.excerpt || post.title || '').slice(0, 160);
@@ -270,6 +286,11 @@ function postPage(post, seccion, anterior, siguiente) {
   // En tesis/bolsa el disclaimer legal + el CTA de libro se mantienen fijos siempre.
   // En el resto de secciones se usa la llamada a la acción que se eligió en el panel.
   const ctaBlock = esInversion ? (disclaimer + ctaLibro) : ctaHtml(post);
+
+  const relacionadosHtml = (relacionados && relacionados.length) ? `<section class="related" aria-label="Sigue leyendo">
+    <h2>Sigue leyendo</h2>
+    <div class="cards">${relacionados.map(r => tarjetaHtml(r, seccion)).join('\n')}</div>
+  </section>` : '';
 
   const pager = (anterior || siguiente) ? `<nav class="pager" aria-label="Más artículos">
     ${anterior ? `<a class="prev" href="${seccion.urlBase}/${anterior.slug}.html"><small>← Anterior</small>${escHtml(anterior.title)}</a>` : ''}
@@ -313,6 +334,17 @@ ${JSON.stringify({
     "description": desc
   }, null, 2)}
 </script>
+<script type="application/ld+json">
+${JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Inicio", "item": `${SITE_URL}/` },
+      { "@type": "ListItem", "position": 2, "name": seccion.nombreTab, "item": `${SITE_URL}${seccion.urlBase}/index.html` },
+      { "@type": "ListItem", "position": 3, "name": post.title, "item": url }
+    ]
+  })}
+</script>
 <style>${STYLE}</style>
 </head>
 <body>
@@ -326,6 +358,7 @@ ${headerHtml('blog')}
     <div class="prose">${mdToHtml(post.content)}</div>
     ${ctaBlock}
   </article>
+  ${relacionadosHtml}
   ${pager}
 </main>
 ${FOOTER}
@@ -355,7 +388,7 @@ function indexPageCronologico(posts, seccion) {
   <p class="lead">${escHtml(seccion.descIndex)}</p>
   ${tabsHtml(seccion.key)}
   ${items ? `<div class="cards">${items}</div>` : '<div class="empty">Muy pronto publicaremos aquí nuevos artículos.</div>'}
-  `);
+  `, !items);
 }
 
 // Índice de la Guía: fases desplegables (1 a 5), igual que en la web.
@@ -390,10 +423,10 @@ function indexPageGuia(posts, seccion) {
   ${tabsHtml(seccion.key)}
   ${bloques}
   ${sinFase.length ? `<h2 style="font-family:var(--serif);color:var(--strong);margin:28px 0 12px;">Otros artículos de la guía</h2><div class="cards">${sinFase.map(p => tarjetaHtml(p, seccion)).join('\n')}</div>` : ''}
-  `);
+  `, !posts.some(p => p.slug));
 }
 
-function paginaBase(seccion, cuerpoHtml) {
+function paginaBase(seccion, cuerpoHtml, sinContenido) {
   return `<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -401,7 +434,7 @@ function paginaBase(seccion, cuerpoHtml) {
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>${escHtml(seccion.tituloIndex)} – MoneyPilot</title>
 <meta name="description" content="${escHtml(seccion.descIndex)}" />
-<meta name="robots" content="index, follow" />
+<meta name="robots" content="${sinContenido ? 'noindex, follow' : 'index, follow'}" />
 <link rel="canonical" href="${SITE_URL}${seccion.urlBase}/index.html" />
 <meta property="og:title" content="${escHtml(seccion.tituloIndex)} – MoneyPilot" />
 <meta property="og:description" content="${escHtml(seccion.descIndex)}" />
@@ -438,7 +471,7 @@ function generarSeccion(posts, seccion) {
   lectura.forEach((post, i) => {
     fs.writeFileSync(
       path.join(outDir, `${post.slug}.html`),
-      postPage(post, seccion, lectura[i - 1] || null, lectura[i + 1] || null)
+      postPage(post, seccion, lectura[i - 1] || null, lectura[i + 1] || null, elegirRelacionados(post, lectura))
     );
   });
 }
@@ -460,6 +493,7 @@ function fechaIso(d) {
 function generarSitemap(postsPorSeccion) {
   const urls = PAGINAS_FIJAS.map(p => ({ ...p }));
   for (const seccion of SECCIONES) {
+    if (!SECCIONES_ACTIVAS.has(seccion.key)) continue; // sección vacía: fuera del sitemap
     urls.push({ loc: `${seccion.urlBase}/index.html`, changefreq: 'weekly', priority: '0.8' });
     for (const post of postsPorSeccion[seccion.key] || []) {
       if (!post.slug) continue;
@@ -503,6 +537,10 @@ async function main() {
 
   // Limpia lo generado en el build anterior (por si algún artículo se ha despublicado).
   fs.rmSync(BASE_DIR, { recursive: true, force: true });
+
+  SECCIONES_ACTIVAS = new Set(SECCIONES
+    .filter(sec => todos.some(p => p.slug && (p.categoria_seccion || 'actualidad') === sec.key))
+    .map(sec => sec.key));
 
   const postsPorSeccion = {};
   for (const seccion of SECCIONES) {
