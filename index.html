@@ -315,7 +315,20 @@ section.section-tinted{
 </style>
 </head>
 <body>
-<div id="root"></div>
+<div id="root">
+  <!-- Contenido básico para buscadores y lectores sin JavaScript. React lo sustituye al arrancar la app. -->
+  <div style="max-width:42rem;margin:0 auto;padding:64px 20px;font-family:ui-sans-serif,system-ui,sans-serif;color:#374151;line-height:1.6;">
+    <h1 style="font-family:Georgia,serif;color:#1e1b4b;font-size:2rem;line-height:1.2;margin:0 0 12px;">MoneyPilot: diagnóstico y plan de tu salud financiera</h1>
+    <p>Descubre el estado real de tus finanzas en minutos. MoneyPilot analiza tus ingresos, gastos, deudas e inversiones y te da un diagnóstico y un plan de acción personalizado, gratis.</p>
+    <p>
+      <a href="/blog/guia/index.html" style="color:#4f46e5;font-weight:700;">Guía de educación financiera</a> ·
+      <a href="/blog/bolsa/index.html" style="color:#4f46e5;font-weight:700;">Noticias de bolsa</a> ·
+      <a href="/blog/tesis/index.html" style="color:#4f46e5;font-weight:700;">Tesis de inversión</a> ·
+      <a href="/recursos-y-libros.html" style="color:#4f46e5;font-weight:700;">Recursos y libros</a> ·
+      <a href="/quienes-somos.html" style="color:#4f46e5;font-weight:700;">Quiénes somos</a>
+    </p>
+  </div>
+</div>
 <script type="module" src="/src/main.js"></script>
 </body>
 </html>
