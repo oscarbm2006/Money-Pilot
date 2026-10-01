@@ -125,7 +125,8 @@ export function NumberField({
   onChange,
   hint,
   suffix = "€",
-  max = MAX_IMPORTE
+  max = MAX_IMPORTE,
+  error
 }) {
   const id = useId();
   const alcanzaMax = Number(value) >= max;
@@ -149,7 +150,7 @@ export function NumberField({
     placeholder: "0",
     className: "w-full rounded-lg px-3 py-2 text-sm font-bold border outline-none",
     style: {
-      borderColor: alcanzaMax ? C.crit : C.border,
+      borderColor: alcanzaMax || error ? C.crit : C.border,
       color: C.ink,
       backgroundColor: C.paper
     }
@@ -163,7 +164,12 @@ export function NumberField({
     style: {
       color: C.crit
     }
-  }, "Máximo permitido: " + max.toLocaleString("es-ES") + (suffix ? " " + suffix : "")) : hint && /*#__PURE__*/React.createElement("p", {
+  }, "Máximo permitido: " + max.toLocaleString("es-ES") + (suffix ? " " + suffix : "")) : error ? /*#__PURE__*/React.createElement("p", {
+    className: "text-xs mt-1 font-bold",
+    style: {
+      color: C.crit
+    }
+  }, error) : hint && /*#__PURE__*/React.createElement("p", {
     className: "text-xs mt-1",
     style: {
       color: C.muted
