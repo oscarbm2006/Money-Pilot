@@ -1,7 +1,7 @@
 const { useState, useEffect, useRef, useCallback, useMemo, useId } = React;
 
 import { ACTIVOS_DEF, ASIGNACION, BLOG_ADMIN_EMAIL, C, CUENTA_TIPOS_DEF, I, NOMBRES_FASE_BLOG, OBJETIVOS_DEF, PERFILES_INFO, PRIORIDADES_OBJETIVO, PRIORIDAD_LABEL, QUIZ_DEF, SECCIONES_BLOG, TIPOS_ACTIVO_DEF, TIPOS_INVERSION_DEF, supa, MAX_IMPORTE } from './constantes.js';
-import { aportacionNecesariaParaObjetivo, calcularCapacidadFinanciera, calcularFondoEmergencia, calcularPerfilMultidimensional, calcularPlanObjetivos, calcularSaludFinanciera, crearIdObjetivo, estadoAhorro, euros, fmtFecha, formatMeses, getNextQuestionId, mdToHtml, normalizarObjetivo, normalizarObjetivos, pct, proyeccionInteres, quizNumero, recomendacionObjetivoPorHorizonte, reconstruirEstadoQuiz, rentabilidadNecesariaParaObjetivo, simularAmortizacion, sincronizarObjetivos, slugify, tiempoNecesarioParaObjetivo, totalMensual } from './calculos.js';
+import { aportacionNecesariaParaObjetivo, calcularCapacidadFinanciera, calcularFondoEmergencia, calcularPerfilMultidimensional, calcularPlanObjetivos, calcularSaludFinanciera, crearIdObjetivo, estadoAhorro, euros, fmtFecha, formatMeses, getNextQuestionId, mdToHtml, normalizarObjetivo, normalizarObjetivos, pct, proyeccionInteres, quizNumero, recomendacionObjetivoPorHorizonte, reconstruirEstadoQuiz, rentabilidadNecesariaParaObjetivo, simularAmortizacion, sincronizarObjetivos, slugify, tiempoNecesarioParaObjetivo, totalMensual, numEs } from './calculos.js';
 import { AnimatedNumber, Badge, BlogLinkCard, Card, DesgloseBarra, Eyebrow, FadeSwitch, NumberField, ProgressBar, SimpleAreaChart, SimpleDonut, SimpleStackedBarChart, StatCard, Termometro } from './ui-basicos.js';
 import { AcordeonFase, GastosTabs } from './secciones.js';
 import { LIBROS } from './libros-guia.js';
@@ -955,7 +955,7 @@ export function Simulador({
     height: 280,
     colorAportado: C.slate,
     colorInteres: C.salu,
-    formatY: v => v.toLocaleString("es-ES") + " €",
+    formatY: v => numEs(v) + " €",
     marcaAnio: anioMarcaGrafico
   })), /*#__PURE__*/React.createElement("div", {
     className: "flex gap-4 mt-2 text-xs font-bold",
@@ -4290,7 +4290,7 @@ export function Seguimiento({
     data: datosGrafico,
     xKey: "fecha",
     series: [{ key: "patrimonio", label: "Patrimonio neto", color: C.sand, opacity: 0.3 }],
-    formatY: v => v.toLocaleString("es-ES") + " €"
+    formatY: v => numEs(v) + " €"
   }))), el(Card, {
     className: "p-5"
   }, el(Eyebrow, null, "Historial de registros"), el("div", {
