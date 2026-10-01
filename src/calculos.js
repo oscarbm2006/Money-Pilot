@@ -352,9 +352,15 @@ export function calcularPerfilMultidimensional(respuestas, datos = {}) {
   };
 }
 
+// El español omite por defecto el separador de miles en números de 4 cifras (1500 en vez de 1.500).
+// Con useGrouping "always" se muestra siempre: 1.500 · 12.345 · 1.234.567
+export function numEs(n, opciones = {}) {
+  return n.toLocaleString("es-ES", { ...opciones, useGrouping: "always" });
+}
+
 export function euros(n, dec = 0) {
   if (n == null || isNaN(n)) return "—";
-  return n.toLocaleString("es-ES", {
+  return numEs(n, {
     style: "currency",
     currency: "EUR",
     minimumFractionDigits: dec,
@@ -364,7 +370,7 @@ export function euros(n, dec = 0) {
 
 export function pct(n, dec = 1) {
   if (n == null || isNaN(n)) return "—";
-  return n.toLocaleString("es-ES", {
+  return numEs(n, {
     minimumFractionDigits: dec,
     maximumFractionDigits: dec
   }) + "%";
