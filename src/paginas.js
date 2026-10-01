@@ -3031,6 +3031,10 @@ export function Cuentas({
     }
     const { _errBanco, _errNombre, ...limpio } = borrador;
     if (editando) {
+      // El saldo solo se envía si el usuario lo ha cambiado: así nunca se reenvía un saldo
+      // desactualizado que deshaga movimientos registrados desde la pestaña Movimientos.
+      const original = cuentas.find(c => c.id === editando);
+      if (original && Number(original.saldo) === Number(limpio.saldo)) delete limpio.saldo;
       onActualizar(editando, limpio);
     } else {
       onAgregar(limpio);
@@ -4377,7 +4381,7 @@ export function NavDesktop({
   const dropdowns = [{
     id: "finanzas",
     titulo: "Mis Finanzas",
-    items: [["diagnostico", "Diagnóstico"], ["cuentas", "Cuentas"], ["inversiones", "Inversiones"], ["patrimonio", "Patrimonio"]]
+    items: [["diagnostico", "Diagnóstico"], ["cuentas", "Cuentas"], ["movimientos", "Movimientos"], ["inversiones", "Inversiones"], ["patrimonio", "Patrimonio"]]
   }, {
     id: "plan",
     titulo: "Plan",
