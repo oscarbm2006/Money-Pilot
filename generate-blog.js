@@ -30,8 +30,17 @@ const supa = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let SECCIONES_ACTIVAS = new Set();
 
 function escHtml(s) {
-  return (s || '').replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+  return (s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
+
+// JSON-LD dentro de <script>: un "</script>" en un título cortaría el bloque.
+// Se neutraliza "<" como \u003c (sigue siendo JSON válido y Google lo interpreta igual).
+function jsonLd(obj) {
+  return JSON.stringify(obj, null, 2).replace(/</g, '\\u003c');
+}
+
+// Un slug acaba en nombres de archivo y en enlaces: solo letras, números, guion y guion bajo.
+const SLUG_VALIDO = /^[A-Za-z0-9][A-Za-z0-9_-]*$/;
 
 // Formato en línea: **negrita**, *cursiva* y [texto](enlace).
 function inline(texto) {
@@ -320,7 +329,7 @@ function postPage(post, seccion, anterior, siguiente, relacionados) {
 <link rel="icon" type="image/x-icon" href="/favicon.ico" />
 <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
 <script type="application/ld+json">
-${JSON.stringify({
+${jsonLd({
     "@context": "https://schema.org",
     "@type": "BlogPosting",
     "headline": post.title,
@@ -332,10 +341,10 @@ ${JSON.stringify({
     "image": `${SITE_URL}/og-image.png`,
     "inLanguage": "es",
     "description": desc
-  }, null, 2)}
+  })}
 </script>
 <script type="application/ld+json">
-${JSON.stringify({
+${jsonLd({
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     "itemListElement": [
@@ -533,7 +542,12 @@ async function main() {
     process.exit(1);
   }
 
-  const todos = ordenar(posts || []);
+  const postsSeguros = (posts || []).filter(p => {
+    if (!p.slug || SLUG_VALIDO.test(p.slug)) return true;
+    console.warn('⚠ Artículo omitido: slug no válido "' + p.slug + '" (solo letras, números, guion y guion bajo).');
+    return false;
+  });
+  const todos = ordenar(postsSeguros);
 
   // Limpia lo generado en el build anterior (por si algún artículo se ha despublicado).
   fs.rmSync(BASE_DIR, { recursive: true, force: true });
