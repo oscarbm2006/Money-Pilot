@@ -662,3 +662,8 @@ export const NOMBRES_FASE_BLOG = {
 
 // Tope de seguridad para importes en euros (1.000 millones): evita cifras absurdas que rompen cálculos y gráficos.
 export const MAX_IMPORTE = 1000000000;
+
+// Categorías de movimientos. Los gastos reutilizan las del Diagnóstico (mismos nombres)
+// para poder comparar después lo estimado con lo realmente gastado.
+export const CATEGORIAS_GASTO = [...GASTOS_FIJOS_DEF.map(g => g.label), ...GASTOS_DISC_DEF.map(g => g.label), "Deudas y préstamos", "Otros gastos"];
+export const CATEGORIAS_INGRESO = ["Nómina", "Ingresos extra / freelance", "Otros ingresos"];
