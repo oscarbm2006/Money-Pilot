@@ -2,7 +2,7 @@ const { useState, useEffect, useRef, useCallback, useMemo, useId } = React;
 
 import { C, GASTOS_DISC_DEF, GASTOS_FIJOS_DEF, GASTOS_HORMIGA_EJEMPLOS, I, STATS_REALES, TASA_INDICE_GLOBAL } from './constantes.js';
 import { Card, EvidenciaModal, Eyebrow, FadeSwitch, FreqField, NumberField, SimpleAreaChart, SimpleStackedBarChart } from './ui-basicos.js';
-import { euros, proyeccionInteres, totalMensual } from './calculos.js';
+import { euros, numEs, proyeccionInteres, totalMensual } from './calculos.js';
 
 export function AnimatedStatValue({
   raw
@@ -249,7 +249,7 @@ export function GastoHormigaSection() {
     height: 280,
     colorAportado: C.slate,
     colorInteres: C.salu,
-    formatY: v => v.toLocaleString("es-ES") + " €"
+    formatY: v => numEs(v) + " €"
   })), /*#__PURE__*/React.createElement("div", {
     className: "flex gap-4 text-xs font-bold",
     style: {
