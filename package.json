@@ -6,7 +6,8 @@
     "dev": "vite",
     "build": "node generate-blog.js && vite build",
     "preview": "vite preview",
-    "blog": "node generate-blog.js"
+    "blog": "node generate-blog.js",
+    "test": "node --test tests/*.test.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4"

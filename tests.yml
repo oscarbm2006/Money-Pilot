@@ -1,0 +1,16 @@
+# Ejecuta las pruebas automáticas de los cálculos cada vez que se sube un cambio a GitHub.
+# Verás una marca ✓ verde (todo bien) o ✗ roja (algo falla) junto a cada cambio.
+name: Pruebas
+on:
+  push:
+  pull_request:
+jobs:
+  pruebas:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install
+      - run: npm test
