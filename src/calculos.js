@@ -530,7 +530,8 @@ export function aportacionNecesariaParaObjetivo(inicial, objetivo, anios, tasaAn
   const mensualFinal = Math.max(0, mensualNecesaria);
   const p = proyeccionInteres(inicial, mensualFinal, tasaAnual, anios);
   return {
-    yaAlcanzado: mensualNecesaria <= 0,
+    // Sin plazo (n <= 0) no se puede repartir nada: solo está alcanzado si el capital inicial ya cubre el objetivo
+    yaAlcanzado: n <= 0 ? inicial >= objetivo : mensualNecesaria <= 0,
     mensualNecesaria: mensualFinal,
     totalAportado: p.totalAportado,
     interesGenerado: p.interesGenerado
@@ -629,7 +630,6 @@ export function simularAmortizacion(deudas, extraMensual, estrategia) {
         d.mesLiquidacion = mes;
         extraLiberado += d.cuotaMin;
       }
-      break;
     }
   }
   return {
