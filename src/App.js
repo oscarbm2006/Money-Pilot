@@ -7,7 +7,6 @@ import { AuthModal, ContinuarBar, ErrorBoundary, Eyebrow, FeedbackModal, Toast }
 import { AmortizacionDeuda, Contacto, Cuentas, Dashboard, Diagnostico, Estrategia, Inversiones, NavDesktop, PaginaLegal, PanelDiagnostico, PanelPrioridad, Patrimonio, PerfilRiesgo, PlanFinanciero, PrintSummary, Seguimiento, Simulador } from './paginas.js';
 const Blog = React.lazy(() => import('./blog.js'));
 import { ConfianzaPrivacidad, HeroSection } from './secciones.js';
-import { Movimientos } from './movimientos.js';
 
 export function App() {
   const {
@@ -557,21 +556,6 @@ export function App() {
     onClick: () => setVistaActual('inversiones'),
     backLabel: "Volver a Diagnóstico",
     onBack: () => setVistaActual('diagnostico')
-  })), vistaActual === 'movimientos' && /*#__PURE__*/React.createElement("div", {
-    key: "movimientos",
-    className: "fade-switch-enter"
-  }, /*#__PURE__*/React.createElement(Movimientos, {
-    user: user,
-    cuentas: cuentas,
-    setCuentas: setCuentas,
-    onToast: (msg, tone) => showToast(msg, tone),
-    onIrACuentas: () => setVistaActual('cuentas'),
-    onLogin: () => setShowAuthModal(true)
-  }), /*#__PURE__*/React.createElement(ContinuarBar, {
-    label: "Continuar a Inversiones",
-    onClick: () => setVistaActual('inversiones'),
-    backLabel: "Volver a Cuentas",
-    onBack: () => setVistaActual('cuentas')
   })), vistaActual === 'inversiones' && /*#__PURE__*/React.createElement("div", {
     key: "inversiones",
     className: "fade-switch-enter"
