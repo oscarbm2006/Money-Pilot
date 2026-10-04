@@ -26,7 +26,8 @@ export function App() {
   const [vistaActual, setVistaActualBase] = useState(() => {
     if (typeof window === "undefined") return "inicio";
     try {
-      return window.localStorage.getItem("salud-financiera:ultima-vista") || "inicio";
+      const guardada = window.localStorage.getItem("salud-financiera:ultima-vista") || "inicio";
+      return guardada === "blog" ? "inicio" : guardada;
     } catch (e) {
       return "inicio";
     }
@@ -63,14 +64,11 @@ export function App() {
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
   }, []);
-  // El blog público son páginas HTML reales (mejor para Google y para AdSense).
-  // El administrador sigue entrando al blog interno para poder crear y editar artículos.
+  // El blog público son páginas HTML reales (mejor para Google y para AdSense) y es el mismo para todos.
+  // El administrador, además, tiene en el pie un enlace "Gestionar blog" para crear y editar artículos.
   const esAdminBlog = !!(user && user.email && user.email === BLOG_ADMIN_EMAIL);
-  const blogHref = esAdminBlog ? null : "/blog/guia/index.html";
-  const irAlBlog = () => {
-    if (blogHref) window.location.assign(blogHref);
-    else setVistaActual('blog');
-  };
+  const blogHref = "/blog/guia/index.html";
+  const irAlBlog = () => window.location.assign(blogHref);
   useEffect(() => {
     if ("scrollRestoration" in window.history) window.history.scrollRestoration = "manual";
     window.scrollTo({
@@ -878,19 +876,19 @@ export function App() {
     }
   }, /*#__PURE__*/React.createElement("span", null, "© ", new Date().getFullYear(), " MoneyPilot"), /*#__PURE__*/React.createElement("div", {
     className: "flex flex-wrap items-center justify-center gap-4"
-  }, /*#__PURE__*/React.createElement(blogHref ? "a" : "button", blogHref ? {
+  }, /*#__PURE__*/React.createElement("a", {
     href: blogHref,
     className: "hover:underline",
     style: {
       color: C.mutedLight
     }
-  } : {
+  }, "Blog"), esAdminBlog ? /*#__PURE__*/React.createElement("button", {
     onClick: () => setVistaActual('blog'),
     className: "hover:underline",
     style: {
       color: C.mutedLight
     }
-  }, "Blog"), /*#__PURE__*/React.createElement("button", {
+  }, "Gestionar blog") : null, /*#__PURE__*/React.createElement("button", {
     onClick: () => setVistaActual('privacidad'),
     className: "hover:underline",
     style: {
