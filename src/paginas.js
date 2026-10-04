@@ -655,6 +655,13 @@ export function AmortizacionDeuda({
   }, euros(d.interesPagado), " interés"))))));
 }
 
+// Cada calculadora obtiene un dato por sí misma, así que ese campo no se pide al usuario.
+const NOTA_MODO_SIMULADOR = {
+  tiempo: "Calculamos cuánto tardarás en llegar a tu objetivo, por eso no hace falta indicar el horizonte.",
+  aportacion: "Calculamos cuánto necesitas aportar cada mes, por eso no hace falta indicar la aportación mensual.",
+  rentabilidad: "Calculamos qué rentabilidad necesitas, por eso no hace falta indicar la rentabilidad anual."
+};
+
 export function Simulador({
   sim,
   setSim,
@@ -783,23 +790,29 @@ export function Simulador({
     style: {
       color: C.muted
     }
-  }, "Usar mis datos")), /*#__PURE__*/React.createElement("div", {
-    className: "grid grid-cols-2 sm:grid-cols-4 gap-3"
+  }, "Usar mis datos")), NOTA_MODO_SIMULADOR[modo] ? /*#__PURE__*/React.createElement("p", {
+    className: "text-xs mb-3",
+    style: {
+      color: C.muted
+    },
+    "data-nota-modo": modo
+  }, NOTA_MODO_SIMULADOR[modo]) : null, /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-2 gap-3 " + (modo === "capital" ? "sm:grid-cols-4" : "sm:grid-cols-3")
   }, /*#__PURE__*/React.createElement(NumberField, {
     label: "Capital inicial",
     value: inicial,
     onChange: v => setAjusteInicial(Number(v) || 0)
-  }), /*#__PURE__*/React.createElement(NumberField, {
+  }), modo !== "aportacion" && /*#__PURE__*/React.createElement(NumberField, {
     label: "Aportación mensual",
     value: mensual,
     onChange: v => setAjusteMensual(Number(v) || 0)
-  }), /*#__PURE__*/React.createElement(NumberField, {
+  }), modo !== "rentabilidad" && /*#__PURE__*/React.createElement(NumberField, {
     label: "Rentabilidad anual",
     value: tasa,
     suffix: "%",
     max: 100,
     onChange: v => setAjusteTasa(Number(v) || 0)
-  }), /*#__PURE__*/React.createElement(NumberField, {
+  }), modo !== "tiempo" && /*#__PURE__*/React.createElement(NumberField, {
     label: "Horizonte (años)",
     value: horizonte,
     suffix: "años",
@@ -1504,7 +1517,7 @@ export function Estrategia({
   const nAyuda = contador++;
   const nObjetivoRiesgo = principal ? contador++ : null;
   const nBaseInvertir = contador++;
-  const nSimulacion = principal ? contador++ : null;
+  const nSimulacion = contador++;
   const nSiguientePaso = contador++;
   return /*#__PURE__*/React.createElement("div", {
     className: "space-y-6"
@@ -1716,21 +1729,21 @@ export function Estrategia({
     }
   }, ASIGNACION[perfil][a.key], "%"))))), /*#__PURE__*/React.createElement("p", {
     className: "text-[11px] mt-3 readable-note"
-  }, "Distribución orientativa y educativa asociada a tu perfil ", perfil.toLowerCase(), ". No constituye una recomendación de inversión personalizada."))), principal && /*#__PURE__*/React.createElement(Card, {
+  }, "Distribución orientativa y educativa asociada a tu perfil ", perfil.toLowerCase(), ". No constituye una recomendación de inversión personalizada."))), /*#__PURE__*/React.createElement(Card, {
     className: "p-5"
-  }, /*#__PURE__*/React.createElement(Eyebrow, null, nSimulacion, " · Simulación del objetivo"), /*#__PURE__*/React.createElement("p", {
+  }, /*#__PURE__*/React.createElement(Eyebrow, null, nSimulacion, principal ? " · Simulación del objetivo" : " · Simulador"), /*#__PURE__*/React.createElement("p", {
     className: "text-sm mt-2",
     style: {
       color: C.muted
     }
-  }, "Lleva el objetivo al simulador para comparar aportación necesaria y aportación simulada. Los cambios del simulador no modifican el objetivo guardado."), /*#__PURE__*/React.createElement("button", {
-    onClick: irASimulador,
+  }, principal ? "Lleva el objetivo al simulador para comparar aportación necesaria y aportación simulada. Los cambios del simulador no modifican el objetivo guardado." : "Prueba cuánto podría crecer tu ahorro con una aportación mensual y una rentabilidad, o calcula qué necesitas para llegar a una meta. Es solo una simulación: no modifica tus datos."), /*#__PURE__*/React.createElement("button", {
+    onClick: principal ? irASimulador : () => onGoToSimulador(),
     className: "inline-flex items-center gap-2 mt-4 px-4 py-2.5 rounded-lg text-sm font-bold",
     style: {
       backgroundColor: C.sand,
       color: C.navy
     }
-  }, "Simular ", principal.nombre || "este objetivo", " ", /*#__PURE__*/React.createElement(I.arrowRight, {
+  }, principal ? ["Simular ", principal.nombre || "este objetivo"] : "Ir al simulador", " ", /*#__PURE__*/React.createElement(I.arrowRight, {
     size: 15
   }))), /*#__PURE__*/React.createElement(Card, {
     className: "p-5"
