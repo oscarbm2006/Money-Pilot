@@ -1,7 +1,7 @@
 const { useState, useEffect, useRef, useCallback, useMemo, useId } = React;
 
 import { C, GASTOS_DISC_DEF, GASTOS_FIJOS_DEF, GASTOS_HORMIGA_EJEMPLOS, I, STATS_REALES, TASA_INDICE_GLOBAL } from './constantes.js';
-import { Card, EvidenciaModal, Eyebrow, FadeSwitch, FreqField, NumberField, SimpleAreaChart, SimpleStackedBarChart } from './ui-basicos.js';
+import { Card, EvidenciaModal, Eyebrow, FadeSwitch, FreqField, NumberField, SimpleStackedBarChart } from './ui-basicos.js';
 import { euros, numEs, proyeccionInteres, totalMensual } from './calculos.js';
 
 export function AnimatedStatValue({
