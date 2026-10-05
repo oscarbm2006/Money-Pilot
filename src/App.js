@@ -474,7 +474,7 @@ export function App() {
     className: "hidden xl:inline text-xs font-bold max-w-40 truncate nav-link-muted"
   }, user.email), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowCuentaModal(true),
-    className: "hidden sm:inline-block text-xs font-bold px-2.5 py-1.5 rounded-lg hover:bg-white/10 nav-link-muted whitespace-nowrap"
+    className: "hidden sm:flex text-xs font-bold px-2.5 py-1.5 rounded-lg hover:bg-white/10 nav-link-muted whitespace-nowrap"
   }, "Mi cuenta"), /*#__PURE__*/React.createElement("button", {
     onClick: signOut,
     className: "text-xs font-bold px-2.5 py-1.5 rounded-lg hover:bg-white/10 nav-link-muted whitespace-nowrap"
