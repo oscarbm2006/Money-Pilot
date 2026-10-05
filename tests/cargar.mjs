@@ -18,6 +18,11 @@ export async function cargarCalculos() {
   const constantes = await servidor.ssrLoadModule('/src/constantes.js');
   return { ...calculos, __constantes: constantes };
 }
+// Carga cualquier módulo de src/ (por ejemplo '/src/cuenta.js') con las mismas variables globales simuladas.
+export async function cargarModulo(ruta) {
+  if (!servidor) servidor = await createServer({ configFile: false, root: raiz, server: { middlewareMode: true }, appType: 'custom', logLevel: 'error' });
+  return servidor.ssrLoadModule(ruta);
+}
 export async function cerrar() {
   if (servidor) await servidor.close();
 }
