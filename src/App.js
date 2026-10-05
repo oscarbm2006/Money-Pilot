@@ -7,6 +7,7 @@ import { AuthModal, ContinuarBar, ErrorBoundary, Eyebrow, FeedbackModal, Toast }
 import { AmortizacionDeuda, Contacto, Cuentas, Dashboard, Diagnostico, Estrategia, Inversiones, NavDesktop, PaginaLegal, PanelDiagnostico, PanelPrioridad, Patrimonio, PerfilRiesgo, PlanFinanciero, PrintSummary, Seguimiento, Simulador } from './paginas.js';
 const Blog = React.lazy(() => import('./blog.js'));
 import { ConfianzaPrivacidad, HeroSection } from './secciones.js';
+import { MiCuentaModal } from './cuenta.js';
 
 export function App() {
   const {
@@ -187,6 +188,7 @@ export function App() {
     guardarActivosLocal(activos);
   }, [activos, activosHidratados]);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showCuentaModal, setShowCuentaModal] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [showFooterNotice, setShowFooterNotice] = useState(true);
@@ -471,6 +473,9 @@ export function App() {
   }, /*#__PURE__*/React.createElement("span", {
     className: "hidden xl:inline text-xs font-bold max-w-40 truncate nav-link-muted"
   }, user.email), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setShowCuentaModal(true),
+    className: "hidden sm:inline-block text-xs font-bold px-2.5 py-1.5 rounded-lg hover:bg-white/10 nav-link-muted whitespace-nowrap"
+  }, "Mi cuenta"), /*#__PURE__*/React.createElement("button", {
     onClick: signOut,
     className: "text-xs font-bold px-2.5 py-1.5 rounded-lg hover:bg-white/10 nav-link-muted whitespace-nowrap"
   }, "Cerrar sesión")) : /*#__PURE__*/React.createElement("button", {
@@ -888,7 +893,13 @@ export function App() {
     style: {
       color: C.mutedLight
     }
-  }, "Gestionar blog") : null, /*#__PURE__*/React.createElement("button", {
+  }, "Gestionar blog") : null, user ? /*#__PURE__*/React.createElement("button", {
+    onClick: () => setShowCuentaModal(true),
+    className: "hover:underline",
+    style: {
+      color: C.mutedLight
+    }
+  }, "Mi cuenta") : null, /*#__PURE__*/React.createElement("button", {
     onClick: () => setVistaActual('privacidad'),
     className: "hover:underline",
     style: {
@@ -920,6 +931,10 @@ export function App() {
     },
     signUp: signUp,
     signIn: signIn
+  }), showCuentaModal && user && /*#__PURE__*/React.createElement(MiCuentaModal, {
+    user: user,
+    onClose: () => setShowCuentaModal(false),
+    onToast: (msg, tone) => showToast(msg, tone)
   }), showFeedbackModal && /*#__PURE__*/React.createElement(FeedbackModal, {
     onClose: () => setShowFeedbackModal(false)
   }), /*#__PURE__*/React.createElement(Toast, {
