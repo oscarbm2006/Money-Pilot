@@ -1,6 +1,6 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
@@ -40,6 +40,13 @@ describe('Cabeceras de seguridad (vercel.json)', () => {
   });
   test('los avisos se envían al endpoint propio', () => {
     assert.deepEqual(csp['report-uri'], ['/api/csp-report']);
+  });
+  test('ninguna página pública tiene scripts escritos dentro del HTML (así se puede activar la política en modo bloqueo)', () => {
+    const paginas = ['index.html', ...readdirSync(resolve(raiz, 'public')).filter(f => f.endsWith('.html')).map(f => 'public/' + f)];
+    for (const p of paginas) {
+      const enLinea = [...leer(p).matchAll(/<script(?![^>]*\ssrc=)([^>]*)>/g)].filter(m => !/ld\+json/.test(m[1]));
+      assert.equal(enLinea.length, 0, `${p} tiene ${enLinea.length} script(s) en línea: muévelo(s) a un archivo .js`);
+    }
   });
   test('la política deja pasar todo lo que la web principal necesita (scripts y conexiones reales)', () => {
     const html = leer('index.html');
