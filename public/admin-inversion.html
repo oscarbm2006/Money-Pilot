@@ -1,180 +1,76 @@
-// Misma configuración pública que la app (la clave "anon" es pública por diseño).
-  // El panel reutiliza la sesión de MoneyPilot: no hay contraseña propia.
-  const SUPABASE_URL = 'https://yhxebtkxagxowrvrqssf.supabase.co';
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InloeGVidGt4YWd4b3dydnJxc3NmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc1MTc0MTMsImV4cCI6MjEwMzA5MzQxM30.Mt9vWxpTP-YnZp38qtBAuZVmMMKmIxIKyXA4ni4WZzM';
-  const supa = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Admin · Generar Contenido</title>
+<meta name="robots" content="noindex, nofollow" />
+<style>
+  :root{--navy:#312E81;--primary:#4F46E5;--paper:#FAFAFA;--ink:#1E1E2E;--muted:#6B7280;--border:#E5E7EB;}
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:ui-sans-serif,system-ui,sans-serif;background:var(--paper);color:var(--ink);}
+  main{max-width:680px;margin:0 auto;padding:48px 24px 80px;}
+  h1{font-size:1.4rem;margin-bottom:24px;}
+  h2{font-size:1.1rem;margin:40px 0 16px;border-top:1px solid var(--border);padding-top:32px;}
+  label{display:block;font-weight:700;font-size:.85rem;margin:18px 0 6px;}
+  input[type=text], input[type=password], textarea{width:100%;padding:12px;border:1px solid var(--border);border-radius:10px;font-size:1rem;font-family:inherit;}
+  textarea{resize:vertical;}
+  .tipo-opciones{display:flex;gap:10px;margin-top:6px;flex-wrap:wrap;}
+  .tipo-opciones button{flex:1;min-width:110px;padding:10px;border-radius:10px;border:1px solid var(--border);background:#fff;cursor:pointer;font-weight:600;}
+  .tipo-opciones button.activo{background:var(--primary);color:#fff;border-color:var(--primary);}
+  .ayuda{font-size:.78rem;color:var(--muted);margin-top:4px;}
+  #generar{margin-top:28px;width:100%;padding:14px;border:none;border-radius:12px;background:var(--navy);color:#fff;font-weight:800;font-size:1rem;cursor:pointer;}
+  #generar:disabled{opacity:.6;cursor:not-allowed;}
+  #estado{margin-top:18px;padding:14px;border-radius:10px;font-size:.9rem;display:none;}
+  #estado.ok{display:block;background:#ECFDF5;color:#065F46;}
+  #estado.error{display:block;background:#FEF2F2;color:#991B1B;}
+  #estado.cargando{display:block;background:#EFF6FF;color:#1E3A8A;}
+  #cargarPosts{width:100%;padding:12px;border:1px solid var(--border);border-radius:10px;background:#fff;font-weight:700;cursor:pointer;}
+  .fila-estado{font-size:.75rem;color:var(--muted);margin-top:8px;}
+  .post-card{border:1px solid var(--border);border-radius:14px;padding:16px;margin-top:14px;background:#fff;}
+  .post-card .titulo{font-weight:800;margin-bottom:2px;}
+  .post-card .seccion{font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px;}
+  .post-card label{margin:10px 0 4px;font-size:.78rem;}
+  .guardar-fila{margin-top:12px;padding:8px 14px;border:none;border-radius:8px;background:var(--primary);color:#fff;font-weight:700;cursor:pointer;font-size:.85rem;}
+</style>
+</head>
+<body>
+<main>
+  <h1>Generar contenido con IA</h1>
 
-  async function cabeceras() {
-    const { data } = await supa.auth.getSession();
-    const token = data && data.session ? data.session.access_token : null;
-    if (!token) return null;
-    return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token };
-  }
+  <div id="sesion" class="fila-estado">Comprobando sesión…</div>
 
-  (async () => {
-    const sesionDiv = document.getElementById('sesion');
-    const { data } = await supa.auth.getSession();
-    if (data && data.session) {
-      sesionDiv.textContent = 'Sesión iniciada como ' + data.session.user.email;
-    } else {
-      sesionDiv.textContent = '';
-      const enlace = document.createElement('a');
-      enlace.href = '/';
-      enlace.textContent = 'Inicia sesión en MoneyPilot con tu cuenta de administrador';
-      sesionDiv.appendChild(enlace);
-      sesionDiv.appendChild(document.createTextNode(' y vuelve a esta página.'));
-    }
-  })();
+  <label>Tipo de contenido</label>
+  <div class="tipo-opciones">
+    <button type="button" id="btnNoticia" class="activo">Noticia</button>
+    <button type="button" id="btnTesis">Tesis</button>
+    <button type="button" id="btnGuia">Guía financiera</button>
+  </div>
 
-  let tipo = 'noticia';
+  <label>Mensaje del CTA final (déjalo en blanco para usar el mensaje por defecto)</label>
+  <textarea id="ctaTexto" rows="2" placeholder="Ej: ¿Quieres aplicar esto a tu propio caso? Usa el"></textarea>
 
-  const btnNoticia = document.getElementById('btnNoticia');
-  const btnTesis = document.getElementById('btnTesis');
-  const btnGuia = document.getElementById('btnGuia');
+  <label>Texto del enlace (opcional)</label>
+  <input type="text" id="ctaEnlaceTexto" placeholder="Ej: diagnóstico gratuito de MoneyPilot" />
 
-  btnNoticia.onclick = () => { tipo = 'noticia'; btnNoticia.classList.add('activo'); btnTesis.classList.remove('activo'); btnGuia.classList.remove('activo'); };
-  btnTesis.onclick = () => { tipo = 'tesis'; btnTesis.classList.add('activo'); btnNoticia.classList.remove('activo'); btnGuia.classList.remove('activo'); };
-  btnGuia.onclick = () => { tipo = 'guia'; btnGuia.classList.add('activo'); btnNoticia.classList.remove('activo'); btnTesis.classList.remove('activo'); };
+  <label>A dónde lleva el enlace</label>
+  <input type="text" id="ctaEnlaceUrl" placeholder="/" value="/" />
+  <div class="ayuda">Se mostrará como: "[mensaje] [texto del enlace subrayado]." No hace falta añadir el punto final.</div>
 
-  document.getElementById('generar').onclick = async () => {
-    const tema = document.getElementById('tema').value.trim();
-    const cta_texto = document.getElementById('ctaTexto').value.trim();
-    const cta_enlace_texto = document.getElementById('ctaEnlaceTexto').value.trim();
-    const cta_enlace_url = document.getElementById('ctaEnlaceUrl').value.trim();
-    const estado = document.getElementById('estado');
-    const boton = document.getElementById('generar');
+  <label>Ticker o tema</label>
+  <input type="text" id="tema" placeholder="Ej: NVDA, sector lujo, qué es el fondo de emergencia..." />
 
-    const headers = await cabeceras();
-    if (!headers) { alert('Primero inicia sesión en MoneyPilot como administrador'); return; }
-    if (!tema) { alert('Escribe un ticker o tema'); return; }
+  <button id="generar">Generar contenido</button>
 
-    boton.disabled = true;
-    estado.className = 'cargando';
-    estado.textContent = 'Generando contenido con Gemini… esto puede tardar unos 15 segundos.';
+  <div id="estado"></div>
 
-    try {
-      const res = await fetch('/api/generar-inversion', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ tema, tipo, cta_texto, cta_enlace_texto, cta_enlace_url }),
-      });
-      const data = await res.json();
+  <h2>Artículos publicados</h2>
+  <button id="cargarPosts">Cargar artículos</button>
+  <div id="listaEstado" class="fila-estado"></div>
+  <div id="listaPosts"></div>
+</main>
 
-      if (!res.ok) {
-        estado.className = 'error';
-        estado.textContent = 'Error: ' + (data.error || 'algo falló') + (data.detalle ? (' — ' + JSON.stringify(data.detalle)) : '');
-      } else {
-        estado.className = 'ok';
-        estado.textContent = '✅ Contenido generado: "' + data.post.title + '". Se publicará solo en el próximo despliegue (unos minutos).';
-        document.getElementById('tema').value = '';
-        document.getElementById('ctaTexto').value = '';
-        document.getElementById('ctaEnlaceTexto').value = '';
-        document.getElementById('ctaEnlaceUrl').value = '/';
-      }
-    } catch (err) {
-      estado.className = 'error';
-      estado.textContent = 'Error de conexión: ' + err.message;
-    } finally {
-      boton.disabled = false;
-    }
-  };
-
-  document.getElementById('cargarPosts').onclick = async () => {
-    const listaEstado = document.getElementById('listaEstado');
-    const contenedor = document.getElementById('listaPosts');
-
-    const headers = await cabeceras();
-    if (!headers) { alert('Primero inicia sesión en MoneyPilot como administrador'); return; }
-
-    listaEstado.textContent = 'Cargando…';
-    contenedor.innerHTML = '';
-    try {
-      const res = await fetch('/api/posts-admin', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ action: 'list' }),
-      });
-      const data = await res.json();
-      if (!res.ok) { listaEstado.textContent = 'Error: ' + (data.error || 'algo falló'); return; }
-
-      if (!data.posts.length) {
-        listaEstado.textContent = 'No hay artículos.';
-        return;
-      }
-      listaEstado.textContent = '';
-
-      data.posts.forEach(p => {
-        const card = document.createElement('div');
-        card.className = 'post-card';
-
-        const inputTexto = document.createElement('textarea');
-        inputTexto.rows = 2;
-        inputTexto.value = p.cta_texto || '';
-        inputTexto.placeholder = '(usando el mensaje por defecto)';
-
-        const inputEnlaceTexto = document.createElement('input');
-        inputEnlaceTexto.type = 'text';
-        inputEnlaceTexto.value = p.cta_enlace_texto || '';
-
-        const inputEnlaceUrl = document.createElement('input');
-        inputEnlaceUrl.type = 'text';
-        inputEnlaceUrl.value = p.cta_enlace_url || '/';
-
-        const btnGuardar = document.createElement('button');
-        btnGuardar.className = 'guardar-fila';
-        btnGuardar.textContent = 'Guardar';
-        btnGuardar.onclick = async () => {
-          btnGuardar.disabled = true;
-          btnGuardar.textContent = '...';
-          try {
-            const r = await fetch('/api/posts-admin', {
-              method: 'POST',
-              headers: (await cabeceras()) || headers,
-              body: JSON.stringify({
-                action: 'update',
-                id: p.id,
-                cta_texto: inputTexto.value,
-                cta_enlace_texto: inputEnlaceTexto.value,
-                cta_enlace_url: inputEnlaceUrl.value,
-              }),
-            });
-            const d = await r.json();
-            btnGuardar.textContent = r.ok ? '✅ Guardado' : 'Error';
-            if (!r.ok) console.error(d);
-          } catch (e) {
-            btnGuardar.textContent = 'Error';
-          } finally {
-            setTimeout(() => { btnGuardar.disabled = false; btnGuardar.textContent = 'Guardar'; }, 1800);
-          }
-        };
-
-        const tituloDiv = document.createElement('div');
-        tituloDiv.className = 'titulo';
-        tituloDiv.textContent = p.title;
-        const seccionDiv = document.createElement('div');
-        seccionDiv.className = 'seccion';
-        seccionDiv.textContent = p.categoria_seccion;
-        const labelTexto = document.createElement('label');
-        labelTexto.textContent = 'Mensaje del CTA';
-        card.appendChild(tituloDiv);
-        card.appendChild(seccionDiv);
-        card.appendChild(labelTexto);
-        card.appendChild(inputTexto);
-
-        const labelEnlaceTexto = document.createElement('label');
-        labelEnlaceTexto.textContent = 'Texto del enlace';
-        card.appendChild(labelEnlaceTexto);
-        card.appendChild(inputEnlaceTexto);
-
-        const labelEnlaceUrl = document.createElement('label');
-        labelEnlaceUrl.textContent = 'A dónde lleva el enlace';
-        card.appendChild(labelEnlaceUrl);
-        card.appendChild(inputEnlaceUrl);
-
-        card.appendChild(btnGuardar);
-        contenedor.appendChild(card);
-      });
-    } catch (err) {
-      listaEstado.textContent = 'Error de conexión: ' + err.message;
-    }
-  };
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
+<script src="/admin-panel.js"></script>
+</body>
+</html>
