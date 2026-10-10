@@ -1265,6 +1265,54 @@ export function ContinuarBar({ label, onClick, backLabel, onBack }) {
   }, label, /*#__PURE__*/React.createElement(I.chevronRight, { size: 16 })) : null));
 }
 
+// Aviso cuando al iniciar sesión hay datos solo en este dispositivo y también en la cuenta.
+export function ConflictoDatosModal({ etiqueta, nLocales, nNube, onNube, onFusionar }) {
+  const [ocupado, setOcupado] = useState(false);
+  const elegir = async fn => {
+    setOcupado(true);
+    try {
+      await fn();
+    } finally {
+      setOcupado(false);
+    }
+  };
+  const btn = {
+    width: "100%",
+    padding: "12px 14px",
+    borderRadius: "12px",
+    fontSize: "14px",
+    fontWeight: 700,
+    textAlign: "left",
+    cursor: ocupado ? "default" : "pointer",
+    opacity: ocupado ? 0.6 : 1
+  };
+  return /*#__PURE__*/React.createElement("div", {
+    className: "fixed inset-0 z-50 flex items-center justify-center px-4",
+    style: { backgroundColor: "rgba(5,8,16,0.7)" },
+    role: "dialog",
+    "aria-modal": "true"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "w-full max-w-md rounded-2xl p-6 toast-enter",
+    style: { backgroundColor: C.surface }
+  }, /*#__PURE__*/React.createElement("h3", {
+    className: "font-serif text-lg font-bold mb-2",
+    style: { color: C.ink }
+  }, "Ya tienes " + etiqueta + " en tu cuenta"), /*#__PURE__*/React.createElement("p", {
+    className: "text-sm mb-5 leading-relaxed",
+    style: { color: C.muted }
+  }, "En este dispositivo hay " + nLocales + " sin guardar en tu cuenta, y en tu cuenta ya hay " + nNube + ". ¿Qué quieres hacer?"), /*#__PURE__*/React.createElement("div", {
+    className: "space-y-3"
+  }, /*#__PURE__*/React.createElement("button", {
+    disabled: ocupado,
+    onClick: () => elegir(onFusionar),
+    style: { ...btn, backgroundColor: "#4F46E5", color: "#fff", border: "none" }
+  }, "Fusionar: guardar también las de este dispositivo"), /*#__PURE__*/React.createElement("button", {
+    disabled: ocupado,
+    onClick: () => elegir(onNube),
+    style: { ...btn, backgroundColor: "transparent", color: C.ink, border: "1px solid " + C.border }
+  }, "Usar solo las de mi cuenta (descarta las de este dispositivo)"))));
+}
+
 export class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
