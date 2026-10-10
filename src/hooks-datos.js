@@ -104,10 +104,12 @@ export function useCuentasSync({
   onSaved
 }) {
   const [cloudReady, setCloudReady] = useState(false);
+  const [conflicto, setConflicto] = useState(null);
   const migradoRef = useRef(false);
   useEffect(() => {
     if (!user) {
       setCloudReady(false);
+      setConflicto(null);
       migradoRef.current = false;
       return;
     }
@@ -122,7 +124,15 @@ export function useCuentasSync({
       if (cancelled) return;
       if (!error && data) {
         if (data.length > 0) {
-          setCuentas(data.map(mapCuentaRemotaALocal));
+          const nube = data.map(mapCuentaRemotaALocal);
+          const pendientes = cuentas.filter(x => esIdCuentaLocal(x.id));
+          if (pendientes.length > 0) {
+            // Hay datos solo en este dispositivo y también en la cuenta: se pregunta al usuario.
+            setConflicto({ nube, locales: pendientes });
+            migradoRef.current = true;
+            return;
+          }
+          setCuentas(nube);
         } else if (!migradoRef.current && cuentas.length > 0) {
           const migradas = [];
           for (const c of cuentas) {
@@ -189,8 +199,28 @@ export function useCuentasSync({
       if (error) onSaved && onSaved("No se pudo borrar en la nube.", "error");
     }
   }, [user, cloudReady, setCuentas, onSaved]);
+  const resolverConflicto = useCallback(async opcion => {
+    const cf = conflicto;
+    if (!cf || !user) return;
+    if (opcion === "fusionar") {
+      const subidos = [];
+      const fallidos = [];
+      for (const x of cf.locales) {
+        const { data: fila, error: errIns } = await supa.from("cuentas").insert(mapCuentaLocalARemota(x, user.id)).select().single();
+        if (!errIns && fila) subidos.push(mapCuentaRemotaALocal(fila));else fallidos.push(x);
+      }
+      setCuentas([...cf.nube, ...subidos, ...fallidos]);
+      if (fallidos.length) onSaved && onSaved("Algunos elementos no se pudieron subir a la nube y siguen en este dispositivo.", "error");
+    } else {
+      setCuentas(cf.nube);
+    }
+    setConflicto(null);
+    setCloudReady(true);
+  }, [conflicto, user, setCuentas, onSaved]);
   return {
     cloudReady,
+    conflicto,
+    resolverConflicto,
     agregarCuenta,
     actualizarCuenta,
     eliminarCuenta
@@ -405,10 +435,12 @@ export function useInversionesSync({
   onSaved
 }) {
   const [cloudReady, setCloudReady] = useState(false);
+  const [conflicto, setConflicto] = useState(null);
   const migradoRef = useRef(false);
   useEffect(() => {
     if (!user) {
       setCloudReady(false);
+      setConflicto(null);
       migradoRef.current = false;
       return;
     }
@@ -423,7 +455,15 @@ export function useInversionesSync({
       if (cancelled) return;
       if (!error && data) {
         if (data.length > 0) {
-          setInversiones(data.map(mapInversionRemotaALocal));
+          const nube = data.map(mapInversionRemotaALocal);
+          const pendientes = inversiones.filter(x => esIdInversionLocal(x.id));
+          if (pendientes.length > 0) {
+            // Hay datos solo en este dispositivo y también en la cuenta: se pregunta al usuario.
+            setConflicto({ nube, locales: pendientes });
+            migradoRef.current = true;
+            return;
+          }
+          setInversiones(nube);
         } else if (!migradoRef.current && inversiones.length > 0) {
           const migradas = [];
           for (const inv of inversiones) {
@@ -501,8 +541,28 @@ export function useInversionesSync({
       if (error) onSaved && onSaved("No se pudo borrar en la nube.", "error");
     }
   }, [user, cloudReady, setInversiones, onSaved]);
+  const resolverConflicto = useCallback(async opcion => {
+    const cf = conflicto;
+    if (!cf || !user) return;
+    if (opcion === "fusionar") {
+      const subidos = [];
+      const fallidos = [];
+      for (const x of cf.locales) {
+        const { data: fila, error: errIns } = await supa.from("inversiones").insert(mapInversionLocalARemota(x, user.id)).select().single();
+        if (!errIns && fila) subidos.push(mapInversionRemotaALocal(fila));else fallidos.push(x);
+      }
+      setInversiones([...cf.nube, ...subidos, ...fallidos]);
+      if (fallidos.length) onSaved && onSaved("Algunos elementos no se pudieron subir a la nube y siguen en este dispositivo.", "error");
+    } else {
+      setInversiones(cf.nube);
+    }
+    setConflicto(null);
+    setCloudReady(true);
+  }, [conflicto, user, setInversiones, onSaved]);
   return {
     cloudReady,
+    conflicto,
+    resolverConflicto,
     agregarInversion,
     actualizarInversion,
     eliminarInversion
@@ -577,10 +637,12 @@ export function useActivosSync({
   onSaved
 }) {
   const [cloudReady, setCloudReady] = useState(false);
+  const [conflicto, setConflicto] = useState(null);
   const migradoRef = useRef(false);
   useEffect(() => {
     if (!user) {
       setCloudReady(false);
+      setConflicto(null);
       migradoRef.current = false;
       return;
     }
@@ -595,7 +657,15 @@ export function useActivosSync({
       if (cancelled) return;
       if (!error && data) {
         if (data.length > 0) {
-          setActivos(data.map(mapActivoRemotoALocal));
+          const nube = data.map(mapActivoRemotoALocal);
+          const pendientes = activos.filter(x => esIdActivoLocal(x.id));
+          if (pendientes.length > 0) {
+            // Hay datos solo en este dispositivo y también en la cuenta: se pregunta al usuario.
+            setConflicto({ nube, locales: pendientes });
+            migradoRef.current = true;
+            return;
+          }
+          setActivos(nube);
         } else if (!migradoRef.current && activos.length > 0) {
           const migrados = [];
           for (const a of activos) {
@@ -663,8 +733,28 @@ export function useActivosSync({
       if (error) onSaved && onSaved("No se pudo borrar en la nube.", "error");
     }
   }, [user, cloudReady, setActivos, onSaved]);
+  const resolverConflicto = useCallback(async opcion => {
+    const cf = conflicto;
+    if (!cf || !user) return;
+    if (opcion === "fusionar") {
+      const subidos = [];
+      const fallidos = [];
+      for (const x of cf.locales) {
+        const { data: fila, error: errIns } = await supa.from("activos").insert(mapActivoLocalARemoto(x, user.id)).select().single();
+        if (!errIns && fila) subidos.push(mapActivoRemotoALocal(fila));else fallidos.push(x);
+      }
+      setActivos([...cf.nube, ...subidos, ...fallidos]);
+      if (fallidos.length) onSaved && onSaved("Algunos elementos no se pudieron subir a la nube y siguen en este dispositivo.", "error");
+    } else {
+      setActivos(cf.nube);
+    }
+    setConflicto(null);
+    setCloudReady(true);
+  }, [conflicto, user, setActivos, onSaved]);
   return {
     cloudReady,
+    conflicto,
+    resolverConflicto,
     agregarActivo,
     actualizarActivo,
     eliminarActivo
