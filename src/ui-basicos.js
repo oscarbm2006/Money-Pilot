@@ -1268,6 +1268,13 @@ export function ContinuarBar({ label, onClick, backLabel, onBack }) {
 // Aviso cuando al iniciar sesión hay datos solo en este dispositivo y también en la cuenta.
 export function ConflictoDatosModal({ etiqueta, nLocales, nNube, onNube, onFusionar }) {
   const [ocupado, setOcupado] = useState(false);
+  const NOMBRES = {
+    "cuentas": ["cuenta bancaria", "cuentas bancarias"],
+    "inversiones": ["inversión", "inversiones"],
+    "otros bienes": ["bien", "bienes"]
+  };
+  const [sing, plur] = NOMBRES[etiqueta] || [etiqueta, etiqueta];
+  const nombre = n => n + " " + (n === 1 ? sing : plur);
   const elegir = async fn => {
     setOcupado(true);
     try {
@@ -1297,20 +1304,20 @@ export function ConflictoDatosModal({ etiqueta, nLocales, nNube, onNube, onFusio
   }, /*#__PURE__*/React.createElement("h3", {
     className: "font-serif text-lg font-bold mb-2",
     style: { color: C.ink }
-  }, "Ya tienes " + etiqueta + " en tu cuenta"), /*#__PURE__*/React.createElement("p", {
+  }, "Tus datos no coinciden con los de tu cuenta"), /*#__PURE__*/React.createElement("p", {
     className: "text-sm mb-5 leading-relaxed",
     style: { color: C.muted }
-  }, "En este dispositivo hay " + nLocales + " sin guardar en tu cuenta, y en tu cuenta ya hay " + nNube + ". ¿Qué quieres hacer?"), /*#__PURE__*/React.createElement("div", {
+  }, "Antes de iniciar sesión guardaste " + nombre(nLocales) + " en este dispositivo, y tu cuenta de MoneyPilot ya tenía " + nombre(nNube) + ". ¿Qué prefieres?"), /*#__PURE__*/React.createElement("div", {
     className: "space-y-3"
   }, /*#__PURE__*/React.createElement("button", {
     disabled: ocupado,
     onClick: () => elegir(onFusionar),
     style: { ...btn, backgroundColor: "#4F46E5", color: "#fff", border: "none" }
-  }, "Fusionar: guardar también las de este dispositivo"), /*#__PURE__*/React.createElement("button", {
+  }, "Conservar todo (añadir lo de este dispositivo a mi cuenta)"), /*#__PURE__*/React.createElement("button", {
     disabled: ocupado,
     onClick: () => elegir(onNube),
     style: { ...btn, backgroundColor: "transparent", color: C.ink, border: "1px solid " + C.border }
-  }, "Usar solo las de mi cuenta (descarta las de este dispositivo)"))));
+  }, "Usar solo lo de mi cuenta (descartar lo de este dispositivo)"))));
 }
 
 export class ErrorBoundary extends React.Component {
