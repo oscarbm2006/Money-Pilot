@@ -670,18 +670,24 @@ export function Simulador({
   onSeleccionarObjetivo,
   ahorroDisponible = 0,
   perfil = null,
-  onIrABlog
+  onIrABlog,
+  onIrADiagnostico,
+  onIrAResultados,
+  diagnosticoHecho = false
 }) {
   const [vista, setVista] = useState("5anos");
   const [modo, setModo] = useState("capital");
   const seleccionado = objetivos.find(o => o.id === objetivoSeleccionadoId) || null;
   const tieneDatos = !!seleccionado || !!perfil;
-  const objetivoNum = seleccionado?.importeObjetivo != null ? Number(seleccionado.importeObjetivo) : null;
+  const [ajusteObjetivo, setAjusteObjetivo] = useState(null);
+  const objetivoManual = ajusteObjetivo != null ? ajusteObjetivo : 10000;
+  const mostrarObjetivoManual = modo !== "capital" && (!seleccionado || seleccionado.importeObjetivo == null);
+  const objetivoNum = seleccionado?.importeObjetivo != null ? Number(seleccionado.importeObjetivo) : Number(objetivoManual) > 0 ? Number(objetivoManual) : null;
 
   // Valores calculados automáticamente a partir del objetivo/perfil del usuario.
   const inicialAuto = seleccionado ? seleccionado.importeReservadoAplicado ?? 0 : 0;
   const mensualAuto = seleccionado ? seleccionado.aportacionMensual ?? ahorroDisponible ?? 0 : ahorroDisponible ?? 0;
-  const tasaAuto = perfil ? PERFILES_INFO[perfil].rentabilidad : 4;
+  const tasaAuto = perfil && PERFILES_INFO[perfil] ? PERFILES_INFO[perfil].rentabilidad : 4;
   const horizonteAuto = seleccionado ? seleccionado.horizonteAniosCalculado ?? seleccionado.plazoAnios ?? 10 : 10;
 
   // Ajuste manual: el usuario puede tocar cualquiera de los 4 campos libremente,
@@ -692,12 +698,13 @@ export function Simulador({
   const [ajusteMensual, setAjusteMensual] = useState(null);
   const [ajusteTasa, setAjusteTasa] = useState(null);
   const [ajusteHorizonte, setAjusteHorizonte] = useState(null);
-  const hayAjusteManual = ajusteInicial != null || ajusteMensual != null || ajusteTasa != null || ajusteHorizonte != null;
+  const hayAjusteManual = ajusteInicial != null || ajusteMensual != null || ajusteTasa != null || ajusteHorizonte != null || ajusteObjetivo != null;
   const restablecerAjuste = () => {
     setAjusteInicial(null);
     setAjusteMensual(null);
     setAjusteTasa(null);
     setAjusteHorizonte(null);
+    setAjusteObjetivo(null);
   };
   const inicial = ajusteInicial != null ? ajusteInicial : inicialAuto;
   const mensual = ajusteMensual != null ? ajusteMensual : mensualAuto;
@@ -766,7 +773,22 @@ export function Simulador({
     }
   }, "Tu escenario de ahorro"), /*#__PURE__*/React.createElement("p", {
     className: "text-sm mt-1 readable-subtitle"
-  }, "Calculado con tus propios datos. Es una proyección educativa: las rentabilidades son hipotéticas y no garantizan resultados futuros.")), /*#__PURE__*/React.createElement("div", {
+  }, (tieneDatos ? "Calculado con tus propios datos." : "Escenario de ejemplo que puedes ajustar a tu gusto.") + " Es una proyección educativa: las rentabilidades son hipotéticas y no garantizan resultados futuros.")), !tieneDatos && /*#__PURE__*/React.createElement(Card, {
+    className: "p-5"
+  }, /*#__PURE__*/React.createElement(Eyebrow, null, "Escenario de ejemplo"), /*#__PURE__*/React.createElement("p", {
+    className: "text-sm mt-2",
+    style: {
+      color: C.muted
+    }
+  }, diagnosticoHecho ? "Estás usando valores de ejemplo. Haz el test de perfil en tus resultados para que usemos la rentabilidad de tu perfil de inversor." : "Puedes probar con tus propios números ahora mismo. Si completas tu diagnóstico, calcularemos el escenario con tus datos reales."), (diagnosticoHecho ? onIrAResultados : onIrADiagnostico) && /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: diagnosticoHecho ? onIrAResultados : onIrADiagnostico,
+    className: "mt-3 inline-flex items-center px-4 py-2.5 rounded-lg text-sm font-bold",
+    style: {
+      backgroundColor: C.sand,
+      color: C.navy
+    }
+  }, diagnosticoHecho ? "Ir a mis resultados" : "Hacer mi diagnóstico")), /*#__PURE__*/React.createElement("div", {
     className: "grid grid-cols-2 sm:grid-cols-4 gap-2"
   }, [["capital", "¿Cuánto tendré?"], ["tiempo", "¿Cuánto tardaré?"], ["aportacion", "¿Cuánto aportar?"], ["rentabilidad", "¿Qué rentabilidad?"]].map(([id, label]) => /*#__PURE__*/React.createElement("button", {
     key: id,
@@ -797,7 +819,7 @@ export function Simulador({
     },
     "data-nota-modo": modo
   }, NOTA_MODO_SIMULADOR[modo]) : null, /*#__PURE__*/React.createElement("div", {
-    className: "grid grid-cols-2 gap-3 " + (modo === "capital" ? "sm:grid-cols-4" : "sm:grid-cols-3")
+    className: "grid grid-cols-2 gap-3 " + (modo === "capital" || mostrarObjetivoManual ? "sm:grid-cols-4" : "sm:grid-cols-3")
   }, /*#__PURE__*/React.createElement(NumberField, {
     label: "Capital inicial",
     value: inicial,
@@ -818,6 +840,10 @@ export function Simulador({
     suffix: "años",
     max: 100,
     onChange: v => setAjusteHorizonte(Math.max(1, Number(v) || 1))
+  }), mostrarObjetivoManual && /*#__PURE__*/React.createElement(NumberField, {
+    label: "Importe que quieres alcanzar",
+    value: objetivoManual,
+    onChange: v => setAjusteObjetivo(Math.max(0, Number(v) || 0))
   }))), objetivos.length > 0 && /*#__PURE__*/React.createElement(Card, {
     className: "p-5"
   }, /*#__PURE__*/React.createElement("div", {
@@ -845,19 +871,7 @@ export function Simulador({
       backgroundColor: C.sandLight,
       color: C.ink
     }
-  }, /*#__PURE__*/React.createElement("b", null, seleccionado.nombre || "Objetivo seleccionado"), " · La proyección usa el ahorro y el plazo de este objetivo automáticamente.")), !tieneDatos ? /*#__PURE__*/React.createElement(Card, {
-    className: "p-6 text-center"
-  }, /*#__PURE__*/React.createElement(Eyebrow, null, "Aún no tenemos datos suficientes"), /*#__PURE__*/React.createElement("h3", {
-    className: "font-serif text-xl font-bold mt-2",
-    style: {
-      color: C.ink
-    }
-  }, "Completa tu diagnóstico y tu perfil de riesgo primero"), /*#__PURE__*/React.createElement("p", {
-    className: "text-sm mt-2 max-w-md mx-auto",
-    style: {
-      color: C.muted
-    }
-  }, "Así podremos calcular un escenario con tus propios números, en vez de mostrarte cifras genéricas que no te aplican.")) : /*#__PURE__*/React.createElement(React.Fragment, null, perfil && /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("b", null, seleccionado.nombre || "Objetivo seleccionado"), " · La proyección usa el ahorro y el plazo de este objetivo automáticamente.")), /*#__PURE__*/React.createElement(React.Fragment, null, perfil && /*#__PURE__*/React.createElement("div", {
     className: "text-xs rounded-lg px-3 py-2.5",
     style: {
       backgroundColor: C.saluLight,
@@ -869,7 +883,7 @@ export function Simulador({
       backgroundColor: C.critLight,
       color: C.ink
     }
-  }, "Este modo necesita un objetivo con un importe definido. Elige uno arriba en \"Conecta un objetivo\" (o crea uno nuevo en Objetivos financieros) para poder calcularlo."), modo === "tiempo" && resTiempo && /*#__PURE__*/React.createElement(Card, {
+  }, "Indica el importe que quieres alcanzar para poder calcular este modo."), modo === "tiempo" && resTiempo && /*#__PURE__*/React.createElement(Card, {
     className: "p-5"
   }, /*#__PURE__*/React.createElement(Eyebrow, null, "Tiempo necesario"), /*#__PURE__*/React.createElement("div", {
     className: "mt-2 rounded-xl p-4",
