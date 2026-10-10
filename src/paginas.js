@@ -247,7 +247,7 @@ export function Dashboard({
     cargaDeuda,
     perfil
   });
-  const saludIco = salud.nombre === "Crítico" ? I.x : salud.nombre === "Mejorable" ? I.alert : I.check;
+  const saludIco = salud.score < 60 ? I.alert : I.check;
   return /*#__PURE__*/React.createElement("div", {
     className: "space-y-6"
   }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h1", {
