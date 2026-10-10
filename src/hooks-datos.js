@@ -53,7 +53,8 @@ export function mapCuentaRemotaALocal(row) {
     tipo: row.tipo || "Corriente",
     nombre: row.nombre || "",
     saldo: Number(row.saldo) || 0,
-    moneda: row.moneda || "EUR"
+    moneda: row.moneda || "EUR",
+    esFondoEmergencia: !!row.es_fondo_emergencia
   };
 }
 
@@ -64,7 +65,8 @@ export function mapCuentaLocalARemota(c, userId) {
     tipo: c.tipo || "Corriente",
     nombre: c.nombre || "",
     saldo: Number(c.saldo) || 0,
-    moneda: c.moneda || "EUR"
+    moneda: c.moneda || "EUR",
+    ...(c.esFondoEmergencia ? { es_fondo_emergencia: true } : {})
   };
 }
 
@@ -170,6 +172,7 @@ export function useCuentasSync({
         if (cambios[k] !== undefined) payload[k] = cambios[k];
       });
       if (cambios.saldo !== undefined) payload.saldo = Number(cambios.saldo) || 0;
+      if (cambios.esFondoEmergencia !== undefined) payload.es_fondo_emergencia = !!cambios.esFondoEmergencia;
       if (Object.keys(payload).length === 0) return;
       const {
         error
