@@ -3,7 +3,7 @@ const { useState, useEffect, useRef, useCallback, useMemo, useId } = React;
 import { BLOG_ADMIN_EMAIL, C, I, OBJETIVOS_DEF, PATTERN_URI_STATIC, PERFILES_INFO } from './constantes.js';
 import { calcularCapacidadFinanciera, calcularDiagnosticoAmpliado, calcularPerfilMultidimensional, calcularPlanFinanciero, calcularPlanObjetivos, calcularPrioridades, datosVacios, normalizarObjetivos, objetivoLegadoDesdeColeccion, reconstruirEstadoQuiz, totalMensual } from './calculos.js';
 import { useActivosPersistidos, useActivosSync, useAuth, useCloudSync, useCuentasPersistidas, useCuentasSync, useDatosPersistidos, useDebouncedEffect, useDeudasMirrorSync, useInversionesPersistidas, useInversionesSync, useSeguimiento, useToast } from './hooks-datos.js';
-import { AuthModal, ContinuarBar, ErrorBoundary, Eyebrow, FeedbackModal, Toast } from './ui-basicos.js';
+import { AuthModal, ConflictoDatosModal, ContinuarBar, ErrorBoundary, Eyebrow, FeedbackModal, Toast } from './ui-basicos.js';
 import { AmortizacionDeuda, Contacto, Cuentas, Dashboard, Diagnostico, Estrategia, Inversiones, NavDesktop, PaginaLegal, PanelDiagnostico, PanelPrioridad, Patrimonio, PerfilRiesgo, PlanFinanciero, PrintSummary, Seguimiento, Simulador } from './paginas.js';
 const Blog = React.lazy(() => import('./blog.js'));
 import { ConfianzaPrivacidad, HeroSection } from './secciones.js';
@@ -120,6 +120,8 @@ export function App() {
     setCuentasHidratadas(true);
   }, [cuentasReady, cuentasGuardadas]);
   const {
+    conflicto: conflictoCuentas,
+    resolverConflicto: resolverConflictoCuentas,
     agregarCuenta,
     actualizarCuenta,
     eliminarCuenta
@@ -147,6 +149,8 @@ export function App() {
     setInversionesHidratadas(true);
   }, [inversionesReady, inversionesGuardadas]);
   const {
+    conflicto: conflictoInversiones,
+    resolverConflicto: resolverConflictoInversiones,
     agregarInversion,
     actualizarInversion,
     eliminarInversion
@@ -174,6 +178,8 @@ export function App() {
     setActivosHidratados(true);
   }, [activosReady, activosGuardados]);
   const {
+    conflicto: conflictoActivos,
+    resolverConflicto: resolverConflictoActivos,
     agregarActivo,
     actualizarActivo,
     eliminarActivo
@@ -937,7 +943,17 @@ export function App() {
     },
     signUp: signUp,
     signIn: signIn
-  }), showCuentaModal && user && /*#__PURE__*/React.createElement(MiCuentaModal, {
+  }), user && (() => {
+    const cf = conflictoCuentas ? { etiqueta: "cuentas", c: conflictoCuentas, r: resolverConflictoCuentas } : conflictoInversiones ? { etiqueta: "inversiones", c: conflictoInversiones, r: resolverConflictoInversiones } : conflictoActivos ? { etiqueta: "otros bienes", c: conflictoActivos, r: resolverConflictoActivos } : null;
+    return cf ? /*#__PURE__*/React.createElement(ConflictoDatosModal, {
+      key: cf.etiqueta,
+      etiqueta: cf.etiqueta,
+      nLocales: cf.c.locales.length,
+      nNube: cf.c.nube.length,
+      onNube: () => cf.r("nube"),
+      onFusionar: () => cf.r("fusionar")
+    }) : null;
+  })(), showCuentaModal && user && /*#__PURE__*/React.createElement(MiCuentaModal, {
     user: user,
     onClose: () => setShowCuentaModal(false),
     onToast: (msg, tone) => showToast(msg, tone)
