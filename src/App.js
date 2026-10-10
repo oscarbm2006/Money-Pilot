@@ -556,7 +556,7 @@ export function App() {
       });
     },
     onFinalizar: () => {
-      setVistaActual('cuentas');
+      setVistaActual('estrategia');
     }
   })), vistaActual === 'cuentas' && /*#__PURE__*/React.createElement("div", {
     key: "cuentas",
@@ -567,8 +567,8 @@ export function App() {
     onActualizar: actualizarCuenta,
     onEliminar: eliminarCuenta
   }), /*#__PURE__*/React.createElement(ContinuarBar, {
-    label: "Continuar a Inversiones",
-    onClick: () => setVistaActual('inversiones'),
+    label: "Ver mis resultados",
+    onClick: () => setVistaActual('estrategia'),
     backLabel: "Volver a Diagnóstico",
     onBack: () => setVistaActual('diagnostico')
   })), vistaActual === 'inversiones' && /*#__PURE__*/React.createElement("div", {
@@ -580,8 +580,8 @@ export function App() {
     onActualizar: actualizarInversion,
     onEliminar: eliminarInversion
   }), /*#__PURE__*/React.createElement(ContinuarBar, {
-    label: "Continuar a Patrimonio",
-    onClick: () => setVistaActual('patrimonio'),
+    label: "Ver mis resultados",
+    onClick: () => setVistaActual('estrategia'),
     backLabel: "Volver a Cuentas",
     onBack: () => setVistaActual('cuentas')
   })), vistaActual === 'patrimonio' && /*#__PURE__*/React.createElement("div", {
@@ -602,7 +602,7 @@ export function App() {
       setVistaActual('diagnostico');
     }
   }), /*#__PURE__*/React.createElement(ContinuarBar, {
-    label: "Continuar a Estrategia",
+    label: "Ver mis resultados",
     onClick: () => setVistaActual('estrategia'),
     backLabel: "Volver a Inversiones",
     onBack: () => setVistaActual('inversiones')
@@ -625,7 +625,31 @@ export function App() {
     style: {
       color: C.muted
     }
-  }, "Aquí se concentran las métricas clave, el perfil de riesgo y las decisiones que puedes tomar a continuación.")), /*#__PURE__*/React.createElement(PanelDiagnostico, {
+  }, "Aquí se concentran las métricas clave, el perfil de riesgo y las decisiones que puedes tomar a continuación.")), (() => {
+    const faltan = [];
+    if (cuentas.length === 0) faltan.push(["cuentas", "Añadir mis cuentas"]);
+    if (inversiones.length === 0) faltan.push(["inversiones", "Añadir mis inversiones"]);
+    if (activos.length === 0) faltan.push(["patrimonio", "Añadir otros bienes"]);
+    if (faltan.length === 0) return null;
+    return /*#__PURE__*/React.createElement("div", {
+      className: "max-w-3xl rounded-2xl p-5",
+      style: { backgroundColor: C.white, border: "1px solid " + C.border }
+    }, /*#__PURE__*/React.createElement("p", {
+      className: "text-sm font-bold",
+      style: { color: C.ink }
+    }, "Afina tus resultados (opcional)"), /*#__PURE__*/React.createElement("p", {
+      className: "text-sm mt-1 mb-3",
+      style: { color: C.muted }
+    }, "Estos resultados se basan en lo que indicaste en el diagnóstico. Si añades tus cuentas, inversiones y otros bienes, serán más precisos."), /*#__PURE__*/React.createElement("div", {
+      className: "flex flex-wrap gap-2"
+    }, faltan.map(([id, texto]) => /*#__PURE__*/React.createElement("button", {
+      key: id,
+      type: "button",
+      onClick: () => setVistaActual(id),
+      className: "text-xs font-bold px-3 py-2 rounded-lg border",
+      style: { borderColor: C.border, color: C.ink, backgroundColor: C.white }
+    }, texto))));
+  })(), /*#__PURE__*/React.createElement(PanelDiagnostico, {
     diagnostico: diagnosticoAmpliado,
     onIrABlog: irAlBlog
   }), /*#__PURE__*/React.createElement(PanelPrioridad, {
@@ -699,8 +723,8 @@ export function App() {
   }), /*#__PURE__*/React.createElement(ContinuarBar, {
     label: "Continuar a Plan",
     onClick: () => setVistaActual('plan'),
-    backLabel: "Volver a Patrimonio",
-    onBack: () => setVistaActual('patrimonio')
+    backLabel: "Volver a Diagnóstico",
+    onBack: () => setVistaActual('diagnostico')
   }))))), vistaActual === 'plan' && /*#__PURE__*/React.createElement("div", {
     key: "plan",
     className: "fade-switch-enter"
