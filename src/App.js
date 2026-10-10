@@ -803,7 +803,7 @@ export function App() {
     className: "max-w-6xl mx-auto px-4 sm:px-6"
   }, /*#__PURE__*/React.createElement("div", {
     className: "max-w-3xl mb-10 section-intro"
-  }, /*#__PURE__*/React.createElement(Eyebrow, null, "Tu proyección personalizada"), /*#__PURE__*/React.createElement("h2", {
+  }, /*#__PURE__*/React.createElement(Eyebrow, null, "Simulador de ahorro"), /*#__PURE__*/React.createElement("h2", {
     className: "font-serif text-3xl sm:text-4xl font-bold mt-2",
     style: {
       color: C.ink
@@ -813,7 +813,7 @@ export function App() {
     style: {
       color: C.muted
     }
-  }, "Este es el escenario calculado con tus propios datos: tu objetivo, tu ahorro y tu perfil de riesgo.")), /*#__PURE__*/React.createElement(Simulador, {
+  }, "Ajusta los números y mira qué puede hacer tu ahorro con el tiempo. Si ya hiciste tu diagnóstico, partirá de tus propios datos.")), /*#__PURE__*/React.createElement(Simulador, {
     sim: sim,
     setSim: setSim,
     objetivos: planObjetivos.objetivos,
@@ -821,7 +821,13 @@ export function App() {
     onSeleccionarObjetivo: setObjetivoSeleccionadoId,
     ahorroDisponible: ahorroDisponible,
     perfil: perfil,
-    onIrABlog: irAlBlog
+    onIrABlog: irAlBlog,
+    diagnosticoHecho: Number(capacidadFinanciera.ingresos) > 0,
+    onIrADiagnostico: () => {
+      setIrADeudas(false);
+      setVistaActual('diagnostico');
+    },
+    onIrAResultados: () => setVistaActual('estrategia')
   })))), vistaActual === 'blog' && /*#__PURE__*/React.createElement("div", {
     key: "blog",
     className: "fade-switch-enter"
