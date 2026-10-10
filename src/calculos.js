@@ -444,7 +444,7 @@ export function calcularSaludFinanciera({
     color: C.salu,
     light: C.saluLight
   };else nivel = {
-    nombre: "Muy buena base",
+    nombre: "Muy buena salud",
     color: C.exc,
     light: C.excLight
   };
