@@ -1,1384 +1,1380 @@
 const { useState, useEffect, useRef, useCallback, useMemo, useId } = React;
 
-import { C, DEUDAS_DEF, FRECUENCIAS, GASTOS_DISC_DEF, GASTOS_FIJOS_DEF, I, PERFILES_NIVELES, PRIORIDADES_OBJETIVO, QUIZ_DEF } from './constantes.js';
+import { C, FRECUENCIAS, I, supa, MAX_IMPORTE } from './constantes.js';
+import { euros, niceTicks, traducirErrorAuth } from './calculos.js';
+import { PrivacyNotice } from './secciones.js';
 
-export function quizNumero(respuestas, id) {
-  const n = Number((respuestas || {})[id]);
-  const max = (QUIZ_DEF[id]?.opciones || []).length || 4;
-  return n >= 1 && n <= max ? n : null;
-}
-
-export function tipoObjetivoDesdeQuiz(valor) {
-  return {
-    1: "casa",
-    2: "coche",
-    3: "vacaciones",
-    4: "estudios",
-    5: "libertad",
-    6: "poder_adquisitivo",
-    7: "otro"
-  }[Number(valor)] || null;
-}
-
-export function esObjetivoMaterial(datos = {}, tipoQuiz = null) {
-  const tipo = tipoObjetivoDesdeQuiz(tipoQuiz) || datos?.objetivo?.tipo;
-  return ["casa", "coche", "vacaciones", "estudios"].includes(tipo);
-}
-
-export function getNextQuestionId(currentQuestionId, respuestas = {}, datos = {}) {
-  const r = respuestas || {};
-  const h = quizNumero(r, "horizonte");
-  const l = quizNumero(r, "liquidez");
-  const p = quizNumero(r, "conocimientoProductos");
-  const k = quizNumero(r, "conocimientoRiesgo");
-  const objetivoRiesgo = quizNumero(r, "objetivo");
-  const objetivoTipo = tipoObjetivoDesdeQuiz(r.objetivoTipo) || datos?.objetivo?.tipo;
-  const necesitaLiquidez = h != null && h <= 2 || l != null && l <= 2;
-  const material = esObjetivoMaterial(datos, r.objetivoTipo);
-  switch (currentQuestionId) {
-    case null:
-    case undefined:
-      return "edad";
-    case "edad":
-      return "disposicionInvertir";
-    case "disposicionInvertir":
-      return "conocimientoProductos";
-    case "conocimientoProductos":
-      return "objetivo";
-    case "objetivo":
-      return "objetivoTipo";
-    case "objetivoTipo":
-      return "horizonte";
-    case "horizonte":
-      return "estabilidad";
-    case "estabilidad":
-      return "concentracion";
-    case "concentracion":
-      return "liquidez";
-    case "liquidez":
-      return necesitaLiquidez ? "liquidezDetalle" : "caida";
-    case "liquidezDetalle":
-      return "colchonAlternativo";
-    case "colchonAlternativo":
-      return "caida";
-    case "caida":
-      if (["libertad", "poder_adquisitivo"].includes(objetivoTipo)) return "objetivoLargoPlazo";
-      return material || objetivoRiesgo <= 2 || objetivoTipo === "otro" ? "objetivoContexto" : h != null && h >= 3 ? "perdida" : p != null && p <= 1 ? "patrimonio" : "conocimientoRiesgo";
-    case "objetivoContexto":
-      return h != null && h >= 3 ? "perdida" : p != null && p <= 1 ? "patrimonio" : "conocimientoRiesgo";
-    case "objetivoLargoPlazo":
-      return h != null && h >= 3 ? "perdida" : p != null && p <= 1 ? "patrimonio" : "conocimientoRiesgo";
-    case "perdida":
-      return p != null && p <= 1 ? "patrimonio" : "conocimientoRiesgo";
-    case "conocimientoRiesgo":
-      return k != null && k >= 3 ? "conocimientoCostes" : "patrimonio";
-    case "conocimientoCostes":
-      return p != null && p >= 3 ? "comportamiento" : "patrimonio";
-    case "comportamiento":
-      return "patrimonio";
-    case "patrimonio":
-    default:
-      return null;
-  }
-}
-
-export function construirRutaQuiz(respuestas = {}, datos = {}) {
-  const r = normalizarRespuestasQuiz(respuestas);
-  const ruta = [];
-  let id = getNextQuestionId(null, r, datos);
-  const vistos = new Set();
-  while (id && !vistos.has(id) && ruta.length < 30) {
-    vistos.add(id);
-    ruta.push(id);
-    if (quizNumero(r, id) == null) break;
-    id = getNextQuestionId(id, r, datos);
-  }
-  return ruta;
-}
-
-export function preguntasDisponiblesQuiz(respuestas = {}, datos = {}) {
-  return construirRutaQuiz(respuestas, datos).map(id => QUIZ_DEF[id]).filter(Boolean);
-}
-
-export function reconstruirEstadoQuiz(quizState, datos = {}) {
-  const estado = quizState && typeof quizState === "object" ? quizState : {};
-  const respuestas = normalizarRespuestasQuiz(estado.respuestas || {});
-  const rutaGuardada = Array.isArray(estado.questionPath) ? estado.questionPath.filter(id => QUIZ_DEF[id]) : [];
-  const rutaCalculada = construirRutaQuiz(respuestas, datos);
-  const ruta = rutaGuardada.length ? rutaGuardada.filter((id, i) => rutaCalculada[i] === id) : rutaCalculada;
-  const rutaFinal = ruta.length ? ruta : rutaCalculada;
-  const ultimo = rutaFinal[rutaFinal.length - 1];
-  const finalizado = !!estado.terminado || ultimo === "patrimonio" && quizNumero(respuestas, "patrimonio") != null;
-  const candidato = estado.currentQuestionId && QUIZ_DEF[estado.currentQuestionId] ? estado.currentQuestionId : null;
-  const actual = finalizado ? ultimo || "patrimonio" : candidato && rutaFinal.includes(candidato) ? candidato : rutaFinal.find(id => quizNumero(respuestas, id) == null) || ultimo || "edad";
-  return {
-    respuestas,
-    currentQuestionId: actual,
-    questionPath: rutaFinal,
-    paso: Math.max(0, rutaFinal.indexOf(actual)),
-    terminado: finalizado,
-    resultado: estado.resultado || null
-  };
-}
-
-export function normalizarRespuestasQuiz(respuestas) {
-  if (!Array.isArray(respuestas)) return respuestas || {};
-  const legacyIds = ["edad", "horizonte", "objetivo", "estabilidad", "concentracion", "liquidez", "caida", "conocimientoProductos"];
-  const out = {};
-  respuestas.forEach((valor, i) => {
-    if (valor != null && legacyIds[i]) out[legacyIds[i]] = Number(valor);
-  });
-  return out;
-}
-
-export function calcularPerfilMultidimensional(respuestas, datos = {}) {
-  const r = normalizarRespuestasQuiz(respuestas);
-  const valor = id => quizNumero(r, id);
-  const media = items => {
-    const validos = items.filter(v => v != null && !isNaN(v));
-    return validos.length ? validos.reduce((a, b) => a + b, 0) / validos.length : null;
-  };
-  const a100 = v => v == null ? null : Math.round(v * 25);
-  const qEdad = valor("edad");
-  const qHorizonte = valor("horizonte");
-  const qObjetivo = valor("objetivo");
-  const qObjetivoTipo = valor("objetivoTipo");
-  const qEstabilidad = valor("estabilidad");
-  const qConcentracion = valor("concentracion");
-  const qLiquidez = valor("liquidez");
-  const qLiquidezDetalle = valor("liquidezDetalle");
-  const qColchonAlternativo = valor("colchonAlternativo");
-  const qCaida = valor("caida");
-  const qPerdida = valor("perdida");
-  const qObjetivoContexto = valor("objetivoContexto");
-  const qObjetivoLargoPlazo = valor("objetivoLargoPlazo");
-  const qProductos = valor("conocimientoProductos");
-  const qRiesgo = valor("conocimientoRiesgo");
-  const qCostes = valor("conocimientoCostes");
-  const qComportamiento = valor("comportamiento");
-  const qPatrimonio = valor("patrimonio");
-  const ahorroActual = Number(datos.ahorroActual || 0);
-  const capacidadFinanciera = calcularCapacidadFinanciera(datos);
-  const ahorroDisponible = capacidadFinanciera.capacidadMensual;
-  const gastoTotal = capacidadFinanciera.gastosTotales;
-  const coberturaEmergencia = capacidadFinanciera.gastosTotales > 0 ? ahorroActual / capacidadFinanciera.gastosTotales : null;
-  const ratioDeuda = capacidadFinanciera.ingresos > 0 ? capacidadFinanciera.cuotasDeuda / capacidadFinanciera.ingresos : null;
-  const deudaPendiente = (datos.deudas || []).reduce((s, d) => s + Number(d.pendiente || 0), 0);
-  const planObjetivos = calcularPlanObjetivos(datos);
-  const objetivosPlan = planObjetivos.objetivos;
-  const objetivoPrincipalPlan = planObjetivos.principal;
-  const objetivoContextualTipo = objetivoPrincipalPlan?.tipo || tipoObjetivoDesdeQuiz(qObjetivoTipo) || null;
-  const importeObjetivo = Number(objetivoPrincipalPlan?.importeObjetivo || 0);
-  const plazoObjetivo = Number(objetivoPrincipalPlan?.plazoAnios || 0);
-  const reservadoObjetivo = Number(objetivoPrincipalPlan?.importeReservado || 0);
-  const coberturaObjetivo = importeObjetivo > 0 ? Math.max(0, Math.min(1, reservadoObjetivo / importeObjetivo)) : null;
-
-  /*
-   * Edad es contexto independiente. Un usuario joven no obtiene por ello
-   * un horizonte largo: el horizonte se deriva exclusivamente de su respuesta.
-   */
-  const edad = a100(qEdad);
-  const horizonte = a100(qHorizonte);
-  const toleranciaRiesgo = a100(media([qCaida, qPerdida, qObjetivo, qObjetivoContexto, qObjetivoLargoPlazo]));
-
-  /*
-   * Capacidad: incorpora situación financiera real y las nuevas preguntas
-   * condicionales de liquidez. Si no hay datos financieros, se usan solo las
-   * respuestas disponibles y la confianza lo refleja.
-   */
-  const factorFlujo = Number(datos.ingresos || 0) > 0 ? ahorroDisponible > 0 ? Math.min(4, 1 + ahorroDisponible / Math.max(Number(datos.ingresos || 1) * 0.25, 1)) : 1 : null;
-  const factorDeuda = ratioDeuda == null ? null : ratioDeuda > 0.40 ? 1 : ratioDeuda > 0.25 ? 2 : ratioDeuda > 0.10 ? 3 : 4;
-  // Nota: el fondo de emergencia (coberturaEmergencia) NO entra aquí a propósito.
-  // Es vital para decidir CUÁNDO empezar a invertir (ver avisos en calcularSaludFinanciera),
-  // pero no debe determinar el perfil de riesgo en sí: alguien con tolerancia agresiva
-  // y 0 de colchón sigue siendo "agresivo de perfil", aunque la recomendación práctica
-  // sea priorizar el colchón antes de invertir.
-  const factoresFinancierosDuros = [factorFlujo, factorDeuda].filter(v => v != null);
-  // qEstabilidad, qColchonAlternativo, qPatrimonio y coberturaObjetivo se excluyen
-  // aquí a propósito: las tres primeras preguntas hablan, directa o indirectamente,
-  // de colchón/fondo de emergencia (la propia nota de "patrimonio" lo describe como
-  // "el colchón real"), y coberturaObjetivo mide el progreso de un objetivo concreto,
-  // no la capacidad de riesgo general. Ninguno de estos factores debe influir en el
-  // perfil de riesgo (ver nota sobre factorEmergencia más arriba). Sí se siguen
-  // preguntando/calculando y sí siguen disponibles para otros usos (avisos de
-  // "cuándo invertir", seguimiento del objetivo).
-  const capacidadFactores = [qConcentracion, qLiquidezDetalle];
-  const capacidadEncuesta = media(capacidadFactores);
-  const capacidadDura = factoresFinancierosDuros.length ? media(factoresFinancierosDuros) : null;
-  // Antes esto encadenaba dos Math.min() (el peor factor "duro" y luego el peor
-  // entre ese y la encuesta), así que un único dato flojo (p.ej. el margen mensual)
-  // hundía todo el resultado aunque el resto fuera excelente. Ahora se pondera:
-  // los datos financieros "duros" (flujo, deuda) cuentan el doble que las
-  // respuestas de la encuesta, pero ya no hay un único factor con veto absoluto.
-  const capacidadRiesgo = a100(capacidadDura == null ? capacidadEncuesta : capacidadEncuesta == null ? capacidadDura : capacidadDura * 2 / 3 + capacidadEncuesta * 1 / 3);
-
-  /* Liquidez ya NO incorpora matemáticamente el horizonte. Son dimensiones distintas. */
-  const liquidez = a100(qLiquidez);
-  const experiencia = a100(media([qProductos, qRiesgo, qCostes, qComportamiento]));
-  const dimensiones = {
-    edad,
-    toleranciaRiesgo,
-    capacidadRiesgo,
-    horizonte,
-    liquidez,
-    experiencia
-  };
-  const pesos = {
-    toleranciaRiesgo: 0.30,
-    capacidadRiesgo: 0.30,
-    horizonte: 0.15,
-    liquidez: 0.15,
-    experiencia: 0.10
-  };
-  const dimensionesPonderadas = Object.fromEntries(Object.entries(pesos).map(([key, peso]) => [key, {
-    valor: dimensiones[key],
-    peso
-  }]));
-  const paresConocidos = Object.entries(pesos).filter(([key]) => dimensiones[key] != null);
-  const pesoConocido = paresConocidos.reduce((s, [, peso]) => s + peso, 0);
-  const baseScore = pesoConocido > 0 ? Math.round(paresConocidos.reduce((s, [key, peso]) => s + dimensiones[key] * peso, 0) / pesoConocido) : 0;
-  const nivelPorScore = score => score < 30 ? 0 : score < 45 ? 1 : score < 60 ? 2 : score < 80 ? 3 : 4;
-  let nivelFinal = nivelPorScore(baseScore);
-
-  /*
-   * La puntuación agregada orienta, pero nunca puede compensar una debilidad
-   * crítica. Cada dimensión limitante aplica un techo independiente.
-   */
-  const limites = [{
-    key: "capacidadRiesgo",
-    valor: capacidadRiesgo,
-    reglas: [[25, 0], [40, 1], [60, 2]]
-  }, {
-    key: "horizonte",
-    valor: horizonte,
-    reglas: [[25, 0], [50, 1], [70, 2]]
-  }, {
-    key: "liquidez",
-    valor: liquidez,
-    reglas: [[25, 0], [50, 1], [70, 2]]
-  }, {
-    key: "experiencia",
-    valor: experiencia,
-    reglas: [[25, 1], [50, 2], [70, 3]]
-  }];
-  const limitesAplicados = [];
-  limites.forEach(({
-    key,
-    valor,
-    reglas
-  }) => {
-    if (valor == null) return;
-    for (const [umbral, maxNivel] of reglas) {
-      if (valor <= umbral) {
-        nivelFinal = Math.min(nivelFinal, maxNivel);
-        limitesAplicados.push({
-          dimension: key,
-          maxNivel,
-          umbral,
-          valor
-        });
-        break;
-      }
-    }
-  });
-  const faltantes = [];
-  if (edad == null) faltantes.push("edad");
-  if (toleranciaRiesgo == null) faltantes.push("tolerancia al riesgo");
-  if (capacidadRiesgo == null) faltantes.push("capacidad para soportar pérdidas");
-  if (horizonte == null) faltantes.push("horizonte temporal");
-  if (liquidez == null) faltantes.push("necesidad de liquidez");
-  if (experiencia == null) faltantes.push("conocimientos de inversión");
-  let confianza = "Alta";
-  if (faltantes.length >= 2 || [capacidadRiesgo, horizonte, liquidez].some(v => v == null)) confianza = "Baja";else if (faltantes.length === 1) confianza = "Media";
-  const factoresPositivos = [];
-  const factoresNegativos = [];
-  const nombres = [["toleranciaRiesgo", "Cómo llevas los altibajos (tolerancia al riesgo)"], ["capacidadRiesgo", "Capacidad para soportar pérdidas"], ["horizonte", "Tiempo por delante (horizonte)"], ["liquidez", "Cuándo podrías necesitar el dinero (liquidez)"], ["experiencia", "Conocimientos de inversión"]];
-  nombres.forEach(([key, label]) => {
-    const v = dimensiones[key];
-    if (v == null) return;
-    if (v >= 70) factoresPositivos.push(label + " alta");else if (v < 50) factoresNegativos.push(label + " limitada");
-  });
-  if (coberturaEmergencia != null && coberturaEmergencia < 3) {
-    const faltaFondo = Math.max(0, gastoTotal * 6 - ahorroActual);
-    factoresNegativos.push(faltaFondo > 0 ? `El fondo de emergencia todavía es reducido (te faltarían ${euros(faltaFondo)} para cubrir 6 meses de gastos)` : "El fondo de emergencia todavía es reducido");
-  }
-  if (ratioDeuda != null && ratioDeuda > 0.25) factoresNegativos.push("La carga de deuda reduce la capacidad de asumir pérdidas");
-  if (ahorroDisponible <= 0) factoresNegativos.push("No existe ahorro mensual disponible para absorber pérdidas");
-  if (qLiquidezDetalle != null && qLiquidezDetalle <= 1) factoresNegativos.push("Podrías necesitar gran parte de la inversión a corto plazo");
-  if (qColchonAlternativo != null && qColchonAlternativo <= 1) factoresNegativos.push("No existe un colchón alternativo suficiente");
-  if (deudaPendiente <= 0 && qPatrimonio >= 3) factoresPositivos.push("Patrimonio neto y deuda favorables");
-  if (importeObjetivo > 0 && plazoObjetivo > 0 && coberturaObjetivo != null && coberturaObjetivo < 0.50 && plazoObjetivo <= 5) factoresNegativos.push("El objetivo necesita todavía una parte importante de financiación");
-  limitesAplicados.forEach(l => {
-    const etiqueta = {
-      capacidadRiesgo: "tu capacidad financiera para soportar pérdidas",
-      horizonte: "tu horizonte temporal",
-      liquidez: "tu necesidad de liquidez",
-      experiencia: "tus conocimientos de inversión"
-    }[l.dimension] || l.dimension;
-    factoresNegativos.push("Tu perfil se ha limitado por " + etiqueta + ", aunque tu tolerancia al riesgo sea más alta");
-  });
-  if (!factoresPositivos.length) factoresPositivos.push("No hay una dimensión claramente alta que impulse el perfil");
-  if (!factoresNegativos.length) factoresNegativos.push("No se detectan limitaciones relevantes entre las dimensiones evaluadas");
-
-  /* Las razones de un techo de seguridad aplicado (limitesAplicados) son la
-     explicación más importante de por qué el perfil final es más bajo de lo
-     que sugerirían tus respuestas de tolerancia — nunca deben quedar fuera
-     por el recorte a 3 elementos. Las priorizamos primero en la lista. */
-  const factoresNegativosUnicos = [...new Set(factoresNegativos)];
-  const razonesTecho = factoresNegativosUnicos.filter(f => f.startsWith("Tu perfil se ha limitado por"));
-  const otrasRazones = factoresNegativosUnicos.filter(f => !f.startsWith("Tu perfil se ha limitado por"));
-  const factoresNegativosFinal = [...razonesTecho, ...otrasRazones].slice(0, 3);
-  const factoresTenidosEnCuenta = ["Objetivo principal y su prioridad", "Objetivo y preferencia de crecimiento", "Horizonte temporal de la inversión", "Necesidad de liquidez", "Capacidad financiera para soportar pérdidas", "Tolerancia ante caídas de mercado", "Conocimientos y experiencia de inversión", "Edad como contexto, sin sustituir al horizonte"];
-  return {
-    ...dimensiones,
-    puntuacionBase: baseScore,
-    dimensionesPonderadas,
-    limitesAplicados,
-    perfil: PERFILES_NIVELES[nivelFinal],
-    confianza,
-    faltantes,
-    factoresPositivos: [...new Set(factoresPositivos)].slice(0, 3),
-    factoresNegativos: factoresNegativosFinal,
-    factoresTenidosEnCuenta,
-    factoresCapacidad: {
-      ahorroDisponible,
-      coberturaEmergencia,
-      ratioDeuda,
-      deudaPendiente,
-      importeObjetivo,
-      plazoObjetivo,
-      coberturaObjetivo
-    }
-  };
-}
-
-// El español omite por defecto el separador de miles en números de 4 cifras (1500 en vez de 1.500).
-// Con useGrouping "always" se muestra siempre: 1.500 · 12.345 · 1.234.567
-export function numEs(n, opciones = {}) {
-  return n.toLocaleString("es-ES", { ...opciones, useGrouping: "always" });
-}
-
-export function euros(n, dec = 0) {
-  if (n == null || isNaN(n)) return "—";
-  return numEs(n, {
-    style: "currency",
-    currency: "EUR",
-    minimumFractionDigits: dec,
-    maximumFractionDigits: dec
-  });
-}
-
-export function pct(n, dec = 1) {
-  if (n == null || isNaN(n)) return "—";
-  return numEs(n, {
-    minimumFractionDigits: dec,
-    maximumFractionDigits: dec
-  }) + "%";
-}
-
-export function totalMensual(obj) {
-  return Object.values(obj).reduce((acc, item) => {
-    const f = FRECUENCIAS.find(x => x.value === item.frecuencia) || FRECUENCIAS[0];
-    return acc + Number(item.valor || 0) / f.divisor;
-  }, 0);
-}
-
-export function emptyCampo(defs) {
-  return Object.fromEntries(defs.map(d => [d.key, {
-    valor: 0,
-    frecuencia: "mensual"
-  }]));
-}
-
-export function estadoAhorro(ratio) {
-  if (ratio < 0) return {
-    nombre: "Construyendo tu base",
-    color: C.mej,
-    light: C.mejLight,
-    Ico: I.alert
-  };
-  if (ratio < 0.1) return {
-    nombre: "Margen de mejora",
-    color: C.mej,
-    light: C.mejLight,
-    Ico: I.alert
-  };
-  if (ratio < 0.2) return {
-    nombre: "Base saludable",
-    color: C.salu,
-    light: C.saluLight,
-    Ico: I.check
-  };
-  return {
-    nombre: "Muy buena base",
-    color: C.exc,
-    light: C.excLight,
-    Ico: I.check
-  };
-}
-
-export function calcularSaludFinanciera({
-  ratioAhorro,
-  coberturaMeses,
-  cargaDeuda,
-  perfil
+export function Toast({
+  toast
 }) {
-  const clamp = (v, min, max) => Math.min(max, Math.max(min, Number.isFinite(Number(v)) ? Number(v) : min));
-  const ptsAhorro = clamp(ratioAhorro, 0, 0.25) / 0.25 * 40;
-  const ptsFondo = clamp(coberturaMeses, 0, 6) / 6 * 30;
-  const ptsDeuda = (1 - clamp(cargaDeuda, 0, 0.3) / 0.3) * 20;
-  const ptsPerfil = perfil ? 10 : 0;
-  const score = Math.round(ptsAhorro + ptsFondo + ptsDeuda + ptsPerfil);
-  /* UX: copy más humano; score, ponderaciones y umbrales permanecen intactos. */
-  let nivel;
-  if (score < 35) nivel = {
-    nombre: "Construyendo tu base",
-    color: C.mej,
-    light: C.mejLight
-  };else if (score < 60) nivel = {
-    nombre: "Margen de mejora",
-    color: C.mej,
-    light: C.mejLight
-  };else if (score < 80) nivel = {
-    nombre: "Base saludable",
-    color: C.salu,
-    light: C.saluLight
-  };else nivel = {
-    nombre: "Muy buena salud",
-    color: C.exc,
-    light: C.excLight
+  if (!toast) return null;
+  const tone = toast.tone === "error" ? {
+    bg: C.crit,
+    ico: I.x
+  } : {
+    bg: C.navy,
+    ico: I.check
   };
-  return {
-    score,
-    ...nivel,
-    desglose: {
-      ptsAhorro,
-      ptsFondo,
-      ptsDeuda,
-      ptsPerfil
+  return /*#__PURE__*/React.createElement("div", {
+    className: "fixed bottom-5 left-1/2 -translate-x-1/2 z-50 toast-enter",
+    key: toast.key
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-2 px-4 py-2.5 rounded-full shadow-lg text-xs font-bold",
+    style: {
+      backgroundColor: tone.bg,
+      color: C.white
     }
-  };
+  }, /*#__PURE__*/React.createElement(tone.ico, {
+    size: 14,
+    color: C.white
+  }), " ", toast.msg));
 }
 
-export function proyeccionInteres(inicial, mensual, tasaAnual, anios) {
-  const r = tasaAnual / 100 / 12;
-  const meses = anios * 12;
-  let valorFuturo;
-  if (r === 0) valorFuturo = inicial + mensual * meses;else {
-    const pow = Math.pow(1 + r, meses);
-    valorFuturo = inicial * pow + mensual * ((pow - 1) / r);
-  }
-  const totalAportado = inicial + mensual * meses;
-  return {
-    anios,
-    totalAportado,
-    valorFuturo,
-    interesGenerado: valorFuturo - totalAportado
-  };
-}
-
-// Fase 2.1: las 3 preguntas que antes solo resolvían las "4 calculadoras" en un
-// documento aparte. Usan el mismo método (interés compuesto mes a mes) que
-// proyeccionInteres, para que los 4 modos del simulador den resultados coherentes
-// entre sí.
-
-export function tiempoNecesarioParaObjetivo(inicial, mensual, tasaAnual, objetivo) {
-  const MAX_ANIOS = 100;
-  if (inicial >= objetivo) return {
-    alcanzado: true,
-    anios: 0,
-    meses: 0,
-    totalAportado: inicial,
-    interesGenerado: 0
-  };
-  const tasaMensual = tasaAnual / 100 / 12;
-  let capital = inicial,
-    totalAportado = inicial,
-    mesesTotales = 0;
-  for (let year = 1; year <= MAX_ANIOS; year++) {
-    for (let m = 0; m < 12; m++) {
-      capital = capital * (1 + tasaMensual) + mensual;
-      totalAportado += mensual;
-      mesesTotales++;
-      if (capital >= objetivo) return {
-        alcanzado: true,
-        anios: Math.floor(mesesTotales / 12),
-        meses: mesesTotales % 12,
-        totalAportado,
-        interesGenerado: capital - totalAportado
-      };
-    }
-  }
-  return {
-    alcanzado: false,
-    anios: MAX_ANIOS,
-    meses: 0,
-    totalAportado,
-    interesGenerado: capital - totalAportado
-  };
-}
-
-export function aportacionNecesariaParaObjetivo(inicial, objetivo, anios, tasaAnual) {
-  const n = anios * 12;
-  const i = tasaAnual / 100 / 12;
-  let mensualNecesaria;
-  if (n <= 0) mensualNecesaria = 0;else if (i > 0) {
-    const factorCrecimiento = Math.pow(1 + i, n);
-    const factorAnualidad = (factorCrecimiento - 1) / i;
-    mensualNecesaria = (objetivo - inicial * factorCrecimiento) / factorAnualidad;
-  } else mensualNecesaria = (objetivo - inicial) / n;
-  const mensualFinal = Math.max(0, mensualNecesaria);
-  const p = proyeccionInteres(inicial, mensualFinal, tasaAnual, anios);
-  return {
-    // Sin plazo (n <= 0) no se puede repartir nada: solo está alcanzado si el capital inicial ya cubre el objetivo
-    yaAlcanzado: n <= 0 ? inicial >= objetivo : mensualNecesaria <= 0,
-    mensualNecesaria: mensualFinal,
-    totalAportado: p.totalAportado,
-    interesGenerado: p.interesGenerado
-  };
-}
-
-export function rentabilidadNecesariaParaObjetivo(inicial, mensual, anios, objetivo) {
-  const capitalConTasa = tasaAnualProbada => proyeccionInteres(inicial, mensual, tasaAnualProbada, anios);
-  const capitalCero = capitalConTasa(0).valorFuturo;
-  if (capitalCero >= objetivo) {
-    const p = capitalConTasa(0);
-    return {
-      yaAlcanzado: true,
-      imposible: false,
-      tasaNecesaria: 0,
-      totalAportado: p.totalAportado,
-      interesGenerado: p.interesGenerado
-    };
-  }
-  let lo = 0,
-    hi = 100;
-  let capitalHi = capitalConTasa(hi).valorFuturo;
-  let iter = 0;
-  while (capitalHi < objetivo && hi < 10000 && iter < 60) {
-    hi *= 2;
-    capitalHi = capitalConTasa(hi).valorFuturo;
-    iter++;
-  }
-  if (capitalHi < objetivo) {
-    const p = capitalConTasa(hi);
-    return {
-      yaAlcanzado: false,
-      imposible: true,
-      tasaNecesaria: hi,
-      totalAportado: p.totalAportado,
-      interesGenerado: p.interesGenerado
-    };
-  }
-  for (let k = 0; k < 60; k++) {
-    const mid = (lo + hi) / 2;
-    if (capitalConTasa(mid).valorFuturo < objetivo) lo = mid;else hi = mid;
-  }
-  const tasaNecesaria = (lo + hi) / 2;
-  const p = capitalConTasa(tasaNecesaria);
-  return {
-    yaAlcanzado: false,
-    imposible: false,
-    tasaNecesaria,
-    totalAportado: p.totalAportado,
-    interesGenerado: p.interesGenerado
-  };
-}
-
-export function simularAmortizacion(deudas, extraMensual, estrategia) {
-  const MAX_MESES = 480;
-  const activos = deudas.filter(d => Number(d.pendiente) > 0).map(d => ({
-    nombre: d.nombre || "Deuda sin nombre",
-    saldo: Number(d.pendiente),
-    tasaMensual: Math.max(0, Number(d.tasa) || 0) / 100 / 12,
-    cuotaMin: Math.max(0, Number(d.cuota) || 0),
-    liquidada: false,
-    mesLiquidacion: null,
-    interesPagado: 0
-  }));
-  const orden = estrategia === "avalancha" ? [...activos].sort((a, b) => b.tasaMensual - a.tasaMensual) : [...activos].sort((a, b) => a.saldo - b.saldo);
-  let extraLiberado = 0;
-  let totalInteres = 0;
-  let mes = 0;
-  while (orden.some(d => !d.liquidada) && mes < MAX_MESES) {
-    mes++;
-    for (const d of orden) {
-      if (d.liquidada) continue;
-      const interes = d.saldo * d.tasaMensual;
-      d.interesPagado += interes;
-      totalInteres += interes;
-      d.saldo += interes;
-      const pagoMin = Math.min(d.cuotaMin, d.saldo);
-      d.saldo -= pagoMin;
-      if (d.saldo <= 0.01) {
-        d.saldo = 0;
-        d.liquidada = true;
-        d.mesLiquidacion = mes;
-        extraLiberado += d.cuotaMin;
-      }
-    }
-    let presupuestoExtra = (Number(extraMensual) || 0) + extraLiberado;
-    for (const d of orden) {
-      if (d.liquidada) continue;
-      if (presupuestoExtra <= 0) break;
-      const pago = Math.min(presupuestoExtra, d.saldo);
-      d.saldo -= pago;
-      presupuestoExtra -= pago;
-      if (d.saldo <= 0.01) {
-        d.saldo = 0;
-        d.liquidada = true;
-        d.mesLiquidacion = mes;
-        extraLiberado += d.cuotaMin;
-      }
-    }
-  }
-  return {
-    orden,
-    totalInteres,
-    mesesTotal: mes,
-    todasLiquidadas: orden.every(d => d.liquidada)
-  };
-}
-
-export function formatMeses(m) {
-  const anios = Math.floor(m / 12),
-    meses = m % 12;
-  if (anios === 0) return meses + (meses === 1 ? " mes" : " meses");
-  if (meses === 0) return anios + (anios === 1 ? " año" : " años");
-  return anios + "a " + meses + "m";
-}
-
-export function exportarJSON({
-  datos,
-  perfil,
-  perfilDetalle,
-  sim,
-  historial,
-  gastoTotal,
-  ahorroDisponible
+export function Eyebrow({
+  children
 }) {
-  const payload = {
-    generado: new Date().toISOString(),
-    ingresosMensuales: datos.ingresos,
-    gastosFijos: datos.gastosFijos,
-    gastosDiscrecionales: datos.gastosDiscrecionales,
-    deudas: datos.deudas,
-    ahorroActual: datos.ahorroActual,
-    objetivo: datos.objetivo,
-    objetivos: normalizarObjetivos(datos),
-    gastoTotalMensual: gastoTotal,
-    ahorroDisponibleMensual: ahorroDisponible,
-    perfilRiesgo: perfil,
-    perfilRiesgoDetalle: perfilDetalle,
-    simulador: sim,
-    historialRatioAhorro: historial
-  };
-  const blob = new Blob([JSON.stringify(payload, null, 2)], {
-    type: "application/json"
-  });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "moneypilot-resumen-" + new Date().toISOString().slice(0, 10) + ".json";
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  return /*#__PURE__*/React.createElement("div", {
+    className: "text-xs font-bold uppercase mb-1",
+    style: {
+      color: C.mej,
+      letterSpacing: "0.12em"
+    }
+  }, children);
 }
 
-export function exportarPDF() {
-  window.print();
+export function Card({
+  children,
+  className = "",
+  style = {},
+  ...rest
+}) {
+  return /*#__PURE__*/React.createElement("div", {
+    className: "rounded-2xl border " + className,
+    style: {
+      backgroundColor: C.surface,
+      backgroundImage: "radial-gradient(120% 140% at 0% 0%, rgba(79,70,229,0.20) 0%, rgba(79,70,229,0.05) 32%, rgba(0,0,0,0) 60%), radial-gradient(100% 120% at 100% 100%, rgba(62,111,168,0.16) 0%, rgba(0,0,0,0) 55%), linear-gradient(160deg, rgba(255,255,255,0.03) 0%, rgba(0,0,0,0.12) 100%)",
+      borderColor: C.border,
+      boxShadow: "0 0 0 1px rgba(79,70,229,0.22), 0 0 46px -4px rgba(79,70,229,0.5), 0 0 90px -20px rgba(62,111,168,0.35), 0 16px 34px -14px rgba(0,0,0,0.65)",
+      ...style
+    },
+    ...rest
+  }, children);
 }
 
-export function deudaTieneContenido(d) {
-  return Number(d.pendiente) > 0 || !!d.nombre || Number(d.cuota) > 0 || Number(d.tasa) > 0;
-}
-
-export function mapDeudaParaSupabase(d, userId) {
-  return {
-    user_id: userId,
-    tipo: d.tipo || "otro",
-    nombre: d.nombre || "Deuda sin nombre",
-    saldo_pendiente: Number(d.pendiente) || 0,
-    cuota_mensual: Number(d.cuota) || 0,
-    tae: d.tasa === "" || d.tasa == null ? null : Number(d.tasa) || null
-  };
-}
-
-export function numOrNull(v) {
-  if (v === "" || v === undefined || v === null) return null;
-  const n = Number(v);
-  return isNaN(n) ? null : n;
-}
-
-export function niceTicks(maxV, targetCount = 6) {
-  if (!(maxV > 0)) return {
-    ticks: [0],
-    niceMax: 1
-  };
-  const rawStep = maxV / targetCount;
-  const mag = Math.pow(10, Math.floor(Math.log10(rawStep)));
-  const norm = rawStep / mag;
-  const niceNorm = norm < 1.5 ? 1 : norm < 3 ? 2 : norm < 7 ? 5 : 10;
-  const step = niceNorm * mag;
-  const niceMax = Math.ceil(maxV / step) * step;
-  const ticks = [];
-  for (let v = 0; v <= niceMax + step * 0.001; v += step) ticks.push(v);
-  return {
-    ticks,
-    niceMax,
-    step
-  };
-}
-
-export function traducirErrorAuth(mensaje) {
-  const m = String(mensaje || "");
-  if (/invalid login credentials/i.test(m)) return "Email o contraseña incorrectos.";
-  if (/user already registered/i.test(m)) return "Ya existe una cuenta con este email. Inicia sesión.";
-  if (/email not confirmed/i.test(m)) return "Confirma tu email antes de iniciar sesión (revisa tu bandeja de entrada).";
-  if (/password should be at least 6 characters/i.test(m)) return "La contraseña debe tener al menos 6 caracteres.";
-  if (/unable to validate email address|invalid email/i.test(m)) return "Introduce un email válido.";
-  if (/rate limit/i.test(m)) return "Demasiados intentos. Espera un momento e inténtalo de nuevo.";
-  return "No se pudo completar la operación. Inténtalo de nuevo.";
-}
-
-export function crearIdObjetivo() {
-  return "obj_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8);
-}
-
-export function normalizarObjetivo(o = {}, index = 0) {
-  const tipo = o.tipo || null;
-  const nombre = typeof o.nombre === "string" ? o.nombre.trim() : "";
-  const importeRaw = o.importe ?? o.importeObjetivo;
-  const reservadoRaw = o.importeReservado ?? o.reservado ?? o.yaReservado;
-  const plazoRaw = o.plazoAnios ?? o.plazo;
-  const fechaRaw = o.fechaObjetivo ?? o.fecha;
-  const importe = importeRaw == null || importeRaw === "" ? null : Math.max(0, Number(importeRaw) || 0);
-  const reservado = reservadoRaw == null || reservadoRaw === "" ? null : Math.max(0, Number(reservadoRaw) || 0);
-  const plazo = plazoRaw == null || plazoRaw === "" ? null : Math.max(0, Number(plazoRaw) || 0);
-  const fecha = typeof fechaRaw === "string" && /^\d{4}-\d{2}-\d{2}$/.test(fechaRaw) ? fechaRaw : null;
-  const prioridad = PRIORIDADES_OBJETIVO.includes(o.prioridad) ? o.prioridad : null;
-  const aportacionMensual = o.aportacionMensual == null || o.aportacionMensual === "" ? null : Math.max(0, Number(o.aportacionMensual) || 0);
-  return {
-    ...o,
-    id: o.id || crearIdObjetivo(),
-    tipo,
+export function Badge({
+  estado
+}) {
+  const {
     nombre,
-    importeObjetivo: importe,
-    importeReservado: reservado,
-    plazoAnios: plazo,
-    fechaObjetivo: fecha,
-    prioridad,
-    aportacionMensual
-  };
+    color,
+    light,
+    Ico: IcoComp
+  } = estado;
+  return /*#__PURE__*/React.createElement("span", {
+    className: "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold",
+    style: {
+      backgroundColor: light,
+      color
+    }
+  }, /*#__PURE__*/React.createElement(IcoComp, {
+    size: 13,
+    strokeWidth: 2.5
+  }), nombre);
 }
 
-export function normalizarObjetivos(datos = {}) {
-  if (Array.isArray(datos.objetivos) && datos.objetivos.length) return datos.objetivos.map((o, i) => normalizarObjetivo(o, i));
-  if (datos.objetivo) {
-    const legacy = datos.objetivo;
-    const tieneDatos = !!(legacy.tipo || legacy.nombre || Number(legacy.importe) > 0 || Number(legacy.importeObjetivo) > 0 || Number(legacy.importeReservado) > 0 || Number(legacy.aportacionMensual) > 0 || Number(legacy.plazoAnios) > 0 || legacy.fechaObjetivo);
-    if (tieneDatos) return [normalizarObjetivo(legacy, 0)];
+export function StatCard({
+  icon: IconComp,
+  label,
+  value,
+  sub,
+  accent,
+  delay = 0
+}) {
+  return /*#__PURE__*/React.createElement(Card, {
+    className: "p-5 flex flex-col gap-3 stagger-item",
+    style: {
+      animationDelay: delay + "ms"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center justify-between"
+  }, /*#__PURE__*/React.createElement(Eyebrow, null, label), /*#__PURE__*/React.createElement("div", {
+    className: "w-9 h-9 rounded-full flex items-center justify-center shrink-0",
+    style: {
+      backgroundColor: accent ? accent + "1A" : C.sandLight
+    }
+  }, /*#__PURE__*/React.createElement(IconComp, {
+    size: 17,
+    color: accent || C.sand,
+    strokeWidth: 2.2
+  }))), /*#__PURE__*/React.createElement("div", {
+    className: "font-serif text-3xl font-bold",
+    style: {
+      color: C.ink
+    }
+  }, value), sub && /*#__PURE__*/React.createElement("div", {
+    className: "text-xs",
+    style: {
+      color: C.muted
+    }
+  }, sub));
+}
+
+export function NumberField({
+  label,
+  value,
+  onChange,
+  hint,
+  suffix = "€",
+  max = MAX_IMPORTE
+}) {
+  const id = useId();
+  const alcanzaMax = Number(value) >= max;
+  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    htmlFor: id,
+    className: "block text-sm font-bold mb-1.5",
+    style: {
+      color: C.ink
+    }
+  }, label), /*#__PURE__*/React.createElement("div", {
+    className: "relative"
+  }, /*#__PURE__*/React.createElement("input", {
+    id: id,
+    type: "number",
+    inputMode: "decimal",
+    value: value === 0 ? "" : value,
+    onChange: e => {
+      const v = e.target.value;
+      onChange(v === "" ? 0 : Math.min(max, Math.max(0, Number(v))));
+    },
+    placeholder: "0",
+    className: "w-full rounded-lg px-3 py-2 text-sm font-bold border outline-none",
+    style: {
+      borderColor: alcanzaMax ? C.crit : C.border,
+      color: C.ink,
+      backgroundColor: C.paper
+    }
+  }), suffix && /*#__PURE__*/React.createElement("span", {
+    className: "absolute right-3 top-1/2 -translate-y-1/2 text-sm font-bold",
+    style: {
+      color: C.muted
+    }
+  }, suffix)), alcanzaMax ? /*#__PURE__*/React.createElement("p", {
+    className: "text-xs mt-1 font-bold",
+    style: {
+      color: C.crit
+    }
+  }, "Máximo permitido: " + max.toLocaleString("es-ES") + (suffix ? " " + suffix : "")) : hint && /*#__PURE__*/React.createElement("p", {
+    className: "text-xs mt-1",
+    style: {
+      color: C.muted
+    }
+  }, hint));
+}
+
+export function focusNextInSequence(e) {
+  const container = e.currentTarget.closest("[data-seq-group]");
+  if (!container) return;
+  const fields = Array.from(container.querySelectorAll("[data-seq-field]"));
+  const idx = fields.indexOf(e.currentTarget);
+  if (idx > -1 && idx < fields.length - 1) {
+    const next = fields[idx + 1];
+    next.focus();
+    if (next.select) next.select();
+  } else if (idx > -1) {
+    e.currentTarget.blur();
   }
-  return [];
 }
 
-export function calcularCapacidadFinanciera(datos = {}) {
-  const totalIngresos = (Number(datos.ingresos) || 0) + (Number(datos.otrosIngresos) || 0);
-  const gastosFijos = totalMensual(datos.gastosFijos || {});
-  const gastosDiscrecionales = totalMensual(datos.gastosDiscrecionales || {});
-  const cuotasDeuda = (datos.deudas || []).reduce((s, d) => s + Math.max(0, Number(d.cuota) || 0), 0);
-  const tieneIngresos = totalIngresos > 0;
-  const capacidadBruta = tieneIngresos ? totalIngresos - gastosFijos - gastosDiscrecionales - cuotasDeuda : null;
-  return {
-    ingresos: totalIngresos,
-    gastosFijos,
-    gastosDiscrecionales,
-    cuotasDeuda,
-    gastosTotales: tieneIngresos ? gastosFijos + gastosDiscrecionales + cuotasDeuda : null,
-    capacidadMensual: capacidadBruta,
-    capacidadParaObjetivos: tieneIngresos ? Math.max(0, capacidadBruta) : null
-  };
+export function FreqField({
+  label,
+  data,
+  onChange,
+  hint
+}) {
+  const id = useId();
+  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    htmlFor: id,
+    className: "block text-sm font-bold mb-1.5",
+    style: {
+      color: C.ink
+    }
+  }, label), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-1.5"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "relative flex-1 min-w-0"
+  }, /*#__PURE__*/React.createElement("input", {
+    id: id,
+    type: "number",
+    inputMode: "decimal",
+    enterKeyHint: "next",
+    "data-seq-field": true,
+    value: data.valor === 0 ? "" : data.valor,
+    onChange: e => {
+      const v = e.target.value;
+      onChange({
+        ...data,
+        valor: v === "" ? 0 : Math.min(MAX_IMPORTE, Math.max(0, Number(v)))
+      });
+    },
+    onKeyDown: e => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        focusNextInSequence(e);
+      }
+    },
+    placeholder: "0",
+    className: "w-full rounded-lg pl-3 pr-7 py-2 text-sm font-bold border outline-none",
+    style: {
+      borderColor: C.border,
+      color: C.ink,
+      backgroundColor: C.paper
+    }
+  }), /*#__PURE__*/React.createElement("span", {
+    className: "absolute right-3 top-1/2 -translate-y-1/2 text-sm font-bold",
+    style: {
+      color: C.muted
+    }
+  }, "€")), /*#__PURE__*/React.createElement("select", {
+    value: data.frecuencia,
+    onChange: e => onChange({
+      ...data,
+      frecuencia: e.target.value
+    }),
+    className: "rounded-lg px-1.5 text-xs font-bold border outline-none shrink-0",
+    style: {
+      borderColor: C.border,
+      color: C.ink,
+      backgroundColor: C.paper
+    }
+  }, FRECUENCIAS.map(f => /*#__PURE__*/React.createElement("option", {
+    key: f.value,
+    value: f.value
+  }, f.label)))), hint && /*#__PURE__*/React.createElement("p", {
+    className: "text-xs mt-1",
+    style: {
+      color: C.muted
+    }
+  }, hint));
 }
 
-export function obtenerHorizonteAnios(o = {}) {
-  if (o.fechaObjetivo) {
-    const hoy = new Date();
-    const fecha = new Date(o.fechaObjetivo + "T23:59:59");
-    if (!isNaN(fecha.getTime())) return Math.max(0, (fecha - hoy) / (365.25 * 24 * 60 * 60 * 1000));
-  }
-  return o.plazoAnios == null ? null : Math.max(0, Number(o.plazoAnios) || 0);
+export function FadeSwitch({
+  id,
+  children
+}) {
+  return /*#__PURE__*/React.createElement("div", {
+    key: id,
+    className: "fade-switch-enter"
+  }, children);
 }
 
-export function objetivoHorizonte(plazo) {
-  if (plazo == null || Number(plazo) <= 0) return "sin definir";
-  return Number(plazo) < 3 ? "corto" : Number(plazo) < 5 ? "medio-corto" : Number(plazo) <= 10 ? "medio" : "largo";
+export function AnimatedNumber({
+  value,
+  format = v => euros(v)
+}) {
+  const [display, setDisplay] = useState(value);
+  const fromRef = useRef(value);
+  const rafRef = useRef(null);
+  useEffect(() => {
+    const from = fromRef.current,
+      to = value;
+    if (from === to) return;
+    const start = performance.now();
+    const duration = 450;
+    const tick = now => {
+      const t = Math.min(1, (now - start) / duration);
+      const eased = 1 - Math.pow(1 - t, 3);
+      setDisplay(from + (to - from) * eased);
+      if (t < 1) rafRef.current = requestAnimationFrame(tick);else fromRef.current = to;
+    };
+    rafRef.current = requestAnimationFrame(tick);
+    return () => rafRef.current && cancelAnimationFrame(rafRef.current);
+  }, [value]);
+  return format(display);
 }
 
-export function recomendacionObjetivoPorHorizonte(plazo) {
-  const anios = plazo == null ? null : Number(plazo);
-  if (anios != null && anios > 0 && anios < 3) return {
-    modo: "ahorrar",
-    titulo: "Prioriza el ahorro",
-    texto: "Por el plazo corto, este dinero necesita estabilidad y disponibilidad. No conviene depender de las fluctuaciones del mercado para una meta cercana."
-  };
-  if (anios != null && anios >= 3 && anios < 5) return {
-    modo: "prudencia",
-    titulo: "Ahorrar con prudencia",
-    texto: "El plazo todavía deja poco margen ante una caída del mercado. Prioriza estabilidad y liquidez; cualquier inversión debería ser compatible con la fecha en la que necesitarás el dinero."
-  };
-  if (anios != null && anios >= 5) return {
-    modo: "invertir",
-    titulo: "Puedes valorar invertir",
-    texto: "El horizonte ofrece más margen para asumir fluctuaciones. Puede tener sentido valorar una estrategia diversificada y coherente con tu perfil y con la necesidad de liquidez del objetivo."
-  };
-  return {
-    modo: "pendiente",
-    titulo: "Indica cuándo necesitarás el dinero",
-    texto: "Cuando indiques cuándo necesitarás el dinero, la herramienta orientará automáticamente sobre si priorizar ahorro o valorar inversión."
-  };
+export function ProgressBar({
+  pctValue,
+  color,
+  bg = C.border,
+  height = 8
+}) {
+  return /*#__PURE__*/React.createElement("div", {
+    className: "w-full rounded-full overflow-hidden",
+    style: {
+      backgroundColor: bg,
+      height
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "h-full rounded-full",
+    style: {
+      width: Math.min(Math.max(pctValue, 0), 100) + "%",
+      backgroundColor: color,
+      transition: "width 600ms cubic-bezier(0.16,1,0.3,1)"
+    }
+  }));
 }
 
-export function objetivoCalculado(o = {}) {
-  const importe = o.importeObjetivo == null ? null : Math.max(0, Number(o.importeObjetivo) || 0);
-  const reservado = o.importeReservado == null ? null : Math.max(0, Number(o.importeReservado) || 0);
-  const reservadoAplicado = importe == null ? 0 : Math.min(importe, reservado == null ? 0 : reservado);
-  const restante = importe == null ? null : Math.max(0, importe - reservadoAplicado);
-  const plazoDirecto = o.plazoAnios == null ? null : Math.max(0, Number(o.plazoAnios) || 0);
-  const plazo = obtenerHorizonteAnios(o);
-  const meses = plazo != null && plazo > 0 ? plazo * 12 : null;
-  const mensualNecesaria = restante == null ? null : restante <= 0 ? 0 : meses > 0 ? restante / meses : null;
-  const aportacion = o.aportacionMensual == null ? null : Math.max(0, Number(o.aportacionMensual) || 0);
-  const diferenciaAportacion = mensualNecesaria == null || aportacion == null ? null : aportacion - mensualNecesaria;
-  return {
-    ...o,
-    importeObjetivo: importe,
-    importeReservado: reservado,
-    importeReservadoAplicado: reservadoAplicado,
-    importeRestante: restante,
-    horizonteAniosCalculado: plazo,
-    horizonteCategoria: objetivoHorizonte(plazo),
-    recomendacionHorizonte: recomendacionObjetivoPorHorizonte(plazo),
-    mesesRestantes: meses,
-    aportacionNecesaria: mensualNecesaria,
-    aportacionMensual: aportacion,
-    diferenciaAportacion,
-    cubierto: importe != null && importe > 0 && restante <= 0,
-    progreso: importe != null && importe > 0 ? Math.min(100, Math.max(0, reservadoAplicado / importe * 100)) : 0
-  };
+export function EmergencyGauge({
+  meses,
+  objetivoMeses = 6,
+  color
+}) {
+  const clamped = Math.min(meses, objetivoMeses * 1.5);
+  const fraction = Math.min(clamped / (objetivoMeses * 1.5), 1);
+  const [animFrac, setAnimFrac] = useState(0);
+  useEffect(() => {
+    const t = setTimeout(() => setAnimFrac(fraction), 80);
+    return () => clearTimeout(t);
+  }, [fraction]);
+  const size = 180,
+    stroke = 16,
+    r = (size - stroke) / 2,
+    circumference = Math.PI * r;
+  const offset = circumference * (1 - animFrac);
+  return /*#__PURE__*/React.createElement("div", {
+    className: "flex flex-col items-center"
+  }, /*#__PURE__*/React.createElement("svg", {
+    width: size,
+    height: size / 2 + stroke / 2,
+    viewBox: "0 0 " + size + " " + (size / 2 + stroke / 2)
+  }, /*#__PURE__*/React.createElement("path", {
+    d: "M " + stroke / 2 + " " + size / 2 + " A " + r + " " + r + " 0 0 1 " + (size - stroke / 2) + " " + size / 2,
+    fill: "none",
+    stroke: C.border,
+    strokeWidth: stroke,
+    strokeLinecap: "round"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M " + stroke / 2 + " " + size / 2 + " A " + r + " " + r + " 0 0 1 " + (size - stroke / 2) + " " + size / 2,
+    fill: "none",
+    stroke: color,
+    strokeWidth: stroke,
+    strokeLinecap: "round",
+    strokeDasharray: circumference,
+    strokeDashoffset: offset,
+    style: {
+      transition: "stroke-dashoffset 700ms cubic-bezier(0.16,1,0.3,1), stroke 400ms"
+    }
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "text-center -mt-2"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "font-serif text-3xl font-bold",
+    style: {
+      color
+    }
+  }, meses.toFixed(1)), /*#__PURE__*/React.createElement("div", {
+    className: "text-xs font-bold",
+    style: {
+      color: C.muted
+    }
+  }, "de ", objetivoMeses, " meses objetivo")));
 }
 
-export function calcularFondoEmergencia(datos = {}) {
-  const base = calcularCapacidadFinanciera(datos);
-  if (base.capacidadMensual == null) return {
-    mesesObjetivo: 6,
-    objetivo: null,
-    gastosEsenciales: null,
-    coberturaMeses: null,
-    falta: null
-  };
-  const gastosEsenciales = base.gastosFijos + base.cuotasDeuda;
-  const objetivo = Math.max(0, gastosEsenciales * 6);
-  const ahorro = datos.ahorroActual == null ? null : Math.max(0, Number(datos.ahorroActual) || 0);
-  const cobertura = gastosEsenciales > 0 && ahorro != null ? ahorro / gastosEsenciales : gastosEsenciales === 0 && ahorro != null ? 6 : null;
-  return {
-    mesesObjetivo: 6,
-    objetivo,
-    gastosEsenciales,
-    coberturaMeses: cobertura,
-    falta: ahorro == null ? null : Math.max(0, objetivo - ahorro)
-  };
+export function Termometro({
+  score,
+  color
+}) {
+  const [animScore, setAnimScore] = useState(0);
+  useEffect(() => {
+    const t = setTimeout(() => setAnimScore(score), 100);
+    return () => clearTimeout(t);
+  }, [score]);
+  const w = 56,
+    tubeTop = 6,
+    tubeBottom = 132,
+    tubeW = 18,
+    bulbR = 22,
+    bulbCy = tubeBottom + bulbR - 6,
+    h = bulbCy + bulbR + 4;
+  const fillHeight = (tubeBottom - tubeTop) * (Math.max(animScore, 4) / 100);
+  const fillY = tubeBottom - fillHeight;
+  return /*#__PURE__*/React.createElement("svg", {
+    width: w,
+    height: h,
+    viewBox: "0 0 " + w + " " + h,
+    className: "shrink-0"
+  }, /*#__PURE__*/React.createElement("rect", {
+    x: w / 2 - tubeW / 2,
+    y: tubeTop,
+    width: tubeW,
+    height: tubeBottom - tubeTop,
+    rx: tubeW / 2,
+    fill: C.border,
+    opacity: "0.5"
+  }), /*#__PURE__*/React.createElement("circle", {
+    cx: w / 2,
+    cy: bulbCy,
+    r: bulbR,
+    fill: C.border,
+    opacity: "0.5"
+  }), /*#__PURE__*/React.createElement("rect", {
+    x: w / 2 - tubeW / 2,
+    y: fillY,
+    width: tubeW,
+    height: tubeBottom - fillY,
+    rx: tubeW / 2,
+    fill: color,
+    style: {
+      transition: "y 800ms cubic-bezier(0.16,1,0.3,1), height 800ms cubic-bezier(0.16,1,0.3,1)"
+    }
+  }), /*#__PURE__*/React.createElement("circle", {
+    cx: w / 2,
+    cy: bulbCy,
+    r: bulbR - 4,
+    fill: color
+  }), [25, 50, 75].map(p => {
+    const y = tubeBottom - (tubeBottom - tubeTop) * (p / 100);
+    return /*#__PURE__*/React.createElement("line", {
+      key: p,
+      x1: w / 2 + tubeW / 2 + 2,
+      x2: w / 2 + tubeW / 2 + 7,
+      y1: y,
+      y2: y,
+      stroke: C.border,
+      strokeWidth: "2"
+    });
+  }));
 }
 
-export function calcularPlanObjetivos(datos = {}) {
-  const base = calcularCapacidadFinanciera(datos);
-  const objetivosBase = normalizarObjetivos(datos).map(objetivoCalculado);
-  const capacidad = base.capacidadParaObjetivos;
-  const aportacionComprometida = objetivosBase.reduce((s, o) => s + (o.aportacionMensual == null ? 0 : o.aportacionMensual), 0);
-  const aportacionNecesariaTotal = objetivosBase.reduce((s, o) => s + (o.aportacionNecesaria == null ? 0 : o.aportacionNecesaria), 0);
-  const deficitCapacidad = capacidad == null ? null : Math.max(0, aportacionComprometida - capacidad);
-  const deficitNecesidad = capacidad == null ? null : Math.max(0, aportacionNecesariaTotal - capacidad);
-  const deficitRitmoElegido = capacidad == null ? null : Math.max(0, aportacionNecesariaTotal - aportacionComprometida);
-  const margenTrasAportaciones = capacidad == null ? null : capacidad - aportacionComprometida;
-  const fondo = calcularFondoEmergencia(datos);
-  const ahorroActual = datos.ahorroActual == null ? null : Math.max(0, Number(datos.ahorroActual) || 0);
-  const reservadoCorto = objetivosBase.filter(o => o.horizonteCategoria === "corto" || o.horizonteCategoria === "medio-corto").reduce((s, o) => s + (o.importeReservadoAplicado || 0), 0);
-  const capitalRealmenteInvertible = fondo.objetivo != null && ahorroActual != null ? Math.max(0, ahorroActual - fondo.objetivo - reservadoCorto) : null;
-  const prioridadSinDefinir = objetivosBase.some(o => !o.prioridad);
-  const ordenPrioridad = {
-    alta: 0,
-    media: 1,
-    baja: 2
+export function DesgloseBarra({
+  label,
+  pts,
+  max,
+  color
+}) {
+  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center justify-between mb-1"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "text-xs font-bold",
+    style: {
+      color: C.ink
+    }
+  }, label), /*#__PURE__*/React.createElement("span", {
+    className: "text-xs font-bold",
+    style: {
+      color: C.muted
+    }
+  }, Math.round(pts), "/", max)), /*#__PURE__*/React.createElement(ProgressBar, {
+    pctValue: pts / max * 100,
+    color: color,
+    height: 5
+  }));
+}
+
+export function SimpleStackedBarChart({
+  data,
+  xKey,
+  aportadoKey,
+  interesKey,
+  height = 280,
+  formatY = v => v,
+  colorAportado,
+  colorInteres,
+  marcaAnio = null
+}) {
+  const [hoverIndex, setHoverIndex] = useState(null);
+  const n = data.length;
+  const width = Math.max(680, n * 16);
+  const padL = 54,
+    padR = 24,
+    padT = 10,
+    padB = 40;
+  const innerW = width - padL - padR,
+    innerH = height - padT - padB;
+  const totals = data.map(d => (d[aportadoKey] || 0) + (d[interesKey] || 0));
+  const maxRaw = Math.max(1, ...totals);
+  const {
+    ticks,
+    niceMax
+  } = niceTicks(maxRaw, 5);
+  const barGap = innerW / n * 0.2;
+  const barW = innerW / n - barGap;
+  const xFor = i => padL + innerW / n * i + barGap / 2;
+  const yFor = v => padT + innerH - innerH * (v / niceMax);
+  const hovered = hoverIndex == null ? null : data[hoverIndex];
+  const marcaIndex = marcaAnio == null ? -1 : data.findIndex(d => d[xKey] === marcaAnio);
+  return /*#__PURE__*/React.createElement("div", {
+    className: "relative w-full overflow-x-auto chart-interactive"
+  }, /*#__PURE__*/React.createElement("svg", {
+    viewBox: "0 0 " + width + " " + height,
+    style: {
+      width: width,
+      minWidth: "100%",
+      height
+    },
+    role: "img",
+    "aria-label": "Gráfico de aportaciones e intereses generados"
+  }, ticks.map((t, i) => /*#__PURE__*/React.createElement("g", {
+    key: i
+  }, /*#__PURE__*/React.createElement("line", {
+    x1: padL,
+    x2: width - padR,
+    y1: yFor(t),
+    y2: yFor(t),
+    stroke: C.border,
+    strokeDasharray: t === 0 ? "0" : "3 3"
+  }), /*#__PURE__*/React.createElement("text", {
+    x: padL - 6,
+    y: yFor(t) + 3,
+    fontSize: "10",
+    fill: C.muted,
+    textAnchor: "end"
+  }, formatY(t)))), data.map((d, i) => {
+    const aportado = d[aportadoKey] || 0,
+      interes = Math.max(0, d[interesKey] || 0);
+    const x = xFor(i);
+    const yAportadoTop = yFor(aportado);
+    const yTotalTop = yFor(aportado + interes);
+    const isHover = hoverIndex === i;
+    return /*#__PURE__*/React.createElement("g", {
+      key: i,
+      onMouseEnter: () => setHoverIndex(i),
+      style: {
+        cursor: "pointer"
+      }
+    }, /*#__PURE__*/React.createElement("rect", {
+      x: x,
+      y: yAportadoTop,
+      width: barW,
+      height: Math.max(0, padT + innerH - yAportadoTop),
+      rx: "3",
+      fill: colorAportado,
+      opacity: isHover ? 1 : 0.9
+    }), /*#__PURE__*/React.createElement("rect", {
+      x: x,
+      y: yTotalTop,
+      width: barW,
+      height: Math.max(0, yAportadoTop - yTotalTop),
+      rx: "3",
+      fill: colorInteres,
+      opacity: isHover ? 1 : 0.9
+    }), /*#__PURE__*/React.createElement("rect", {
+      x: x,
+      y: padT,
+      width: barW,
+      height: innerH,
+      fill: "transparent"
+    }));
+  }), data.map((d, i) => {
+    if (n > 20 && i % Math.ceil(n / 16) !== 0) return null;
+    return /*#__PURE__*/React.createElement("text", {
+      key: i,
+      x: xFor(i) + barW / 2,
+      y: height - padB + 16,
+      fontSize: "9",
+      fill: C.muted,
+      textAnchor: "middle"
+    }, d[xKey]);
+  }), marcaIndex >= 0 && /*#__PURE__*/React.createElement("g", {
+    pointerEvents: "none"
+  }, /*#__PURE__*/React.createElement("line", {
+    x1: xFor(marcaIndex) + barW / 2,
+    x2: xFor(marcaIndex) + barW / 2,
+    y1: padT,
+    y2: padT + innerH,
+    stroke: C.sand,
+    strokeWidth: "2",
+    strokeDasharray: "4 3"
+  }), /*#__PURE__*/React.createElement("rect", {
+    x: Math.min(Math.max(xFor(marcaIndex) + barW / 2 - 42, padL), width - padR - 84),
+    y: padT - 2,
+    width: "84",
+    height: "16",
+    rx: "5",
+    fill: C.sand
+  }), /*#__PURE__*/React.createElement("text", {
+    x: Math.min(Math.max(xFor(marcaIndex) + barW / 2, padL + 42), width - padR - 42),
+    y: padT + 10,
+    fontSize: "9",
+    fontWeight: "700",
+    fill: "#fff",
+    textAnchor: "middle"
+  }, "Año objetivo")), hovered && /*#__PURE__*/React.createElement("g", {
+    transform: `translate(${Math.max(padL, Math.min(width - 190, xFor(hoverIndex) - 80))},8)`
+  }, /*#__PURE__*/React.createElement("rect", {
+    width: "180",
+    height: "66",
+    rx: "10",
+    fill: "#ffffff",
+    stroke: C.border,
+    filter: "drop-shadow(0 5px 12px rgba(49,46,129,.12))"
+  }), /*#__PURE__*/React.createElement("text", {
+    x: "12",
+    y: "19",
+    fontSize: "10",
+    fontWeight: "700",
+    fill: C.navy
+  }, "Año ", hovered[xKey]), /*#__PURE__*/React.createElement("circle", {
+    cx: "16",
+    cy: "34",
+    r: "4",
+    fill: colorAportado
+  }), /*#__PURE__*/React.createElement("text", {
+    x: "26",
+    y: "38",
+    fontSize: "10",
+    fill: C.ink
+  }, "Aportado: ", formatY(hovered[aportadoKey] || 0)), /*#__PURE__*/React.createElement("circle", {
+    cx: "16",
+    cy: "50",
+    r: "4",
+    fill: colorInteres
+  }), /*#__PURE__*/React.createElement("text", {
+    x: "26",
+    y: "54",
+    fontSize: "10",
+    fill: C.ink
+  }, "Intereses: ", formatY(hovered[interesKey] || 0)))));
+}
+
+export function SimpleAreaChart({
+  data,
+  xKey,
+  series,
+  height = 240,
+  formatY = v => v
+}) {
+  const [hoverIndex, setHoverIndex] = useState(null);
+  const width = 680,
+    padL = 46,
+    padR = 10,
+    padT = 10,
+    padB = 36;
+  const innerW = width - padL - padR,
+    innerH = height - padT - padB;
+  const allValues = data.flatMap(d => series.map(s => d[s.key] || 0));
+  const maxRaw = Math.max(1, ...allValues);
+  const {
+    ticks,
+    niceMax
+  } = niceTicks(maxRaw, 6);
+  const xFor = i => padL + innerW * (data.length <= 1 ? 0 : i / (data.length - 1));
+  const yFor = v => padT + innerH - innerH * (v / niceMax);
+  const handleMove = e => {
+    if (!data.length) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    // 1. Píxeles físicos del ratón dentro del contenedor
+    const screenX = e.clientX - rect.left;
+    // 2. Escalar esos píxeles físicos al sistema de coordenadas interno del SVG (width: 680)
+    const svgX = screenX / rect.width * width;
+    // 3. Ahora ya podemos restar el padding interno del SVG
+    const innerX = svgX - padL;
+    const fraction = innerX / innerW;
+    const raw = fraction * (data.length - 1);
+    setHoverIndex(Math.max(0, Math.min(data.length - 1, Math.round(raw))));
   };
-  const orden = [...objetivosBase].sort((a, b) => {
-    const pa = a.prioridad ? ordenPrioridad[a.prioridad] : 99,
-      pb = b.prioridad ? ordenPrioridad[b.prioridad] : 99;
-    return pa - pb || (a.horizonteAniosCalculado ?? Infinity) - (b.horizonteAniosCalculado ?? Infinity) || (b.importeRestante || 0) - (a.importeRestante || 0);
-  });
-  let capacidadRestante = capacidad;
-  const objetivos = orden.map((o, index) => {
-    const capacidadAntes = capacidadRestante;
-    const elegido = o.aportacionMensual;
-    const esfuerzoReferencia = elegido != null ? elegido : o.aportacionNecesaria != null ? o.aportacionNecesaria : 0;
-    const capacidadAsignada = capacidad == null ? null : Math.min(capacidadAntes, Math.max(0, esfuerzoReferencia));
-    if (capacidadRestante != null && elegido != null) capacidadRestante = Math.max(0, capacidadRestante - elegido);
-    const datosCompletos = o.importeObjetivo != null && o.horizonteAniosCalculado != null && o.horizonteAniosCalculado > 0;
-    let estado = "pendiente";
-    if (o.cubierto) estado = "completado";else if (datosCompletos && capacidad != null) {
-      const esfuerzoElegido = elegido != null ? elegido : o.aportacionNecesaria;
-      const superaCapacidad = elegido != null && elegido > capacidadAntes;
-      const ritmoInsuficiente = o.aportacionNecesaria != null && o.aportacionNecesaria > capacidadAntes;
-      if (superaCapacidad || ritmoInsuficiente) estado = "no_viable";else if (elegido != null && o.aportacionNecesaria != null && elegido < o.aportacionNecesaria) estado = "ajustado";else if (capacidadAntes - esfuerzoElegido <= Math.max(25, capacidadAntes * 0.10)) estado = "ajustado";else estado = "viable";
-    } else if (datosCompletos) estado = "pendiente_capacidad";
-    const deficitAportacion = elegido != null && capacidad != null ? Math.max(0, elegido - capacidadAntes) : null;
-    const deficitRitmo = o.aportacionNecesaria != null && capacidad != null ? Math.max(0, o.aportacionNecesaria - capacidadAntes) : null;
+  const hovered = hoverIndex == null ? null : data[hoverIndex];
+  const tooltipX = hoverIndex == null ? 0 : xFor(hoverIndex);
+  const tooltipW = 172;
+  const tooltipLeft = Math.max(6, Math.min(width - tooltipW - 6, tooltipX - tooltipW / 2));
+  return /*#__PURE__*/React.createElement("div", {
+    className: "relative w-full h-full chart-interactive",
+    onMouseMove: handleMove,
+    onMouseLeave: () => setHoverIndex(null)
+  }, /*#__PURE__*/React.createElement("svg", {
+    viewBox: "0 0 " + width + " " + height,
+    className: "w-full h-full",
+    role: "img",
+    "aria-label": "Gráfico interactivo de interés compuesto"
+  }, ticks.map((t, i) => /*#__PURE__*/React.createElement("g", {
+    key: i
+  }, /*#__PURE__*/React.createElement("line", {
+    x1: padL,
+    x2: width - padR,
+    y1: yFor(t),
+    y2: yFor(t),
+    stroke: C.border,
+    strokeDasharray: t === 0 ? "0" : "3 3"
+  }), /*#__PURE__*/React.createElement("text", {
+    x: padL - 6,
+    y: yFor(t) + 3,
+    fontSize: "10",
+    fill: C.muted,
+    textAnchor: "end"
+  }, formatY(t)))), series.map((s, si) => {
+    const pts = data.map((d, i) => [xFor(i), yFor(d[s.key] || 0)]);
+    const areaPath = "M" + pts.map(p => p.join(",")).join(" L") + " L" + xFor(data.length - 1) + "," + (padT + innerH) + " L" + padL + "," + (padT + innerH) + " Z";
+    const linePath = "M" + pts.map(p => p.join(",")).join(" L");
+    return /*#__PURE__*/React.createElement("g", {
+      key: si
+    }, /*#__PURE__*/React.createElement("path", {
+      d: areaPath,
+      fill: s.color,
+      opacity: s.opacity ?? 0.3
+    }), /*#__PURE__*/React.createElement("path", {
+      d: linePath,
+      fill: "none",
+      stroke: s.color,
+      strokeWidth: 2.2
+    }));
+  }), data.map((d, i) => /*#__PURE__*/React.createElement("text", {
+    key: i,
+    x: xFor(i),
+    y: height - padB + 14,
+    fontSize: "8",
+    fill: C.muted,
+    textAnchor: "end",
+    transform: `rotate(-60, ${xFor(i)}, ${height - padB + 14})`
+  }, d[xKey])), /*#__PURE__*/React.createElement("rect", {
+    x: padL,
+    y: padT,
+    width: innerW,
+    height: innerH,
+    fill: "transparent",
+    pointerEvents: "all"
+  }), hoverIndex != null && hovered && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("line", {
+    x1: tooltipX,
+    x2: tooltipX,
+    y1: padT,
+    y2: padT + innerH,
+    stroke: C.sand,
+    strokeWidth: "1.5",
+    strokeDasharray: "4 3",
+    opacity: ".7"
+  }), series.map((s, si) => /*#__PURE__*/React.createElement("circle", {
+    key: si,
+    cx: tooltipX,
+    cy: yFor(hovered[s.key] || 0),
+    r: "4",
+    fill: C.surface,
+    stroke: s.color,
+    strokeWidth: "2.5"
+  })), /*#__PURE__*/React.createElement("g", {
+    transform: `translate(${tooltipLeft},8)`
+  }, /*#__PURE__*/React.createElement("rect", {
+    width: tooltipW,
+    height: 66 + series.length * 16,
+    rx: "10",
+    fill: "#ffffff",
+    stroke: C.border,
+    filter: "drop-shadow(0 5px 12px rgba(49,46,129,.12))"
+  }), /*#__PURE__*/React.createElement("text", {
+    x: "12",
+    y: "19",
+    fontSize: "10",
+    fontWeight: "700",
+    fill: C.navy
+  }, hovered[xKey]), series.map((s, si) => /*#__PURE__*/React.createElement("g", {
+    key: si,
+    transform: `translate(0,${30 + si * 16})`
+  }, /*#__PURE__*/React.createElement("circle", {
+    cx: "13",
+    cy: "-3",
+    r: "3",
+    fill: s.color
+  }), /*#__PURE__*/React.createElement("text", {
+    x: "21",
+    y: "0",
+    fontSize: "10",
+    fill: C.muted
+  }, s.label || s.key, ": ", /*#__PURE__*/React.createElement("tspan", {
+    fontWeight: "700",
+    fill: C.ink
+  }, formatY(hovered[s.key] || 0)))))))));
+}
+
+export function SimpleDonut({
+  data,
+  size = 200,
+  thickness = 28,
+  formatCentro = v => v + "%"
+}) {
+  const [hover, setHover] = useState(null);
+  const total = data.reduce((s, d) => s + d.value, 0) || 1;
+  const r = (size - thickness) / 2;
+  const circumference = 2 * Math.PI * r;
+  let acc = 0;
+  const segments = data.map((d, i) => {
+    const frac = d.value / total;
+    const dash = circumference * frac;
+    const gap = circumference - dash;
+    const rotation = acc / total * 360;
+    acc += d.value;
     return {
-      ...o,
-      orden: index + 1,
-      capacidadAntes,
-      capacidadAsignada,
-      deficitAportacion,
-      deficitRitmo,
-      estadoViabilidad: estado
+      ...d,
+      dash,
+      gap,
+      rotation,
+      i
     };
   });
-  const principal = orden.find(o => o.prioridad) || (objetivos.length === 1 ? objetivos[0] : null);
-  const habit = datos.habito;
-  const ejecucion = habit === "No tengo ni idea de a dónde va" ? {
-    nivel: "pendiente",
-    texto: "Mejora primero el control de tus gastos antes de comprometer una aportación elevada."
-  } : habit === "Más o menos controlado, pero sin apuntar nada" ? {
-    nivel: "intermedio",
-    texto: "Una aportación automática y una revisión periódica pueden ayudarte a sostener el plan."
-  } : habit === "Todo apuntado y bajo control" ? {
-    nivel: "fuerte",
-    texto: "Tu seguimiento facilita mantener las aportaciones y revisar el progreso."
-  } : {
-    nivel: "pendiente",
-    texto: "Completa tus hábitos financieros para valorar mejor la capacidad de ejecución del plan."
-  };
-  const conflictoObjetivos = capacidad != null && aportacionComprometida > capacidad;
-  return {
-    ...base,
-    ahorroActual,
-    objetivos,
-    ordenObjetivos: orden,
-    aportacionComprometida,
-    aportacionTotal: aportacionComprometida,
-    aportacionNecesariaTotal,
-    deficitMensual: deficitCapacidad,
-    deficitNecesidad,
-    deficitRitmoElegido,
-    margenTrasAportaciones,
-    principal,
-    prioridadSinDefinir,
-    fondoEmergenciaNecesario: fondo.objetivo,
-    reservadoCorto,
-    capitalRealmenteInvertible,
-    capitalInvertibleCompleto: fondo.objetivo != null && ahorroActual != null,
-    capacidadMensual: base.capacidadMensual,
-    capacidadParaObjetivos: capacidad,
-    ejecucion,
-    conflictoObjetivos,
-    objetivosOrdenados: orden.map(o => o.id)
-  };
+  const active = hover != null ? segments[hover] : null;
+  return /*#__PURE__*/React.createElement("div", {
+    className: "relative inline-block",
+    style: {
+      width: size,
+      height: size
+    }
+  }, /*#__PURE__*/React.createElement("svg", {
+    width: size,
+    height: size,
+    viewBox: "0 0 " + size + " " + size
+  }, /*#__PURE__*/React.createElement("g", {
+    transform: "rotate(-90 " + size / 2 + " " + size / 2 + ")"
+  }, segments.map(seg => /*#__PURE__*/React.createElement("circle", {
+    key: seg.i,
+    cx: size / 2,
+    cy: size / 2,
+    r: r,
+    fill: "none",
+    stroke: seg.color,
+    strokeWidth: hover === seg.i ? thickness + 6 : thickness,
+    strokeDasharray: seg.dash + " " + seg.gap,
+    transform: "rotate(" + seg.rotation + " " + size / 2 + " " + size / 2 + ")",
+    style: {
+      transition: "stroke-width 200ms ease, opacity 200ms ease",
+      opacity: hover == null || hover === seg.i ? 1 : 0.35,
+      cursor: "pointer"
+    },
+    onMouseEnter: () => setHover(seg.i),
+    onMouseLeave: () => setHover(null)
+  })))), /*#__PURE__*/React.createElement("div", {
+    className: "absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center px-3"
+  }, active ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+    className: "text-xl font-bold font-serif",
+    style: {
+      color: active.color
+    }
+  }, formatCentro(active.value)), /*#__PURE__*/React.createElement("div", {
+    className: "text-[10px] font-bold mt-0.5 leading-tight",
+    style: {
+      color: C.muted
+    }
+  }, active.name)) : /*#__PURE__*/React.createElement("div", {
+    className: "text-[10px] font-bold",
+    style: {
+      color: C.mutedLight
+    }
+  }, "Pasa el cursor", /*#__PURE__*/React.createElement("br", null), "por el gráfico")));
 }
 
-export function calcularDiagnosticoAmpliado({
-  datos,
-  cuentas = [],
-  inversiones = [],
-  planObjetivos
+export function EvidenciaModal({
+  tarjeta,
+  onClose
 }) {
-  const positivos = [];
-  const preocupantes = [];
-  const capacidad = planObjetivos.capacidadMensual;
-  const ratioAhorro = planObjetivos.ingresos > 0 ? capacidad / planObjetivos.ingresos : null;
-
-  // 1. Capacidad de ahorro
-  if (capacidad != null) {
-    if (capacidad <= 0) {
-      preocupantes.push({
-        titulo: "Gastas más de lo que ingresas",
-        texto: `Tu margen mensual actual es ${euros(capacidad)}. Cualquier imprevisto (una avería, una factura inesperada) tendría que pagarse con deuda o con tus ahorros.`
-      });
-    } else if (ratioAhorro != null && ratioAhorro < 0.10) {
-      preocupantes.push({
-        titulo: "Tu margen de ahorro es reducido",
-        texto: `Ahorras ${pct(ratioAhorro * 100)} de lo que ingresas. Por debajo del 10% cuesta avanzar hacia tus objetivos y hacia un colchón de seguridad.`
-      });
-    } else {
-      positivos.push({
-        titulo: "Ahorras una parte saludable de tus ingresos",
-        texto: `Actualmente ahorras ${pct(ratioAhorro * 100)} de lo que ingresas cada mes.`
-      });
+  const Icon = tarjeta.icon;
+  return /*#__PURE__*/React.createElement("div", {
+    className: "fixed inset-0 z-50 flex items-center justify-center px-4",
+    style: {
+      backgroundColor: "rgba(5,8,16,0.7)"
+    },
+    onClick: onClose
+  }, /*#__PURE__*/React.createElement("div", {
+    onClick: e => e.stopPropagation(),
+    className: "w-full max-w-xl rounded-2xl overflow-hidden flex flex-col toast-enter",
+    style: {
+      backgroundColor: C.surface,
+      maxHeight: "85vh"
     }
-  }
-
-  // 2. Liquidez / fondo de emergencia — usa el saldo real de tus Cuentas si las
-  // tienes registradas; si no, usa el ahorro manual introducido en Diagnóstico.
-  const liquidezReal = cuentas.length > 0 ? cuentas.reduce((s, c) => s + (Number(c.saldo) || 0), 0) : Number(datos.ahorroActual) || 0;
-  const gastosEsenciales = planObjetivos.fondoEmergenciaNecesario != null ? planObjetivos.fondoEmergenciaNecesario / 6 : null;
-  const coberturaMeses = gastosEsenciales != null && gastosEsenciales > 0 ? liquidezReal / gastosEsenciales : null;
-  if (coberturaMeses != null) {
-    if (coberturaMeses < 3) {
-      preocupantes.push({
-        titulo: "Tu colchón de emergencia es insuficiente",
-        texto: `Con tu liquidez actual (${euros(liquidezReal)}) cubrirías ${coberturaMeses.toFixed(1)} meses de gastos esenciales. Por debajo de 3 meses, un imprevisto puede obligarte a endeudarte.`
-      });
-    } else if (coberturaMeses < 6) {
-      preocupantes.push({
-        titulo: "Tu fondo de emergencia es mejorable",
-        texto: `Cubre ${coberturaMeses.toFixed(1)} meses de gastos esenciales. La referencia recomendada son 6 meses.`
-      });
-    } else {
-      positivos.push({
-        titulo: "Tu fondo de emergencia es sólido",
-        texto: `Cubre ${coberturaMeses.toFixed(1)} meses de gastos esenciales, por encima del mínimo recomendado.`
-      });
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-start justify-between gap-3 px-5 sm:px-6 pt-5 sm:pt-6 pb-4 shrink-0",
+    style: {
+      borderBottom: "1px solid " + C.border
     }
-  }
-
-  // 3. Deuda cara
-  const deudasActivas = (datos.deudas || []).filter(d => Number(d.pendiente) > 0);
-  const deudaCara = deudasActivas.filter(d => Number(d.tasa) >= 10);
-  if (deudaCara.length > 0) {
-    const nombres = deudaCara.map(d => d.nombre || "deuda sin nombre").join(", ");
-    preocupantes.push({
-      titulo: "Tienes deuda con un interés elevado",
-      texto: `${nombres} tiene(n) un interés del 10% o más. Ese coste suele superar la rentabilidad esperada de invertir, así que normalmente conviene amortizarla antes de invertir más.`
-    });
-  } else if (deudasActivas.length > 0) {
-    positivos.push({
-      titulo: "Tu deuda actual tiene un coste moderado",
-      texto: "Ninguna de tus deudas activas supera el 10% de interés."
-    });
-  } else {
-    positivos.push({
-      titulo: "No tienes deudas activas registradas",
-      texto: "Esto te da más margen para ahorrar e invertir sin compromisos previos."
-    });
-  }
-
-  // 4. Exposición de la cartera de inversión
-  if (inversiones.length > 0) {
-    const totalInvertido = inversiones.reduce((s, inv) => s + (Number(inv.valorActual) || 0), 0);
-    const tiposUnicos = new Set(inversiones.map(inv => inv.tipo)).size;
-    if (tiposUnicos === 1 && inversiones.length >= 2) {
-      preocupantes.push({
-        titulo: "Tu cartera está concentrada en un único tipo de activo",
-        texto: `Toda tu inversión (${euros(totalInvertido)}) está en "${inversiones[0].tipo}". Repartir entre varios tipos de activo reduce el impacto de que uno de ellos baje de valor.`
-      });
-    } else {
-      positivos.push({
-        titulo: "Tu cartera está repartida en varios tipos de activo",
-        texto: `Tienes inversión en ${tiposUnicos} tipos de activo distintos.`
-      });
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-3.5 min-w-0"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "w-11 h-11 rounded-xl flex items-center justify-center shrink-0",
+    style: {
+      backgroundColor: "rgba(79,70,229,.12)"
     }
-    if (gastosEsenciales != null && liquidezReal > gastosEsenciales * 12 && totalInvertido < liquidezReal) {
-      preocupantes.push({
-        titulo: "Tienes bastante liquidez sin invertir",
-        texto: `Tu liquidez (${euros(liquidezReal)}) supera ampliamente tu fondo de emergencia recomendado. Salvo que la necesites pronto, ese exceso suele perder poder adquisitivo con la inflación si se queda parado.`
-      });
+  }, /*#__PURE__*/React.createElement(Icon, {
+    size: 20,
+    color: C.sand
+  })), /*#__PURE__*/React.createElement("h3", {
+    className: "font-serif text-lg sm:text-xl font-bold",
+    style: {
+      color: C.ink
     }
-  }
-
-  // 5. Objetivos financieros
-  if (planObjetivos.objetivos.length > 0) {
-    const noViables = planObjetivos.objetivos.filter(o => o.estadoViabilidad === "no_viable");
-    if (planObjetivos.conflictoObjetivos) {
-      preocupantes.push({
-        titulo: "Tus objetivos piden más de lo que puedes aportar",
-        texto: `En conjunto necesitas ${euros(planObjetivos.aportacionComprometida)}/mes, pero tu capacidad actual es ${euros(planObjetivos.capacidadParaObjetivos)}/mes.`
-      });
-    } else if (noViables.length > 0) {
-      preocupantes.push({
-        titulo: "Alguno de tus objetivos no es viable con el ritmo actual",
-        texto: `${noViables.map(o => o.nombre || "un objetivo").join(", ")} necesita más aportación mensual de la que tu capacidad actual permite, dado el plazo indicado.`
-      });
-    } else {
-      positivos.push({
-        titulo: "Tus objetivos son viables con tu ritmo actual",
-        texto: "Con tu capacidad de ahorro y los plazos indicados, tus objetivos registrados son alcanzables."
-      });
+  }, tarjeta.titulo)), /*#__PURE__*/React.createElement("button", {
+    onClick: onClose,
+    "aria-label": "Cerrar",
+    className: "shrink-0 w-8 h-8 rounded-lg flex items-center justify-center hover:bg-black/5",
+    style: {
+      color: C.muted
     }
-  }
-  return {
-    positivos,
-    preocupantes,
-    liquidezReal,
-    coberturaMeses
-  };
+  }, /*#__PURE__*/React.createElement(I.x, {
+    size: 18
+  }))), /*#__PURE__*/React.createElement("div", {
+    className: "px-5 sm:px-6 py-5 overflow-y-auto"
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "text-sm leading-relaxed",
+    style: {
+      color: C.muted
+    }
+  }, tarjeta.texto), /*#__PURE__*/React.createElement("p", {
+    className: "text-[11px] leading-relaxed mt-4",
+    style: {
+      color: C.mutedLight
+    }
+  }, tarjeta.fuente))));
 }
 
-export function calcularPrioridades({
-  datos,
-  inversiones = [],
-  planObjetivos,
-  diagnostico
+export function FeedbackModal({
+  onClose
 }) {
-  const capacidad = planObjetivos.capacidadMensual;
-  const coberturaMeses = diagnostico.coberturaMeses;
-  const deudasActivas = (datos.deudas || []).filter(d => Number(d.pendiente) > 0);
-  const deudaCara = deudasActivas.filter(d => Number(d.tasa) >= 10);
-  const objetivosProblema = planObjetivos.conflictoObjetivos || planObjetivos.objetivos.some(o => o.estadoViabilidad === "no_viable");
-  const nombresDeudaCara = deudaCara.map(d => d.nombre || "una deuda").join(", ");
-
-  const pasos = [{
-    id: "seguridad",
-    titulo: "Ajusta tu presupuesto",
-    texto: capacidad != null ? `Ahora mismo tu margen mensual es ${euros(capacidad)}. Antes de pensar en deudas, fondo de emergencia o inversión, necesitas que ese número deje de ser negativo.` : "Introduce tus ingresos y gastos para poder evaluar tu situación.",
-    satisfecho: capacidad == null || capacidad > 0
-  }, {
-    id: "colchon",
-    titulo: "Consigue un colchón mínimo de seguridad",
-    texto: `Tu liquidez actual cubre ${coberturaMeses == null ? "una parte todavía por calcular de" : coberturaMeses.toFixed(1)} tus gastos esenciales de un mes. Antes de atacar deudas o invertir, conviene tener al menos 1 mes cubierto para no depender de más deuda ante cualquier imprevisto.`,
-    satisfecho: coberturaMeses == null || coberturaMeses >= 1
-  }, {
-    id: "deuda_cara",
-    titulo: "Prioriza tu deuda más cara",
-    texto: deudaCara.length > 0 ? `${nombresDeudaCara} tiene(n) un interés del 10% o más. Ese coste suele superar lo que ganarías invirtiendo, así que amortizarla es más prioritario que invertir.` : "No tienes deuda con un interés elevado pendiente.",
-    satisfecho: deudaCara.length === 0
-  }, {
-    id: "fondo_emergencia",
-    titulo: "Completa tu fondo de emergencia",
-    texto: `Tu colchón cubre ${coberturaMeses == null ? "una parte todavía por calcular" : coberturaMeses.toFixed(1) + " de los 6"} meses de gasto recomendados. Complétalo antes de invertir con fuerza, así no tendrás que deshacer inversiones ante un imprevisto.`,
-    satisfecho: coberturaMeses == null || coberturaMeses >= 6
-  }, {
-    id: "inversion",
-    titulo: "Valora empezar o aumentar tu inversión",
-    texto: capacidad != null && capacidad > 0 ? "Con tu deuda cara resuelta y el fondo de emergencia cubierto, tienes margen para valorar destinar tu ahorro mensual a inversión, según tu perfil de riesgo." : "Todavía no tienes margen mensual para destinar a inversión.",
-    satisfecho: inversiones.length > 0 || capacidad == null || capacidad <= 0
-  }, {
-    id: "objetivos",
-    titulo: "Revisa tus objetivos",
-    texto: objetivosProblema ? "Alguno de tus objetivos necesita más aportación de la que tu capacidad actual permite. Revísalo para ajustar plazo o importe." : "Con tu base financiera cubierta, revisa tus objetivos y ajusta su ritmo si tu situación cambia.",
-    satisfecho: planObjetivos.objetivos.length === 0 || !objetivosProblema
-  }];
-  let actualAsignado = false;
-  const pasosConEstado = pasos.map(p => {
-    let estado;
-    if (p.satisfecho) estado = "hecho";else if (!actualAsignado) {
-      estado = "actual";
-      actualAsignado = true;
-    } else estado = "pendiente";
-    return {
-      ...p,
-      estado
-    };
-  });
-  const todoEnOrden = !actualAsignado;
-  return {
-    pasos: pasosConEstado,
-    todoEnOrden
-  };
-}
-
-export function calcularPlanFinanciero({
-  datos,
-  cuentas = [],
-  inversiones = [],
-  planObjetivos,
-  diagnostico,
-  prioridad,
-  perfil
-}) {
-  const capacidad = planObjetivos.capacidadMensual;
-  const liquidezReal = diagnostico.liquidezReal;
-  const fondo = calcularFondoEmergencia(datos);
-  const gastosEsenciales = fondo.gastosEsenciales;
-  const metaColchonInicial = gastosEsenciales != null ? gastosEsenciales : null;
-  const deudasActivas = (datos.deudas || []).filter(d => Number(d.pendiente) > 0);
-  const deudaCara = deudasActivas.filter(d => Number(d.tasa) >= 10);
-  const restanteDeudaCara = deudaCara.reduce((s, d) => s + Number(d.pendiente || 0), 0);
-  const totalInvertido = inversiones.reduce((s, inv) => s + (Number(inv.valorActual) || 0), 0);
-  const estadoPorId = id => {
-    const paso = prioridad.pasos.find(p => p.id === id);
-    if (!paso) return "completado";
-    return paso.estado === "hecho" ? "completado" : paso.estado === "actual" ? "en_curso" : "pendiente";
-  };
-  const bloqueadoPorPresupuesto = prioridad.pasos.find(p => p.id === "seguridad")?.estado === "actual";
-  const restanteColchon = metaColchonInicial != null ? Math.max(0, metaColchonInicial - liquidezReal) : null;
-  const restanteFondo = fondo.objetivo != null ? Math.max(0, fondo.objetivo - liquidezReal) : null;
-  const fases = [{
-    id: "colchon_inicial",
-    titulo: "Colchón inicial",
-    objetivoTexto: "Conseguir una reserva mínima de seguridad (1 mes de gastos esenciales).",
-    meta: metaColchonInicial,
-    actual: liquidezReal,
-    restante: restanteColchon,
-    progreso: metaColchonInicial > 0 ? Math.min(100, liquidezReal / metaColchonInicial * 100) : null,
-    accion: restanteColchon > 0 ? `Aparta ${euros(restanteColchon)} más para llegar a 1 mes de colchón.` : "Colchón mínimo conseguido.",
-    estado: bloqueadoPorPresupuesto ? "pendiente" : estadoPorId("colchon")
-  }, {
-    id: "deuda",
-    titulo: "Deuda cara",
-    objetivoTexto: "Priorizar y amortizar la deuda de mayor coste (interés del 10% o más).",
-    meta: null,
-    actual: null,
-    restante: restanteDeudaCara,
-    progreso: null,
-    accion: restanteDeudaCara > 0 ? `Destina tu excedente mensual a amortizar ${deudaCara.map(d => d.nombre || "esta deuda").join(", ")} mediante bola de nieve o avalancha.` : "No tienes deuda cara pendiente.",
-    estado: bloqueadoPorPresupuesto ? "pendiente" : estadoPorId("deuda_cara")
-  }, {
-    id: "fondo_emergencia",
-    titulo: "Fondo de emergencia",
-    objetivoTexto: "Alcanzar el objetivo de 6 meses de gastos esenciales.",
-    meta: fondo.objetivo,
-    actual: liquidezReal,
-    restante: restanteFondo,
-    progreso: fondo.objetivo > 0 ? Math.min(100, liquidezReal / fondo.objetivo * 100) : null,
-    accion: restanteFondo > 0 ? `Te faltan ${euros(restanteFondo)} para completar 6 meses de fondo de emergencia.` : "Fondo de emergencia completo.",
-    estado: bloqueadoPorPresupuesto ? "pendiente" : estadoPorId("fondo_emergencia")
-  }, {
-    id: "inversion",
-    titulo: "Inversión",
-    objetivoTexto: "Definir cuánto puedes destinar a invertir de forma sostenible.",
-    meta: null,
-    actual: totalInvertido,
-    restante: null,
-    progreso: null,
-    accion: capacidad > 0 ? `Con tu margen mensual (${euros(capacidad)}) puedes valorar destinar una parte a inversión, según tu perfil de riesgo${perfil ? " (" + perfil + ")" : ""}.` : "Todavía no tienes margen mensual libre para invertir.",
-    estado: bloqueadoPorPresupuesto ? "pendiente" : estadoPorId("inversion")
-  }, {
-    id: "objetivos",
-    titulo: "Objetivos",
-    objetivoTexto: "Canalizar tu ahorro hacia tus metas: casa, coche, vacaciones, jubilación u otros.",
-    meta: null,
-    actual: planObjetivos.objetivos.length,
-    restante: null,
-    progreso: null,
-    accion: planObjetivos.principal ? `Tu objetivo prioritario es "${planObjetivos.principal.nombre || "tu objetivo"}"; te faltan ${planObjetivos.principal.importeRestante == null ? "datos por completar" : euros(planObjetivos.principal.importeRestante)}.` : "Define tus objetivos financieros para poder guiar tu ahorro hacia ellos.",
-    estado: bloqueadoPorPresupuesto ? "pendiente" : estadoPorId("objetivos")
-  }];
-  const partesSituacion = [];
-  if (deudaCara.length > 0) partesSituacion.push(`tienes deuda con un interés del 10% o más (${deudaCara.map(d => d.nombre || "una deuda").join(", ")})`);
-  if (fases[2].estado !== "completado") partesSituacion.push("un fondo de emergencia insuficiente");
-  if (inversiones.length > 0) partesSituacion.push("ya tienes inversiones en marcha");
-  const resumenSituacion = bloqueadoPorPresupuesto ? "Tu situación: ahora mismo gastas más de lo que ingresas." : partesSituacion.length > 0 ? `Tu situación: ${partesSituacion.join(", ")}.` : "Tu situación: tu base financiera está en orden.";
-  const recomendaciones = bloqueadoPorPresupuesto ? ["Ajustar tu presupuesto antes de nada, revisando ingresos y gastos."] : fases.filter(f => f.estado !== "completado").map(f => f.accion);
-  if (recomendaciones.length === 0) recomendaciones.push("Sigue así: revisa tu plan periódicamente y ajusta tus objetivos si tu situación cambia.");
-  return {
-    fases,
-    resumenSituacion,
-    recomendaciones,
-    bloqueadoPorPresupuesto
-  };
-}
-
-export function objetivoLegadoDesdeColeccion(objetivos = []) {
-  const o = objetivos[0];
-  return o ? {
-    tipo: o.tipo || null,
-    nombre: o.nombre || "",
-    importe: o.importeObjetivo,
-    plazoAnios: o.plazoAnios,
-    fechaObjetivo: o.fechaObjetivo || null,
-    importeReservado: o.importeReservado,
-    prioridad: o.prioridad || null,
-    aportacionMensual: o.aportacionMensual,
-    objetivos: objetivos
-  } : {
-    tipo: null,
-    nombre: "",
-    importe: null,
-    plazoAnios: null,
-    fechaObjetivo: null,
-    importeReservado: null,
-    prioridad: null,
-    aportacionMensual: null,
-    objetivos: []
-  };
-}
-
-export function sincronizarObjetivos(datos, objetivos) {
-  return {
-    ...datos,
-    objetivos,
-    objetivo: objetivoLegadoDesdeColeccion(objetivos)
-  };
-}
-
-export const datosVacios = () => ({
-  ingresos: 0,
-  otrosIngresos: 0,
-  gastosFijos: emptyCampo(GASTOS_FIJOS_DEF),
-  gastosDiscrecionales: emptyCampo(GASTOS_DISC_DEF),
-  deudas: DEUDAS_DEF.map(d => ({
-    ...d
-  })),
-  ahorroActual: 0,
-  habito: null,
-  objetivo: {
-    tipo: null,
-    nombre: "",
-    importe: null,
-    plazoAnios: null,
-    fechaObjetivo: null,
-    importeReservado: null,
-    aportacionMensual: null,
-    prioridad: null,
-    objetivos: []
-  },
-  objetivos: []
-});
-
-export function slugify(s) {
-  return (s || "").toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-}
-
-export function fmtFecha(d) {
-  try {
-    return new Date(d).toLocaleDateString('es-ES', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric'
-    });
-  } catch (e) {
-    return '';
-  }
-}
-
-export function escHtml(s) {
-  return (s || '').replace(/[&<>]/g, c => ({
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;'
-  })[c]);
-}
-
-export function mdToHtml(md) {
-  const lineas = (md || '').split('\n');
-  let html = '';
-  let enLista = false;
-  for (let raw of lineas) {
-    const linea = raw.trim();
-    const encabezado = linea.match(/^#{1,6}\s*(.+)$/);
-    if (encabezado) {
-      if (enLista) {
-        html += '</ul>';
-        enLista = false;
-      }
-      html += `<h2 style="font-size:1.35rem;font-weight:800;margin:28px 0 12px;color:inherit;">${escHtml(encabezado[1])}</h2>`;
-    } else if (linea.startsWith('- ')) {
-      if (!enLista) {
-        html += '<ul>';
-        enLista = true;
-      }
-      html += `<li>${escHtml(linea.slice(2)).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')}</li>`;
-    } else if (linea === '') {
-      if (enLista) {
-        html += '</ul>';
-        enLista = false;
-      }
-    } else {
-      if (enLista) {
-        html += '</ul>';
-        enLista = false;
-      }
-      html += `<p>${escHtml(linea).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')}</p>`;
+  const FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSdZ4VFZ4YlVkvARja94yGosvInko1zfN7RAH916SXlssPZh-g/viewform?usp=header&embedded=true";
+  return /*#__PURE__*/React.createElement("div", {
+    className: "fixed inset-0 z-50 flex items-center justify-center px-4",
+    style: {
+      backgroundColor: "rgba(5,8,16,0.7)"
+    },
+    onClick: onClose
+  }, /*#__PURE__*/React.createElement("div", {
+    onClick: e => e.stopPropagation(),
+    className: "w-full max-w-2xl rounded-2xl overflow-hidden flex flex-col",
+    style: {
+      backgroundColor: C.surface,
+      maxHeight: "90vh"
     }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center justify-between px-5 py-4 shrink-0",
+    style: {
+      borderBottom: "1px solid " + C.border
+    }
+  }, /*#__PURE__*/React.createElement("h2", {
+    className: "font-serif text-lg font-bold",
+    style: {
+      color: C.ink
+    }
+  }, "Danos tu opinión"), /*#__PURE__*/React.createElement("button", {
+    onClick: onClose,
+    "aria-label": "Cerrar",
+    className: "w-8 h-8 rounded-lg flex items-center justify-center hover:bg-black/5",
+    style: {
+      color: C.muted
+    }
+  }, /*#__PURE__*/React.createElement(I.x, {
+    size: 18
+  }))), /*#__PURE__*/React.createElement("div", {
+    className: "px-5 pt-3 shrink-0"
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "text-xs",
+    style: {
+      color: C.muted
+    }
+  }, "Tu respuesta es ", /*#__PURE__*/React.createElement("b", null, "anónima"), ": no recogemos ningún dato identificativo. ¡Gracias por ayudarnos a mejorar!")), /*#__PURE__*/React.createElement("div", {
+    className: "p-4"
+  }, /*#__PURE__*/React.createElement("iframe", {
+    src: FORM_URL,
+    title: "Formulario de opinión",
+    className: "w-full h-[80svh] rounded-xl",
+    style: {
+      border: "1px solid " + C.border,
+      backgroundColor: C.paper
+    }
+  }, "Cargando…"))));
+}
+
+export function AuthModal({
+  onClose,
+  onAuthSuccess,
+  signUp,
+  signIn
+}) {
+  const [modo, setModo] = useState("registro");
+  const [email, setEmail] = useState("");
+  const [emailConfirm, setEmailConfirm] = useState("");
+  const [password, setPassword] = useState("");
+  const [verPassword, setVerPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [avisoConfirmacion, setAvisoConfirmacion] = useState(false);
+  const [loadingGoogle, setLoadingGoogle] = useState(false);
+  const loginConGoogle = async () => {
+    setError(null);
+    setLoadingGoogle(true);
+    const {
+      error
+    } = await supa.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: window.location.origin
+      }
+    });
+    if (error) {
+      setError(traducirErrorAuth(error.message));
+      setLoadingGoogle(false);
+    }
+    // Si no hay error, el navegador redirige a Google automáticamente
+  };
+  const emailsNoCoinciden = modo === "registro" && emailConfirm.length > 0 && email.trim().toLowerCase() !== emailConfirm.trim().toLowerCase();
+  const submit = async e => {
+    e.preventDefault();
+    setError(null);
+    if (modo === "registro" && email.trim().toLowerCase() !== emailConfirm.trim().toLowerCase()) {
+      setError("Los dos emails no coinciden. Revísalos antes de continuar.");
+      return;
+    }
+    setLoading(true);
+    try {
+      if (modo === "registro") {
+        const {
+          data,
+          error
+        } = await signUp(email, password);
+        if (error) {
+          setError(traducirErrorAuth(error.message));
+        } else if (data?.session) {
+          onAuthSuccess();
+        } else {
+          setAvisoConfirmacion(true);
+        }
+      } else {
+        const {
+          data,
+          error
+        } = await signIn(email, password);
+        if (error) {
+          setError(traducirErrorAuth(error.message));
+        } else {
+          onAuthSuccess();
+        }
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+  return /*#__PURE__*/React.createElement("div", {
+    className: "fixed inset-0 z-50 flex items-center justify-center px-4",
+    style: {
+      backgroundColor: "rgba(5,8,16,0.7)"
+    },
+    onClick: onClose
+  }, /*#__PURE__*/React.createElement("div", {
+    onClick: e => e.stopPropagation(),
+    className: "w-full max-w-sm rounded-2xl p-6",
+    style: {
+      backgroundColor: C.surface
+    }
+  }, avisoConfirmacion ? /*#__PURE__*/React.createElement("div", {
+    className: "text-center py-4"
+  }, /*#__PURE__*/React.createElement(I.check, {
+    size: 28,
+    color: C.salu,
+    className: "mx-auto mb-3"
+  }), /*#__PURE__*/React.createElement("p", {
+    className: "text-sm font-bold",
+    style: {
+      color: C.ink
+    }
+  }, "¡Cuenta creada!"), /*#__PURE__*/React.createElement("p", {
+    className: "text-sm mt-1",
+    style: {
+      color: C.muted
+    }
+  }, "Ya puedes iniciar sesión con tu email y contraseña. Guarda bien tus datos: si el email tiene un error, no podrás recuperar tu cuenta más adelante."), /*#__PURE__*/React.createElement("button", {
+    onClick: onClose,
+    className: "mt-5 px-4 py-2 rounded-lg text-sm font-bold",
+    style: {
+      backgroundColor: C.navy,
+      color: C.white
+    }
+  }, "Entendido")) : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center justify-between mb-4"
+  }, /*#__PURE__*/React.createElement("h2", {
+    className: "font-serif text-xl font-bold",
+    style: {
+      color: C.ink
+    }
+  }, modo === "registro" ? "Crear cuenta" : "Iniciar sesión"), /*#__PURE__*/React.createElement("button", {
+    onClick: onClose,
+    "aria-label": "Cerrar",
+    style: {
+      color: C.muted
+    }
+  }, /*#__PURE__*/React.createElement(I.x, {
+    size: 18
+  }))), /*#__PURE__*/React.createElement("p", {
+    className: "text-sm mb-4",
+    style: {
+      color: C.muted
+    }
+  }, modo === "registro" ? "Guarda tu progreso en la nube y accede desde cualquier dispositivo." : "Bienvenido de nuevo."), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: loginConGoogle,
+    disabled: loadingGoogle,
+    className: "w-full flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-sm font-bold border transition-colors hover:bg-black/5 mb-3",
+    style: {
+      borderColor: C.border,
+      color: C.ink,
+      backgroundColor: C.white
+    }
+  }, /*#__PURE__*/React.createElement("svg", {
+    width: "18",
+    height: "18",
+    viewBox: "0 0 48 48"
+  }, /*#__PURE__*/React.createElement("path", {
+    fill: "#FFC107",
+    d: "M43.6 20.5H42V20H24v8h11.3c-1.6 4.7-6.1 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.1 8 3.1l5.7-5.7C34.6 6.1 29.6 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-3.5z"
+  }), /*#__PURE__*/React.createElement("path", {
+    fill: "#FF3D00",
+    d: "M6.3 14.7l6.6 4.8C14.6 15.9 18.9 13 24 13c3.1 0 5.9 1.1 8 3.1l5.7-5.7C34.6 6.1 29.6 4 24 4 16.3 4 9.6 8.3 6.3 14.7z"
+  }), /*#__PURE__*/React.createElement("path", {
+    fill: "#4CAF50",
+    d: "M24 44c5.5 0 10.4-1.9 14.3-5.1l-6.6-5.6C29.6 35.4 27 36.3 24 36.3c-5.2 0-9.6-3.3-11.2-8l-6.6 5.1C9.5 39.6 16.2 44 24 44z"
+  }), /*#__PURE__*/React.createElement("path", {
+    fill: "#1976D2",
+    d: "M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.2 4.3-4.1 5.7l6.6 5.6C40.9 36.6 44 30.9 44 24c0-1.3-.1-2.7-.4-3.5z"
+  })), loadingGoogle ? "Redirigiendo…" : "Continuar con Google"), /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-3 mb-3"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex-1 h-px",
+    style: {
+      backgroundColor: C.border
+    }
+  }), /*#__PURE__*/React.createElement("span", {
+    className: "text-xs",
+    style: {
+      color: C.muted
+    }
+  }, "o con tu email"), /*#__PURE__*/React.createElement("div", {
+    className: "flex-1 h-px",
+    style: {
+      backgroundColor: C.border
+    }
+  })), /*#__PURE__*/React.createElement("form", {
+    onSubmit: submit,
+    className: "space-y-3"
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    className: "block text-xs font-bold mb-1",
+    style: {
+      color: C.ink
+    }
+  }, "Email"), /*#__PURE__*/React.createElement("input", {
+    type: "email",
+    required: true,
+    value: email,
+    onChange: e => setEmail(e.target.value),
+    className: "w-full rounded-lg px-3 py-2 text-sm border outline-none",
+    style: {
+      borderColor: C.border,
+      color: C.ink,
+      backgroundColor: C.paper
+    }
+  })), modo === "registro" && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    className: "block text-xs font-bold mb-1",
+    style: {
+      color: C.ink
+    }
+  }, "Repite tu email"), /*#__PURE__*/React.createElement("input", {
+    type: "email",
+    required: true,
+    value: emailConfirm,
+    onChange: e => setEmailConfirm(e.target.value),
+    onPaste: e => e.preventDefault(),
+    className: "w-full rounded-lg px-3 py-2 text-sm border outline-none",
+    style: {
+      borderColor: emailsNoCoinciden ? C.crit : C.border,
+      color: C.ink,
+      backgroundColor: C.paper
+    }
+  }), emailsNoCoinciden && /*#__PURE__*/React.createElement("p", {
+    className: "text-xs mt-1",
+    style: {
+      color: C.critText
+    }
+  }, "Los emails no coinciden."), /*#__PURE__*/React.createElement("p", {
+    className: "text-xs mt-1",
+    style: {
+      color: C.mutedLight
+    }
+  }, "No dejamos pegar aquí para asegurarnos de que lo escribes bien: como no enviamos email de confirmación, es la única forma de comprobar que no hay un error.")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    className: "block text-xs font-bold mb-1",
+    style: {
+      color: C.ink
+    }
+  }, "Contraseña"), /*#__PURE__*/React.createElement("div", {
+    className: "relative"
+  }, /*#__PURE__*/React.createElement("input", {
+    type: verPassword ? "text" : "password",
+    required: true,
+    minLength: 6,
+    value: password,
+    onChange: e => setPassword(e.target.value),
+    className: "w-full rounded-lg pl-3 pr-10 py-2 text-sm border outline-none",
+    style: {
+      borderColor: C.border,
+      color: C.ink,
+      backgroundColor: C.paper
+    }
+  }), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: () => setVerPassword(v => !v),
+    "aria-label": verPassword ? "Ocultar contraseña" : "Mostrar contraseña",
+    className: "absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded",
+    style: {
+      color: C.muted
+    }
+  }, verPassword ? /*#__PURE__*/React.createElement(I.eyeOff, {
+    size: 16
+  }) : /*#__PURE__*/React.createElement(I.eye, {
+    size: 16
+  })))), modo === "registro" && /*#__PURE__*/React.createElement(PrivacyNotice, null), error && /*#__PURE__*/React.createElement("div", {
+    className: "text-xs rounded-lg px-3 py-2",
+    style: {
+      backgroundColor: "rgba(239,68,68,0.08)",
+      color: C.critText
+    }
+  }, error), /*#__PURE__*/React.createElement("button", {
+    type: "submit",
+    disabled: loading || emailsNoCoinciden,
+    className: "w-full py-2.5 rounded-lg text-sm font-bold disabled:opacity-60",
+    style: {
+      backgroundColor: C.navy,
+      color: C.white
+    }
+  }, loading ? "Un momento…" : modo === "registro" ? "Crear cuenta" : "Entrar")), /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      setModo(modo === "registro" ? "login" : "registro");
+      setError(null);
+      setEmailConfirm("");
+    },
+    className: "w-full text-center text-xs font-bold mt-4",
+    style: {
+      color: C.muted
+    }
+  }, modo === "registro" ? "¿Ya tienes cuenta? Inicia sesión" : "¿No tienes cuenta? Regístrate"))));
+}
+
+export function ContinuarBar({ label, onClick, backLabel, onBack }) {
+  if (!onClick && !onBack) return null;
+  // Barra "pegajosa": queda visible en la parte baja de la pantalla mientras el
+  // usuario avanza y, al llegar al final de la página, se apoya DEBAJO del contenido
+  // (sin margen negativo), de modo que nunca tapa avisos, banners ni disclaimers.
+  return /*#__PURE__*/React.createElement("div", {
+    className: "sticky z-10 no-print",
+    style: {
+      bottom: 0,
+      marginTop: "1.5rem",
+      marginBottom: "1rem",
+      padding: "0.5rem 1rem calc(0.75rem + env(safe-area-inset-bottom, 0px))",
+      pointerEvents: "none"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "max-w-3xl mx-auto flex items-center justify-between gap-3"
+  }, onBack ? /*#__PURE__*/React.createElement("button", {
+    onClick: onBack,
+    type: "button",
+    className: "inline-flex items-center gap-2 text-sm font-bold px-4 py-3 rounded-xl border transition-transform hover:scale-[1.02] shadow-lg",
+    style: { backgroundColor: C.white, borderColor: C.border, color: C.ink, pointerEvents: "auto" }
+  }, /*#__PURE__*/React.createElement(I.chevronLeft, { size: 16 }), backLabel || "Volver") : /*#__PURE__*/React.createElement("span", null), onClick ? /*#__PURE__*/React.createElement("button", {
+    onClick: onClick,
+    type: "button",
+    className: "inline-flex items-center gap-2 text-sm font-bold px-5 py-3 rounded-xl transition-transform hover:scale-[1.02] shadow-lg",
+    style: { backgroundColor: C.sand, color: C.white, pointerEvents: "auto" }
+  }, label, /*#__PURE__*/React.createElement(I.chevronRight, { size: 16 })) : null));
+}
+
+// Aviso cuando al iniciar sesión hay datos solo en este dispositivo y también en la cuenta.
+export function ConflictoDatosModal({ etiqueta, nLocales, nNube, onNube, onFusionar }) {
+  const [ocupado, setOcupado] = useState(false);
+  const NOMBRES = {
+    "cuentas": ["cuenta bancaria", "cuentas bancarias"],
+    "inversiones": ["inversión", "inversiones"],
+    "otros bienes": ["bien", "bienes"]
+  };
+  const [sing, plur] = NOMBRES[etiqueta] || [etiqueta, etiqueta];
+  const nombre = n => n + " " + (n === 1 ? sing : plur);
+  const elegir = async fn => {
+    setOcupado(true);
+    try {
+      await fn();
+    } finally {
+      setOcupado(false);
+    }
+  };
+  const btn = {
+    width: "100%",
+    padding: "12px 14px",
+    borderRadius: "12px",
+    fontSize: "14px",
+    fontWeight: 700,
+    textAlign: "left",
+    cursor: ocupado ? "default" : "pointer",
+    opacity: ocupado ? 0.6 : 1
+  };
+  return /*#__PURE__*/React.createElement("div", {
+    className: "fixed inset-0 z-50 flex items-center justify-center px-4",
+    style: { backgroundColor: "rgba(5,8,16,0.7)" },
+    role: "dialog",
+    "aria-modal": "true"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "w-full max-w-md rounded-2xl p-6 toast-enter",
+    style: { backgroundColor: C.surface }
+  }, /*#__PURE__*/React.createElement("h3", {
+    className: "font-serif text-lg font-bold mb-2",
+    style: { color: C.ink }
+  }, "Tus datos no coinciden con los de tu cuenta"), /*#__PURE__*/React.createElement("p", {
+    className: "text-sm mb-5 leading-relaxed",
+    style: { color: C.muted }
+  }, "Antes de iniciar sesión guardaste " + nombre(nLocales) + " en este dispositivo, y tu cuenta de MoneyPilot ya tenía " + nombre(nNube) + ". ¿Qué prefieres?"), /*#__PURE__*/React.createElement("div", {
+    className: "space-y-3"
+  }, /*#__PURE__*/React.createElement("button", {
+    disabled: ocupado,
+    onClick: () => elegir(onFusionar),
+    style: { ...btn, backgroundColor: "#4F46E5", color: "#fff", border: "none" }
+  }, "Conservar todo (añadir lo de este dispositivo a mi cuenta)"), /*#__PURE__*/React.createElement("button", {
+    disabled: ocupado,
+    onClick: () => elegir(onNube),
+    style: { ...btn, backgroundColor: "transparent", color: C.ink, border: "1px solid " + C.border }
+  }, "Usar solo lo de mi cuenta (descartar lo de este dispositivo)"))));
+}
+
+export class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { error: null };
   }
-  if (enLista) html += '</ul>';
-  return html;
+  static getDerivedStateFromError(error) {
+    return { error };
+  }
+  componentDidCatch(error, info) {
+    console.error("Error capturado por ErrorBoundary:", error, info);
+  }
+  render() {
+    if (this.state.error) {
+      return /*#__PURE__*/React.createElement("div", {
+        style: {
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "24px",
+          textAlign: "center",
+          fontFamily: "ui-sans-serif, system-ui, sans-serif"
+        }
+      }, /*#__PURE__*/React.createElement("div", {
+        style: { maxWidth: "420px" }
+      }, /*#__PURE__*/React.createElement("h1", {
+        style: { fontSize: "20px", fontWeight: "700", color: "#312E81", marginBottom: "10px" }
+      }, "Algo ha fallado"), /*#__PURE__*/React.createElement("p", {
+        style: { fontSize: "14px", color: "#6B7280", marginBottom: "18px" }
+      }, "Ha ocurrido un error inesperado. Prueba a recargar la página; si el problema sigue, dínoslo desde \"Evaluar\"."), /*#__PURE__*/React.createElement("button", {
+        onClick: () => window.location.reload(),
+        style: {
+          backgroundColor: "#4F46E5",
+          color: "#fff",
+          border: "none",
+          borderRadius: "10px",
+          padding: "10px 20px",
+          fontWeight: "700",
+          fontSize: "14px",
+          cursor: "pointer"
+        }
+      }, "Recargar página")));
+    }
+    return this.props.children;
+  }
+}
+
+export function BlogLinkCard({ texto, onClick }) {
+  if (!onClick) return null;
+  return /*#__PURE__*/React.createElement("button", {
+    onClick: onClick,
+    className: "w-full text-left rounded-xl p-4 flex items-center justify-between gap-3 transition-colors hover:bg-white/60",
+    style: { backgroundColor: C.sandLight, border: "1px solid rgba(79,70,229,.16)" }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "text-sm font-bold",
+    style: { color: C.ink }
+  }, texto), /*#__PURE__*/React.createElement(I.chevronRight, { size: 16 }));
 }
