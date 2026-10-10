@@ -662,6 +662,134 @@ const NOTA_MODO_SIMULADOR = {
   rentabilidad: "Calculamos qué rentabilidad necesitas, por eso no hace falta indicar la rentabilidad anual."
 };
 
+// Simulador de deudas independiente: cualquiera puede probarlo sin hacer el diagnóstico.
+export function SimuladorDeudas({
+  deudasDiagnostico = [],
+  diagnosticoHecho = false,
+  onIrADiagnostico
+}) {
+  const MAX_DEUDAS = 5;
+  const nuevoId = () => "sim_" + Math.random().toString(36).slice(2, 8);
+  const deudaVacia = () => ({
+    id: nuevoId(),
+    pendiente: 0,
+    tasa: 0,
+    cuota: 0
+  });
+  const delDiagnostico = () => (deudasDiagnostico || []).filter(d => Number(d.pendiente) > 0).slice(0, MAX_DEUDAS).map(d => ({
+    id: nuevoId(),
+    pendiente: Number(d.pendiente) || 0,
+    tasa: Number(d.tasa) || 0,
+    cuota: Number(d.cuota) || 0
+  }));
+  const hayDeudasDiagnostico = delDiagnostico().length > 0;
+  const [lista, setLista] = useState(() => {
+    const previas = delDiagnostico();
+    return previas.length > 0 ? previas : [deudaVacia()];
+  });
+  const cambiar = (id, campo, valor) => setLista(l => l.map(d => d.id === id ? {
+    ...d,
+    [campo]: Math.max(0, Number(valor) || 0)
+  } : d));
+  const quitar = id => setLista(l => l.length > 1 ? l.filter(d => d.id !== id) : [deudaVacia()]);
+  const anadir = () => setLista(l => l.length < MAX_DEUDAS ? [...l, deudaVacia()] : l);
+  const usarDelDiagnostico = () => {
+    const previas = delDiagnostico();
+    setLista(previas.length > 0 ? previas : [deudaVacia()]);
+  };
+  const deudasParaSimular = lista.map((d, i) => ({
+    ...d,
+    nombre: "Deuda " + (i + 1)
+  }));
+  const hayDeudaActiva = lista.some(d => Number(d.pendiente) > 0);
+  return /*#__PURE__*/React.createElement("div", {
+    className: "space-y-6"
+  }, !diagnosticoHecho && /*#__PURE__*/React.createElement(Card, {
+    className: "p-5"
+  }, /*#__PURE__*/React.createElement(Eyebrow, null, "Simulador independiente"), /*#__PURE__*/React.createElement("p", {
+    className: "text-sm mt-2",
+    style: {
+      color: C.muted
+    }
+  }, "Escribe tus deudas y mira cuánto tardarías en liquidarlas. Si completas tu diagnóstico, las cargaremos automáticamente."), onIrADiagnostico && /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: onIrADiagnostico,
+    className: "mt-3 px-4 py-2 rounded-lg text-sm font-bold",
+    style: {
+      backgroundColor: C.sand,
+      color: C.navy
+    }
+  }, "Hacer mi diagnóstico")), /*#__PURE__*/React.createElement(Card, {
+    className: "p-5"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center justify-between gap-3"
+  }, /*#__PURE__*/React.createElement(Eyebrow, null, "Tus deudas"), hayDeudasDiagnostico && /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: usarDelDiagnostico,
+    className: "text-xs font-bold",
+    style: {
+      color: C.muted
+    }
+  }, "Usar mis deudas del diagnóstico")), /*#__PURE__*/React.createElement("div", {
+    className: "space-y-4 mt-3"
+  }, lista.map((d, i) => /*#__PURE__*/React.createElement("div", {
+    key: d.id,
+    className: "rounded-xl p-4",
+    style: {
+      backgroundColor: C.paper,
+      border: "1px solid " + C.border
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center justify-between gap-3 mb-3"
+  }, /*#__PURE__*/React.createElement("b", {
+    className: "text-sm",
+    style: {
+      color: C.ink
+    }
+  }, "Deuda " + (i + 1)), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: () => quitar(d.id),
+    className: "text-xs font-bold",
+    style: {
+      color: C.muted
+    }
+  }, lista.length > 1 ? "Quitar" : "Vaciar")), /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-2 gap-3 sm:grid-cols-3"
+  }, /*#__PURE__*/React.createElement(NumberField, {
+    label: "Saldo pendiente",
+    value: d.pendiente,
+    onChange: v => cambiar(d.id, "pendiente", v)
+  }), /*#__PURE__*/React.createElement(NumberField, {
+    label: "Interés anual",
+    value: d.tasa,
+    suffix: "%",
+    max: 100,
+    onChange: v => cambiar(d.id, "tasa", v)
+  }), /*#__PURE__*/React.createElement(NumberField, {
+    label: "Cuota mensual",
+    value: d.cuota,
+    onChange: v => cambiar(d.id, "cuota", v)
+  }))))), lista.length < MAX_DEUDAS && /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: anadir,
+    className: "mt-4 text-xs font-bold px-3 py-2 rounded-lg border",
+    style: {
+      borderColor: C.border,
+      color: C.ink,
+      backgroundColor: C.white
+    }
+  }, "Añadir otra deuda")), hayDeudaActiva ? /*#__PURE__*/React.createElement(AmortizacionDeuda, {
+    deudas: deudasParaSimular
+  }) : /*#__PURE__*/React.createElement(Card, {
+    className: "p-5"
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "text-sm",
+    style: {
+      color: C.muted
+    }
+  }, "Escribe el saldo pendiente de al menos una deuda para ver la simulación.")));
+}
+
 export function Simulador({
   sim,
   setSim,
@@ -4399,7 +4527,6 @@ export function NavDesktop({
 }) {
   const el = React.createElement;
   const sueltoInicio = ["inicio", "Introducción"];
-  const sueltoSimulador = ["simulador", "Simulador"];
   const sueltoBlog = ["blog", "Blog"];
   const dropdowns = [{
     id: "finanzas",
@@ -4409,6 +4536,10 @@ export function NavDesktop({
     id: "plan",
     titulo: "Plan",
     items: [["estrategia", "Estrategia"], ["plan", "Plan"], ["seguimiento", "Seguimiento"]]
+  }, {
+    id: "simuladores",
+    titulo: "Simuladores",
+    items: [["simulador", "Ahorro e inversión"], ["simulador-deudas", "Deudas"]]
   }];
   const [menuAbierto, setMenuAbierto] = useState(null);
   const navRef = useRef(null);
@@ -4476,7 +4607,7 @@ export function NavDesktop({
   return el("nav", {
     ref: navRef,
     className: "flex items-center gap-1 text-xs font-bold flex-wrap"
-  }, boton(sueltoInicio), dropdowns.map(dropdown), boton(sueltoSimulador), blogHref ? el("a", {
+  }, boton(sueltoInicio), dropdowns.map(dropdown), blogHref ? el("a", {
     key: "blog",
     href: blogHref,
     className: "px-2.5 py-2 rounded-lg transition-colors hover:bg-white/10 nav-link-muted"
