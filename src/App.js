@@ -280,9 +280,8 @@ export function App() {
   useEffect(() => {
     if (!hydrated || snapshotDone.current || datos.ingresos <= 0) return;
     snapshotDone.current = true;
-    const cuotasDeuda = calcularCapacidadFinanciera(datos).cuotasDeuda;
-    const gasto = totalMensual(datos.gastosFijos) + totalMensual(datos.gastosDiscrecionales) + cuotasDeuda;
-    const ratio = datos.ingresos > 0 ? (datos.ingresos - gasto) / datos.ingresos : 0;
+    const cap = calcularCapacidadFinanciera(datos);
+    const ratio = cap.ingresos > 0 ? (cap.capacidadMensual || 0) / cap.ingresos : 0;
     setHistorial(prev => {
       const last = prev[prev.length - 1];
       if (last && Math.abs(last.ratio - ratio) < 0.001) return prev;
@@ -292,7 +291,7 @@ export function App() {
       }].slice(-20);
     });
     registrarSnapshotNube(ratio);
-  }, [hydrated, datos.ingresos, datos.gastosFijos, datos.gastosDiscrecionales, datos.deudas]);
+  }, [hydrated, datos.ingresos, datos.otrosIngresos, datos.gastosFijos, datos.gastosDiscrecionales, datos.deudas]);
   const reiniciar = async () => {
     await clear();
     setDatos(datosVacios());
@@ -315,8 +314,15 @@ export function App() {
       resultado: null
     });
     setHistorial([]);
+    setCuentas([]);
+    setInversiones([]);
+    setActivos([]);
     snapshotDone.current = false;
     setVistaActual('inicio');
+  };
+  const confirmarReinicio = () => {
+    const ok = window.confirm("¿Borrar todos tus datos de este dispositivo y empezar de nuevo?\n\nSi tienes sesión iniciada, parte de lo guardado en tu cuenta puede volver a cargarse. Para eliminarlo todo, usa «Mi cuenta».");
+    if (ok) reiniciar();
   };
   const capacidadFinanciera = calcularCapacidadFinanciera(datos);
   const cuotasDeuda = capacidadFinanciera.cuotasDeuda;
@@ -495,7 +501,7 @@ export function App() {
   }, /*#__PURE__*/React.createElement(I.clipboard, {
     size: 14
   }), "Evaluar"), /*#__PURE__*/React.createElement("button", {
-    onClick: reiniciar,
+    onClick: confirmarReinicio,
     "aria-label": "Borrar datos y empezar de nuevo",
     className: "inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1.5 rounded-lg hover:bg-white/10 nav-link-muted",
     title: "Borra tus datos guardados y vuelve a empezar"
