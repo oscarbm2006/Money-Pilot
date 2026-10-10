@@ -4,7 +4,7 @@ import { BLOG_ADMIN_EMAIL, C, I, OBJETIVOS_DEF, PATTERN_URI_STATIC, PERFILES_INF
 import { calcularCapacidadFinanciera, calcularDiagnosticoAmpliado, calcularPerfilMultidimensional, calcularPlanFinanciero, calcularPlanObjetivos, calcularPrioridades, datosVacios, normalizarObjetivos, objetivoLegadoDesdeColeccion, reconstruirEstadoQuiz, totalMensual } from './calculos.js';
 import { useActivosPersistidos, useActivosSync, useAuth, useCloudSync, useCuentasPersistidas, useCuentasSync, useDatosPersistidos, useDebouncedEffect, useDeudasMirrorSync, useInversionesPersistidas, useInversionesSync, useSeguimiento, useToast } from './hooks-datos.js';
 import { AuthModal, ConflictoDatosModal, ContinuarBar, ErrorBoundary, Eyebrow, FeedbackModal, Toast } from './ui-basicos.js';
-import { AmortizacionDeuda, Contacto, Cuentas, Dashboard, Diagnostico, Estrategia, Inversiones, NavDesktop, PaginaLegal, PanelDiagnostico, PanelPrioridad, Patrimonio, PerfilRiesgo, PlanFinanciero, PrintSummary, Seguimiento, Simulador } from './paginas.js';
+import { AmortizacionDeuda, SimuladorDeudas, Contacto, Cuentas, Dashboard, Diagnostico, Estrategia, Inversiones, NavDesktop, PaginaLegal, PanelDiagnostico, PanelPrioridad, Patrimonio, PerfilRiesgo, PlanFinanciero, PrintSummary, Seguimiento, Simulador } from './paginas.js';
 const Blog = React.lazy(() => import('./blog.js'));
 import { ConfianzaPrivacidad, HeroSection } from './secciones.js';
 import { MiCuentaModal } from './cuenta.js';
@@ -792,6 +792,8 @@ export function App() {
     },
     onOpenAuth: () => setShowAuthModal(true)
   }), /*#__PURE__*/React.createElement(ContinuarBar, {
+    label: "Probar el simulador",
+    onClick: () => setVistaActual('simulador'),
     backLabel: "Volver a Plan",
     onBack: () => setVistaActual('plan')
   })))), vistaActual === 'simulador' && /*#__PURE__*/React.createElement("div", {
@@ -828,6 +830,32 @@ export function App() {
       setVistaActual('diagnostico');
     },
     onIrAResultados: () => setVistaActual('estrategia')
+  })))), vistaActual === 'simulador-deudas' && /*#__PURE__*/React.createElement("div", {
+    key: "simulador-deudas",
+    className: "fade-switch-enter"
+  }, /*#__PURE__*/React.createElement("section", {
+    className: "py-16 sm:py-24 section-tinted"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "max-w-6xl mx-auto px-4 sm:px-6"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "max-w-3xl mb-10 section-intro"
+  }, /*#__PURE__*/React.createElement(Eyebrow, null, "Simulador de deudas"), /*#__PURE__*/React.createElement("h2", {
+    className: "font-serif text-3xl sm:text-4xl font-bold mt-2",
+    style: {
+      color: C.ink
+    }
+  }, "¿Cuánto tardarás en salir de tus deudas?"), /*#__PURE__*/React.createElement("p", {
+    className: "text-sm sm:text-base mt-3",
+    style: {
+      color: C.muted
+    }
+  }, "Escribe tus deudas y compara dos formas de pagarlas. Es una proyección educativa.")), /*#__PURE__*/React.createElement(SimuladorDeudas, {
+    deudasDiagnostico: datos.deudas,
+    diagnosticoHecho: Number(capacidadFinanciera.ingresos) > 0,
+    onIrADiagnostico: () => {
+      setIrADeudas(false);
+      setVistaActual('diagnostico');
+    }
   })))), vistaActual === 'blog' && /*#__PURE__*/React.createElement("div", {
     key: "blog",
     className: "fade-switch-enter"
