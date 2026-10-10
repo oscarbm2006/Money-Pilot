@@ -270,10 +270,72 @@ function ctaHtml(post) {
   return `<div class="cta">${escHtml(info.texto)} <a href="${info.url}">${escHtml(info.enlaceTexto)}</a>${escHtml(info.sufijo)}</div>`;
 }
 
+// ---------------------------------------------------------------------------
+// Extractos limpios: los que vienen de la base de datos a veces están cortados a mitad de
+// palabra, llevan símbolos de formato (**), repiten el título o faltan. En esos casos se
+// construye uno nuevo a partir del propio texto del artículo (sin modificar los datos).
+// ---------------------------------------------------------------------------
+function sinNumero(titulo) {
+  return String(titulo || '').replace(/^\s*\d+\s*[.)]\s*/, '').trim();
+}
+function normalizar(t) {
+  return String(t || '').toLowerCase().replace(/[“”"«»'’‘]/g, '').replace(/\s+/g, ' ').trim();
+}
+function textoPlano(md) {
+  return String(md || '')
+    .replace(/```[\s\S]*?```/g, ' ')
+    .replace(/^\s{0,3}#{1,6}\s+/gm, '')
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, ' ')
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/^\s*[-*+]\s+/gm, '')
+    .replace(/^\s*\d+[.)]\s+/gm, '')
+    .replace(/^\s*>\s?/gm, '')
+    .replace(/[*_`~]+/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+// Si el artículo empieza repitiendo su propio título (como "# Título", "2. Título" o en texto plano), se quita:
+// la página ya muestra el título como encabezado.
+function sinTituloRepetido(md, titulo) {
+  const lineas = String(md || '').split('\n');
+  let i = 0;
+  while (i < lineas.length && !lineas[i].trim()) i++;
+  if (i >= lineas.length) return md;
+  const limpia = t => normalizar(textoPlano(t)).replace(/[.:!?¿¡\s]+$/, '');
+  const primera = limpia(lineas[i]);
+  const objetivo = limpia(sinNumero(titulo));
+  if (primera && primera === objetivo) return lineas.slice(i + 1).join('\n').replace(/^\s+/, '');
+  return md;
+}
+function extractoBueno(ex, titulo) {
+  const t = String(ex || '').trim();
+  if (!t) return false;
+  if (!/[.!?…»”")]$/.test(t)) return false;                 // cortado
+  if (/[*_`#]/.test(t)) return false;                        // símbolos de formato
+  const nuevoTitulo = normalizar(sinNumero(titulo));
+  if (nuevoTitulo.length >= 20 && normalizar(t).startsWith(nuevoTitulo.slice(0, 25))) return false; // repite el título
+  return true;
+}
+// Corta en el final de la última frase completa que quepa; si no hay, en la última palabra, con "…"
+function cortarFrase(texto, max) {
+  const t = String(texto || '').trim();
+  if (t.length <= max) return t;
+  const trozo = t.slice(0, max);
+  const frase = /^([\s\S]{60,}?[.!?…]["”»)]?)(?=\s|$)(?![\s\S]*?[.!?…]["”»)]?(?=\s|$))/.exec(trozo);
+  if (frase) return frase[1].trim();
+  const corte = trozo.replace(/\s+\S*$/, '').replace(/[\s,;:—–-]+$/, '');
+  return (corte || trozo.trim()) + '…';
+}
+function extractoDe(post, max = 160) {
+  if (extractoBueno(post.excerpt, post.title)) return cortarFrase(String(post.excerpt).trim(), Math.max(max, 220));
+  const base = textoPlano(sinTituloRepetido(post.content, post.title));
+  return cortarFrase(base || textoPlano(post.excerpt) || post.title || '', max);
+}
+
 function postPage(post, seccion, anterior, siguiente) {
   const url = `${SITE_URL}${seccion.urlBase}/${post.slug}.html`;
   const title = `${post.title} – MoneyPilot`;
-  const desc = (post.excerpt || post.title || '').slice(0, 160);
+  const desc = cortarFrase(extractoDe(post), 160);
   const esInversion = seccion.key === 'tesis' || seccion.key === 'bolsa';
   const esGuia = seccion.key === 'guia';
   const categoria = post.category || (esGuia ? (NOMBRES_FASE[post.fase] || 'Guía') : 'General');
@@ -349,7 +411,7 @@ ${headerHtml('blog')}
     <div class="article-cat">${escHtml(categoria)}</div>
     <h1>${escHtml(post.title)}</h1>
     <p class="meta">${meta}</p>
-    <div class="prose">${mdToHtml(post.content)}</div>
+    <div class="prose">${mdToHtml(sinTituloRepetido(post.content, post.title))}</div>
     ${ctaBlock}
   </article>
   ${pager}
@@ -366,7 +428,7 @@ function tarjetaHtml(p, seccion) {
     <div>
       <div class="cat">${escHtml(p.category || 'General')}</div>
       <h2>${escHtml(p.title)}</h2>
-      <p>${escHtml(p.excerpt || '')}</p>
+      <p>${escHtml(extractoDe(p))}</p>
       <div class="by">${escHtml(p.author || 'Equipo MoneyPilot')} · ${fmtFecha(p.created_at)}</div>
     </div>
   </a>`;
@@ -396,7 +458,7 @@ function indexPageGuia(posts, seccion) {
   const fila = p => `
       <a class="fase-item" href="${seccion.urlBase}/${p.slug}.html">
         <strong>${escHtml(p.title)}</strong>
-        ${p.excerpt ? `<span>${escHtml(p.excerpt)}</span>` : ''}
+        <span>${escHtml(extractoDe(p))}</span>
       </a>`;
 
   const bloques = [1, 2, 3, 4, 5].map(n => {
