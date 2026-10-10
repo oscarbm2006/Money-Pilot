@@ -423,7 +423,7 @@ export function calcularSaludFinanciera({
   cargaDeuda,
   perfil
 }) {
-  const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
+  const clamp = (v, min, max) => Math.min(max, Math.max(min, Number.isFinite(Number(v)) ? Number(v) : min));
   const ptsAhorro = clamp(ratioAhorro, 0, 0.25) / 0.25 * 40;
   const ptsFondo = clamp(coberturaMeses, 0, 6) / 6 * 30;
   const ptsDeuda = (1 - clamp(cargaDeuda, 0, 0.3) / 0.3) * 20;
@@ -444,7 +444,7 @@ export function calcularSaludFinanciera({
     color: C.salu,
     light: C.saluLight
   };else nivel = {
-    nombre: "Muy buena salud",
+    nombre: "Muy buena base",
     color: C.exc,
     light: C.excLight
   };
@@ -590,8 +590,8 @@ export function simularAmortizacion(deudas, extraMensual, estrategia) {
   const activos = deudas.filter(d => Number(d.pendiente) > 0).map(d => ({
     nombre: d.nombre || "Deuda sin nombre",
     saldo: Number(d.pendiente),
-    tasaMensual: Number(d.tasa) / 100 / 12,
-    cuotaMin: Number(d.cuota) || 0,
+    tasaMensual: Math.max(0, Number(d.tasa) || 0) / 100 / 12,
+    cuotaMin: Math.max(0, Number(d.cuota) || 0),
     liquidada: false,
     mesLiquidacion: null,
     interesPagado: 0
