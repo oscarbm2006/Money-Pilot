@@ -29,7 +29,9 @@ const reducirMovimiento = () => typeof window !== 'undefined' && !!window.matchM
 const drawObs = typeof IntersectionObserver === 'function' ? new IntersectionObserver(entries => {
   for (const e of entries) {
     if (e.isIntersecting) {
-      e.target.setAttribute('data-drawn', '');
+      // El valor de data-draw, si existe, es un retraso en ms (sirve para escalonar varias barras)
+      const retraso = Number(e.target.getAttribute('data-draw')) || 0;
+      if (retraso) setTimeout(() => e.target.setAttribute('data-drawn', ''), retraso);else e.target.setAttribute('data-drawn', '');
       drawObs.unobserve(e.target);
     }
   }
@@ -38,10 +40,29 @@ const drawObs = typeof IntersectionObserver === 'function' ? new IntersectionObs
   rootMargin: '0px 0px 40px 0px'
 }) : null;
 export const drawRef = el => {
-  if (!el) return;
+  if (!el || el.hasAttribute('data-drawn')) return;
   if (drawObs) drawObs.observe(el);else el.setAttribute('data-drawn', '');
 };
 
+// Salida suave de una fila de lista: la desvanece y la desplaza un poco antes de ejecutar el borrado.
+// Solo para filas con identificador estable, que el borrado desmonta de verdad (si no, quedaría apagada).
+export function quitarConSalida(ev, accion) {
+  const fila = ev && ev.currentTarget && ev.currentTarget.closest ? ev.currentTarget.closest('.fila-entra') : null;
+  if (!fila || typeof fila.animate !== 'function' || reducirMovimiento()) {
+    accion();
+    return;
+  }
+  fila.style.pointerEvents = 'none';
+  const a = fila.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateX(14px)' }], { duration: 170, easing: 'cubic-bezier(.4,0,.2,1)', fill: 'forwards' });
+  let hecho = false;
+  const ir = () => {
+    if (hecho) return;
+    hecho = true;
+    accion();
+  };
+  a.onfinish = ir;
+  setTimeout(ir, 260); // red de seguridad
+}
 export function Toast({
   toast
 }) {
@@ -354,11 +375,12 @@ export function ProgressBar({
   pctValue,
   color,
   bg = C.border,
-  height = 8
+  height = 8,
+  delay = 0
 }) {
   return /*#__PURE__*/React.createElement("div", {
     className: "w-full rounded-full overflow-hidden",
-    "data-draw": "",
+    "data-draw": delay ? String(delay) : "",
     ref: drawRef,
     style: {
       backgroundColor: bg,
@@ -499,7 +521,8 @@ export function DesgloseBarra({
   label,
   pts,
   max,
-  color
+  color,
+  delay = 0
 }) {
   return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     className: "flex items-center justify-between mb-1"
@@ -516,7 +539,8 @@ export function DesgloseBarra({
   }, Math.round(pts), "/", max)), /*#__PURE__*/React.createElement(ProgressBar, {
     pctValue: pts / max * 100,
     color: color,
-    height: 5
+    height: 5,
+    delay: delay
   }));
 }
 
