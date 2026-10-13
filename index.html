@@ -56,6 +56,18 @@
 <link rel="stylesheet" href="/styles.css" />
 <style id="estilos">
 /* ---- base ---- */
+  /* Movimiento unificado: una sola escala de duraciones y curvas para toda la app */
+  :root {
+    --mp-rapido: 160ms;   /* hovers, pulsaciones, cambios de color */
+    --mp-medio: 240ms;    /* entradas de página, menús, avisos */
+    --mp-lento: 400ms;    /* aparición de tarjetas y secciones */
+    --mp-grafico: 700ms;  /* barras, anillos y gráficos */
+    --mp-curva: cubic-bezier(0.16,1,0.3,1);      /* entradas: arranca rápido y frena suave */
+    --mp-curva-suave: cubic-bezier(0.4,0,0.2,1); /* cambios de estado */
+  }
+  @media (prefers-reduced-motion: reduce) {
+    :root { --mp-rapido: .01ms; --mp-medio: .01ms; --mp-lento: .01ms; --mp-grafico: .01ms; }
+  }
 html, body { overflow-x: hidden; max-width: 100%; }
   html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
   /* Evita el zoom por doble toque en iPhone (el zoom con dos dedos sigue funcionando) */
@@ -66,11 +78,11 @@ html, body { overflow-x: hidden; max-width: 100%; }
   .font-serif { font-family: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif; }
   ::-webkit-scrollbar { height: 6px; width: 6px; }
   @keyframes fadeSwitchIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
-  .fade-switch-enter { animation: fadeSwitchIn 200ms ease; }
+  .fade-switch-enter { animation: fadeSwitchIn var(--mp-medio) var(--mp-curva); }
   @keyframes staggerIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
-  .stagger-item { animation: staggerIn 380ms cubic-bezier(0.16,1,0.3,1) both; }
+  .stagger-item { animation: staggerIn var(--mp-lento) var(--mp-curva) both; }
   @keyframes toastIn { from { opacity:0; transform:translateY(8px) scale(0.96); } to { opacity:1; transform:translateY(0) scale(1); } }
-  .toast-enter { animation: toastIn 220ms cubic-bezier(0.16,1,0.3,1); }
+  .toast-enter { animation: toastIn var(--mp-medio) var(--mp-curva); }
 
   .glass-nav { backdrop-filter: blur(18px) saturate(140%); -webkit-backdrop-filter: blur(18px) saturate(140%); }
 
@@ -79,7 +91,7 @@ html, body { overflow-x: hidden; max-width: 100%; }
   .border {
     box-shadow: 0 1px 3px rgba(30,30,46,0.05), 0 8px 24px rgba(30,30,46,0.05);
     background-image:none;
-    transition: box-shadow 250ms ease, border-color 250ms ease;
+    transition: box-shadow var(--mp-medio) var(--mp-curva-suave), border-color var(--mp-medio) var(--mp-curva-suave);
   }
   .border:hover { border-color: rgba(79,70,229,0.45); box-shadow: 0 4px 16px rgba(79,70,229,0.12); }
 
@@ -89,8 +101,34 @@ html, body { overflow-x: hidden; max-width: 100%; }
     outline-offset: 2px;
     border-radius: 4px;
   }
-  input, select { transition: border-color 200ms ease, box-shadow 200ms ease; }
+  input, select { transition: border-color var(--mp-rapido) var(--mp-curva-suave), box-shadow var(--mp-rapido) var(--mp-curva-suave); }
   input:focus, select:focus { border-color: #4F46E5 !important; box-shadow: 0 0 0 3px rgba(79,70,229,0.15); }
+
+
+  /* ---- movimiento unificado (Fase 1) ---- */
+  /* Las utilidades de transición de Tailwind usan 150 ms fijos: las alineamos con las variables.
+     Se excluye .duration-300, que ya fija su propia duración. */
+  .transition:not(.duration-300), .transition-all:not(.duration-300), .transition-colors:not(.duration-300),
+  .transition-shadow:not(.duration-300), .transition-transform:not(.duration-300) {
+    transition-duration: var(--mp-rapido);
+    transition-timing-function: var(--mp-curva-suave);
+  }
+
+  /* Aparición al hacer scroll: las tarjetas (Card) entran cuando se acercan a la vista.
+     Se usa un atributo (data-rv) y no una clase para que React no lo borre al re-renderizar.
+     El estado final de la animación NO se conserva (fill-mode backwards), así que no interfiere
+     con los transform de hover de cada tarjeta. */
+  @keyframes mpReveal { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:translateY(0); } }
+  [data-reveal]:not([data-rv]) { opacity: 0; }
+  [data-reveal][data-rv] { animation: mpReveal var(--mp-lento) var(--mp-curva) backwards; }
+  @media (prefers-reduced-motion: reduce) { [data-reveal]:not([data-rv]) { opacity: 1; } }
+  @media print { [data-reveal] { opacity: 1 !important; animation: none !important; } }
+
+  /* Respuesta al pulsar: usa la propiedad "scale" (independiente de "transform") para no pisar
+     los hover:scale / hover:-translate que ya existen. Se excluyen los que ya traen active:scale. */
+  button, [role=button] { transition: scale var(--mp-rapido) var(--mp-curva-suave); }
+  button:not(:disabled):not([class*="active:scale"]):active,
+  [role=button]:not([aria-disabled=true]):not([class*="active:scale"]):active { scale: 0.98; }
 
   /* Exportación a PDF: se usa la impresión nativa del navegador (Guardar como PDF).
      Ocultamos la app y mostramos solo el resumen imprimible, con colores legibles en papel. */
@@ -268,7 +306,7 @@ section.section-tinted{
   border:1px solid #DDE3EC !important; background:#F9FAFC !important;
   color:#334155 !important; font-weight:600;
   display:flex; align-items:center; justify-content:space-between;
-  transition:all 180ms ease;
+  transition:all var(--mp-rapido) var(--mp-curva-suave);
 }
 .quiz-option:hover{border-color:rgba(79,70,229,.38)!important;background:#F2F4FF!important;transform:translateX(2px);box-shadow:0 4px 12px rgba(79,70,229,.07)}
 .chart-interactive{cursor:crosshair}
@@ -295,11 +333,11 @@ section.section-tinted{
 }
 .cta-highlight-title{ color:#1E1B4B !important; }
 .cta-highlight-sub{ color:#4B5563 !important; }
-.nav-link-muted{ color:#94A3B8 !important; transition:color 250ms ease; }
+.nav-link-muted{ color:#94A3B8 !important; transition:color var(--mp-medio) var(--mp-curva-suave); }
 .nav-link-muted:hover{ color:#E2E8F0 !important; }
-.nav-menu-text{ color:#CBD5E1 !important; transition:color 250ms ease; }
+.nav-menu-text{ color:#CBD5E1 !important; transition:color var(--mp-medio) var(--mp-curva-suave); }
 .nav-menu-text:hover{ color:#FFFFFF !important; }
-.export-menu{ transform-origin: top right; animation: menuPop 200ms cubic-bezier(0.16,1,0.3,1); }
+.export-menu{ transform-origin: top right; animation: menuPop var(--mp-medio) var(--mp-curva); }
 @keyframes menuPop{ from{ opacity:0; transform:scale(0.94) translateY(-4px); } to{ opacity:1; transform:scale(1) translateY(0); } }
 
 /* ---- phase2-palette-tokens ---- */
