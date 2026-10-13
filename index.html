@@ -371,8 +371,14 @@ section.section-tinted{
 }
 .cta-highlight-title{ color:#1E1B4B !important; }
 .cta-highlight-sub{ color:#4B5563 !important; }
-.nav-link-muted{ color:#94A3B8 !important; transition:color var(--mp-medio) var(--mp-curva-suave); }
-.nav-link-muted:hover{ color:#E2E8F0 !important; }
+/* Menú superior más legible: texto más claro y algo mayor (13 px). Mismos valores en el blog y en Recursos y libros. */
+header nav.text-xs{ font-size:.8125rem; line-height:1.25rem; }
+.nav-link-muted{ color:#CBD5E1 !important; transition:color var(--mp-medio) var(--mp-curva-suave); }
+.nav-link-muted:hover{ color:#FFFFFF !important; }
+header nav .nav-link-active{ color:#FFFFFF !important; background-color:rgba(79,70,229,.45); border-bottom-color:#A5B4FC !important; }
+header .export-menu button{ font-size:.8125rem; color:#F1F5F9 !important; white-space:nowrap; }
+header .export-menu button:hover{ color:#FFFFFF !important; }
+header .export-menu button[style*="0.08"]{ color:#FFFFFF !important; background-color:rgba(79,70,229,.55) !important; }
 .nav-menu-text{ color:#CBD5E1 !important; transition:color var(--mp-medio) var(--mp-curva-suave); }
 .nav-menu-text:hover{ color:#FFFFFF !important; }
 .export-menu{ transform-origin: top right; animation: menuPop var(--mp-medio) var(--mp-curva); }
