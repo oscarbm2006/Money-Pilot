@@ -33,6 +33,8 @@
   a.back{display:inline-block;margin-top:40px;color:var(--primary);font-weight:700;text-decoration:none;}
   a.back:hover{text-decoration:underline;}
   footer{border-top:1px solid var(--border);padding:24px;text-align:center;color:var(--muted);font-size:.8rem;}
+  /* Fundido suave entre páginas (misma regla que la app y el blog) */
+  @media (prefers-reduced-motion: no-preference) { @view-transition { navigation: auto; } }
 </style>
 </head>
 <body>

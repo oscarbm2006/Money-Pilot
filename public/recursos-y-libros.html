@@ -259,6 +259,8 @@
   .why.open{ grid-template-rows:1fr; }
   .why > div{ overflow:hidden; min-height:0; }
   .why p{ margin:0 0 16px; padding:10px 12px; border-radius:10px; background:var(--accent-soft); color:#374151; font-size:0.86rem; }
+  /* Fundido suave entre páginas (misma regla que la app y el blog) */
+  @media (prefers-reduced-motion: no-preference) { @view-transition { navigation: auto; } }
 </style>
 </head>
 <body>
