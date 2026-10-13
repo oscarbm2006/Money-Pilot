@@ -57,6 +57,11 @@
 <style id="estilos">
 /* ---- base ---- */
 html, body { overflow-x: hidden; max-width: 100%; }
+  html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+  /* Evita el zoom por doble toque en iPhone (el zoom con dos dedos sigue funcionando) */
+  html, body, button, a, input, select, label { touch-action: manipulation; }
+  /* Móvil: iOS hace zoom automático al tocar un campo con letra menor de 16 px */
+  @media (max-width: 767px) { input, select, textarea { font-size: 16px !important; } }
   body { margin:0; font-family: ui-sans-serif, system-ui, sans-serif; }
   .font-serif { font-family: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif; }
   ::-webkit-scrollbar { height: 6px; width: 6px; }
