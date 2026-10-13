@@ -71,6 +71,40 @@ export function App() {
   const esAdminBlog = !!(user && user.email && user.email === BLOG_ADMIN_EMAIL);
   const blogHref = "/blog/guia/index.html";
   const irAlBlog = () => window.location.assign(blogHref);
+  // Cabecera: al bajar un poco se oscurece y gana sombra (solo cambia un atributo en <html>; el CSS hace el resto)
+  useEffect(() => {
+    const raiz = document.documentElement;
+    let raf = 0,
+      activo = false,
+      t = 0;
+    const medir = () => {
+      raf = 0;
+      const v = window.scrollY > 8;
+      if (v !== activo) {
+        activo = v;
+        if (v) raiz.setAttribute("data-scrolled", "");else raiz.removeAttribute("data-scrolled");
+      }
+    };
+    const alScroll = () => {
+      if (!raf) raf = requestAnimationFrame(medir);
+      // Mientras se hace scroll, las animaciones decorativas (fondo de la portada) se pausan
+      if (!t) raiz.setAttribute("data-scrolling", "");
+      clearTimeout(t);
+      t = setTimeout(() => {
+        t = 0;
+        raiz.removeAttribute("data-scrolling");
+      }, 160);
+    };
+    window.addEventListener("scroll", alScroll, { passive: true });
+    medir();
+    return () => {
+      window.removeEventListener("scroll", alScroll);
+      if (raf) cancelAnimationFrame(raf);
+      clearTimeout(t);
+      raiz.removeAttribute("data-scrolled");
+      raiz.removeAttribute("data-scrolling");
+    };
+  }, []);
   useEffect(() => {
     if ("scrollRestoration" in window.history) window.history.scrollRestoration = "manual";
     window.scrollTo({
