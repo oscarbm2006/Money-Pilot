@@ -584,27 +584,32 @@ export function HeroSection({
   }, /*#__PURE__*/React.createElement("div", {
     className: "grid lg:grid-cols-[1fr_.9fr] gap-10 lg:gap-14 items-start lg:items-center"
   }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
-    className: "text-sm font-bold uppercase mb-4",
+    className: "text-sm font-bold uppercase mb-4 stagger-item",
     style: {
       color: C.sand,
       letterSpacing: ".14em"
     }
   }, "Pon tu dinero en orden"), /*#__PURE__*/React.createElement("h1", {
-    className: "font-serif text-4xl sm:text-5xl lg:text-6xl font-bold leading-[1.02]",
+    className: "font-serif text-4xl sm:text-5xl lg:text-6xl font-bold leading-[1.02] stagger-item",
     style: {
-      color: C.ink
+      color: C.ink,
+      animationDelay: "60ms"
     }
   }, "Tu salud financiera puesta a prueba: ", /*#__PURE__*/React.createElement("span", {
     style: {
       color: C.sand
     }
   }, "¿sientes que el dinero se te escapa y no sabes por qué?")), /*#__PURE__*/React.createElement("p", {
-    className: "text-base sm:text-lg mt-6 max-w-xl leading-relaxed",
+    className: "text-base sm:text-lg mt-6 max-w-xl leading-relaxed stagger-item",
     style: {
-      color: C.muted
+      color: C.muted,
+      animationDelay: "140ms"
     }
   }, "No llegar a fin de mes, no saber en qué se va el sueldo o sentir que la deuda nunca baja es más común de lo que parece. Aquí puedes ver tu situación con claridad y recibir un plan sencillo para empezar a ordenarla, sin tecnicismos y sin que nadie te juzgue."), /*#__PURE__*/React.createElement("div", {
-    className: "flex flex-wrap items-center gap-4 mt-8"
+    className: "flex flex-wrap items-center gap-4 mt-8 stagger-item",
+    style: {
+      animationDelay: "220ms"
+    }
   }, /*#__PURE__*/React.createElement("button", {
     onClick: onStart,
     className: "inline-flex items-center gap-2 px-6 py-3.5 rounded-xl text-sm font-bold transition-transform hover:scale-[1.03]",
@@ -625,9 +630,10 @@ export function HeroSection({
       border: "1.5px solid rgba(79,70,229,.35)"
     }
   }, "Por qué importa la salud financiera")), /*#__PURE__*/React.createElement("div", {
-    className: "flex flex-wrap gap-4 mt-5 text-xs",
+    className: "flex flex-wrap gap-4 mt-5 text-xs stagger-item",
     style: {
-      color: C.mutedLight
+      color: C.mutedLight,
+      animationDelay: "300ms"
     }
   }, /*#__PURE__*/React.createElement("span", {
     className: "inline-flex items-center gap-1.5"
