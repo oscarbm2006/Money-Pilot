@@ -147,12 +147,21 @@ html, body { overflow-x: hidden; max-width: 100%; }
     [data-draw]:not([data-drawn]) .mp-line  { stroke-dasharray: 1; stroke-dashoffset: 1; }
     [data-draw]:not([data-drawn]) .mp-line-len { stroke-dasharray: var(--len); stroke-dashoffset: var(--len); }
     [data-draw]:not([data-drawn]) .mp-area  { opacity: 0; }
+    [data-draw]:not([data-drawn]) .mp-prog  { width: 0 !important; }
     [data-draw]:not([data-drawn]) .mp-donut { opacity: 0; transform: rotate(-70deg) scale(0.88); }
     [data-draw][data-drawn] .mp-bar   { animation: mpGrowY var(--mp-grafico) var(--mp-curva) backwards; }
     [data-draw][data-drawn] .mp-line  { animation: mpDraw calc(var(--mp-grafico) * 1.4) var(--mp-curva-suave) backwards; }
     [data-draw][data-drawn] .mp-line-len { animation: mpDrawLen calc(var(--mp-grafico) * 1.4) var(--mp-curva-suave) backwards; }
     [data-draw][data-drawn] .mp-area  { animation: mpFade var(--mp-grafico) ease-out backwards; }
     [data-draw][data-drawn] .mp-donut { animation: mpDonut var(--mp-grafico) var(--mp-curva) backwards; }
+  }
+
+  /* Las tarjetas clicables se elevan un poco al pasar el ratón (solo con puntero y sin reduced-motion). */
+  @media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    .border.cursor-pointer {
+      transition: box-shadow var(--mp-medio) var(--mp-curva-suave), border-color var(--mp-medio) var(--mp-curva-suave), transform var(--mp-medio) var(--mp-curva);
+    }
+    .border.cursor-pointer:hover { transform: translateY(-3px); }
   }
 
   /* Exportación a PDF: se usa la impresión nativa del navegador (Guardar como PDF).
