@@ -8,6 +8,7 @@ import { AmortizacionDeuda, SimuladorDeudas, Contacto, Cuentas, Dashboard, Diagn
 const Blog = React.lazy(() => import('./blog.js'));
 import { ConfianzaPrivacidad, HeroSection } from './secciones.js';
 import { MiCuentaModal } from './cuenta.js';
+import { ReiniciarTodoModal } from './cuenta.js';
 
 export function App() {
   const {
@@ -195,6 +196,7 @@ export function App() {
   }, [activos, activosHidratados]);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showCuentaModal, setShowCuentaModal] = useState(false);
+  const [showReinicioModal, setShowReinicioModal] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [showFooterNotice, setShowFooterNotice] = useState(true);
@@ -327,7 +329,11 @@ export function App() {
     setVistaActual('inicio');
   };
   const confirmarReinicio = () => {
-    const ok = window.confirm("¿Borrar todos tus datos de este dispositivo y empezar de nuevo?\n\nSi tienes sesión iniciada, parte de lo guardado en tu cuenta puede volver a cargarse. Para eliminarlo todo, usa «Mi cuenta».");
+    if (user) {
+      setShowReinicioModal(true);
+      return;
+    }
+    const ok = window.confirm("¿Borrar todos tus datos de este dispositivo y empezar de nuevo?\n\nEsta acción no se puede deshacer.");
     if (ok) reiniciar();
   };
   const capacidadFinanciera = calcularCapacidadFinanciera(datos);
@@ -1011,7 +1017,16 @@ export function App() {
       onNube: () => cf.r("nube"),
       onFusionar: () => cf.r("fusionar")
     }) : null;
-  })(), showCuentaModal && user && /*#__PURE__*/React.createElement(MiCuentaModal, {
+  })(), showReinicioModal && user && /*#__PURE__*/React.createElement(ReiniciarTodoModal, {
+    user: user,
+    onClose: () => setShowReinicioModal(false),
+    onDone: () => {
+      setShowReinicioModal(false);
+      reiniciar();
+      showToast("Todo borrado. Puedes empezar de nuevo.");
+    },
+    onToast: (msg, tone) => showToast(msg, tone)
+  }), showCuentaModal && user && /*#__PURE__*/React.createElement(MiCuentaModal, {
     user: user,
     onClose: () => setShowCuentaModal(false),
     onToast: (msg, tone) => showToast(msg, tone)
