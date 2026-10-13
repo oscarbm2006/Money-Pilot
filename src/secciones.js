@@ -580,6 +580,15 @@ export function HeroSection({
       background: "radial-gradient(70% 55% at 50% 0%, rgba(79,70,229,.09), transparent 72%)"
     }
   }), /*#__PURE__*/React.createElement("div", {
+    className: "mp-ambiente",
+    "aria-hidden": "true"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "mp-orbe mp-orbe-1"
+  }), /*#__PURE__*/React.createElement("span", {
+    className: "mp-orbe mp-orbe-2"
+  }), /*#__PURE__*/React.createElement("span", {
+    className: "mp-orbe mp-orbe-3"
+  })), /*#__PURE__*/React.createElement("div", {
     className: "relative z-10 max-w-6xl mx-auto w-full px-4 sm:px-6"
   }, /*#__PURE__*/React.createElement("div", {
     className: "grid lg:grid-cols-[1fr_.9fr] gap-10 lg:gap-14 items-start lg:items-center"
