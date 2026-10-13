@@ -501,13 +501,13 @@ export function App() {
     className: "text-xs font-bold px-3 py-1.5 rounded-lg",
     style: {
       backgroundColor: C.sand,
-      color: C.navy
+      color: C.white
     }
   }, "Guardar")), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowFeedbackModal(true),
     className: "inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1.5 rounded-lg hover:bg-white/10 whitespace-nowrap",
     style: {
-      color: C.sand
+      color: "#C7D2FE"
     },
     title: "Evaluar página"
   }, /*#__PURE__*/React.createElement(I.clipboard, {
@@ -550,6 +550,7 @@ export function App() {
   }, /*#__PURE__*/React.createElement(Diagnostico, {
     key: irADeudas ? 'diag-deudas' : 'diag',
     irADeudas: irADeudas,
+    onIrASimuladorDeudas: () => setVistaActual('simulador-deudas'),
     datos: datos,
     setDatos: setDatos,
     liquidezReal: liquidezReal,
@@ -603,6 +604,7 @@ export function App() {
     onEliminarActivo: eliminarActivo,
     onIrACuentas: () => setVistaActual('cuentas'),
     onIrAInversiones: () => setVistaActual('inversiones'),
+    onIrASimuladorDeudas: () => setVistaActual('simulador-deudas'),
     onIrADiagnostico: () => {
       setIrADeudas(true);
       setVistaActual('diagnostico');
@@ -680,7 +682,13 @@ export function App() {
     style: {
       color: C.ink
     }
-  }, "Sal de la deuda con un orden claro")), /*#__PURE__*/React.createElement(AmortizacionDeuda, {
+  }, "Sal de la deuda con un orden claro"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setVistaActual('simulador-deudas'),
+    className: "text-xs font-bold mt-3 underline",
+    style: {
+      color: C.navy
+    }
+  }, "Probar otras combinaciones en el simulador de deudas")), /*#__PURE__*/React.createElement(AmortizacionDeuda, {
     deudas: datos.deudas
   })), /*#__PURE__*/React.createElement("div", {
     className: "rounded-2xl p-5 sm:p-6",
