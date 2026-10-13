@@ -20,6 +20,23 @@ const revealRef = el => {
 };
 const reducirMovimiento = () => typeof window !== 'undefined' && !!window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+// Gráficos que se dibujan al hacer visibles (≥25 % en pantalla). Marca el contenedor con data-drawn;
+// el resto lo hace el CSS de index.html (barras que crecen, línea que se traza, dona que gira).
+const drawObs = typeof IntersectionObserver === 'function' ? new IntersectionObserver(entries => {
+  for (const e of entries) {
+    if (e.isIntersecting) {
+      e.target.setAttribute('data-drawn', '');
+      drawObs.unobserve(e.target);
+    }
+  }
+}, {
+  threshold: 0.25
+}) : null;
+const drawRef = el => {
+  if (!el) return;
+  if (drawObs) drawObs.observe(el);else el.setAttribute('data-drawn', '');
+};
+
 export function Toast({
   toast
 }) {
@@ -529,7 +546,9 @@ export function SimpleStackedBarChart({
   const hovered = hoverIndex == null ? null : data[hoverIndex];
   const marcaIndex = marcaAnio == null ? -1 : data.findIndex(d => d[xKey] === marcaAnio);
   return /*#__PURE__*/React.createElement("div", {
-    className: "relative w-full overflow-x-auto chart-interactive"
+    className: "relative w-full overflow-x-auto chart-interactive",
+    "data-draw": "",
+    ref: drawRef
   }, /*#__PURE__*/React.createElement("svg", {
     viewBox: "0 0 " + width + " " + height,
     style: {
@@ -563,9 +582,11 @@ export function SimpleStackedBarChart({
     const isHover = hoverIndex === i;
     return /*#__PURE__*/React.createElement("g", {
       key: i,
+      className: "mp-bar",
       onMouseEnter: () => setHoverIndex(i),
       style: {
-        cursor: "pointer"
+        cursor: "pointer",
+        animationDelay: Math.round(i * Math.min(16, 480 / Math.max(n, 1))) + "ms"
       }
     }, /*#__PURE__*/React.createElement("rect", {
       x: x,
@@ -704,6 +725,8 @@ export function SimpleAreaChart({
   const tooltipLeft = Math.max(6, Math.min(width - tooltipW - 6, tooltipX - tooltipW / 2));
   return /*#__PURE__*/React.createElement("div", {
     className: "relative w-full h-full chart-interactive",
+    "data-draw": "",
+    ref: drawRef,
     onMouseMove: handleMove,
     onMouseLeave: () => setHoverIndex(null)
   }, /*#__PURE__*/React.createElement("svg", {
@@ -734,10 +757,19 @@ export function SimpleAreaChart({
       key: si
     }, /*#__PURE__*/React.createElement("path", {
       d: areaPath,
+      className: "mp-area",
+      style: {
+        animationDelay: 150 + si * 120 + "ms"
+      },
       fill: s.color,
       opacity: s.opacity ?? 0.3
     }), /*#__PURE__*/React.createElement("path", {
       d: linePath,
+      className: "mp-line",
+      pathLength: 1,
+      style: {
+        animationDelay: si * 120 + "ms"
+      },
       fill: "none",
       stroke: s.color,
       strokeWidth: 2.2
@@ -836,11 +868,14 @@ export function SimpleDonut({
   const active = hover != null ? segments[hover] : null;
   return /*#__PURE__*/React.createElement("div", {
     className: "relative inline-block",
+    "data-draw": "",
+    ref: drawRef,
     style: {
       width: size,
       height: size
     }
   }, /*#__PURE__*/React.createElement("svg", {
+    className: "mp-donut",
     width: size,
     height: size,
     viewBox: "0 0 " + size + " " + size
