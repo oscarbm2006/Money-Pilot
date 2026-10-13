@@ -5,6 +5,7 @@ import { execFileSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve, join } from 'node:path';
+import { Script } from 'node:vm';
 
 const raiz = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 let tmp;
@@ -190,5 +191,58 @@ describe('Blog estático: extractos limpios y título sin repetir', () => {
     const idx = readFileSync(join(dir, 'public/blog/bolsa/index.html'), 'utf8');
     const p = /<a class="card"[\s\S]*?<p>([\s\S]*?)<\/p>/.exec(idx)[1];
     assert.ok(FIN.test(p) && !p.includes('conocerse que<'), 'tarjeta cortada: ' + p);
+  });
+});
+
+describe('Guía: progreso de lectura (blog)', () => {
+  const datosDe = html => {
+    const m = html.match(/<script type="application\/json" id="guia-datos">([\s\S]*?)<\/script>/);
+    assert.ok(m, 'falta el bloque de datos guia-datos');
+    return JSON.parse(m[1]);
+  };
+  test('el índice de la guía lleva el panel (oculto hasta que cargue el script), los datos en orden de lectura y el script externo', () => {
+    const h = leer('public/blog/guia/index.html');
+    assert.ok(/<section class="gp" id="guia-progreso" hidden/.test(h));
+    const d = datosDe(h);
+    assert.deepEqual(d.guias.map(g => g.s), ['articulo-1', 'articulo-2', 'articulo-3', 'articulo-4']);
+    assert.ok(d.guias.every(g => g.t && g.m >= 1 && g.u === '/blog/guia/' + g.s + '.html'));
+    assert.equal((h.match(/<script src="\/guia-progreso\.js" defer><\/script>/g) || []).length, 1);
+    for (const g of d.guias) assert.ok(h.includes('data-slug="' + g.s + '"'), 'falta data-slug de ' + g.s);
+  });
+  test('cada artículo de la guía lleva su identificador, el marcador de final, el estado (oculto) y el script', () => {
+    const h = leer('public/blog/guia/articulo-2.html');
+    assert.ok(h.includes('data-guia-slug="articulo-2"'));
+    assert.ok(h.includes('id="guia-fin"'));
+    assert.ok(/<div class="gp-mini" id="guia-estado" hidden>/.test(h));
+    assert.equal((h.match(/<script src="\/guia-progreso\.js" defer><\/script>/g) || []).length, 1);
+    assert.deepEqual(datosDe(h).guias.map(g => g.s), ['articulo-1', 'articulo-2', 'articulo-3', 'articulo-4']);
+  });
+  test('las demás secciones no cargan el script de progreso ni llevan el marcador de final', () => {
+    for (const p of ['actualidad/hostil-titulo.html', 'actualidad/index.html']) {
+      const h = leer('public/blog/' + p);
+      assert.ok(!h.includes('<script src="/guia-progreso.js"') && !h.includes('guia-fin') && !h.includes('guia-datos'), p);
+    }
+  });
+  test('no se añade JavaScript en línea (la CSP no lo admite): todos los <script> son JSON-LD, datos JSON o externos', () => {
+    for (const f of ['guia/index.html', 'guia/articulo-1.html']) {
+      for (const m of leer('public/blog/' + f).matchAll(/<script([^>]*)>/g)) {
+        assert.ok(/type="application\/(ld\+)?json"|src="\/[^"]+"/.test(m[1]), 'script en línea en ' + f + ': ' + m[0]);
+      }
+    }
+  });
+  test('un título hostil no puede cerrar el bloque de datos de la guía', () => {
+    const dir = generar([post(1, { title: 'Malo </script><img src=x onerror=alert(1)>', slug: 'malo' }), post(2)]);
+    try {
+      const h = readFileSync(join(dir, 'public/blog/guia/index.html'), 'utf8');
+      const bloque = h.split('<script type="application/json" id="guia-datos">')[1].split('</script>')[0];
+      assert.ok(!bloque.includes('<'), 'el bloque de datos contiene "<" sin escapar');
+      assert.equal(JSON.parse(bloque).guias[0].t, 'Malo </script><img src=x onerror=alert(1)>');
+    } finally { rmSync(dir, { recursive: true, force: true }); }
+  });
+  test('el script del navegador existe, es sintácticamente válido y no inserta HTML con innerHTML', () => {
+    const src = readFileSync(resolve(raiz, 'public/guia-progreso.js'), 'utf8');
+    assert.doesNotThrow(() => new Script(src));
+    assert.ok(!src.includes('innerHTML') && !src.includes('document.write'));
+    assert.ok(src.includes("salud-financiera:"), 'la clave debe usar el prefijo que borra "Empezar de nuevo"');
   });
 });
