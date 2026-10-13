@@ -23,7 +23,8 @@ const revealRef = el => {
 };
 const reducirMovimiento = () => typeof window !== 'undefined' && !!window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-// Gráficos que se dibujan al hacer visibles (≥25 % en pantalla). Marca el contenedor con data-drawn;
+// Gráficos que se dibujan en cuanto llegan a la pantalla (igual que las cajas; empiezan 40 px antes de
+// entrar del todo, para que ya estén creciendo cuando los ves). Marca el contenedor con data-drawn;
 // el resto lo hace el CSS de index.html (barras que crecen, línea que se traza, dona que gira).
 const drawObs = typeof IntersectionObserver === 'function' ? new IntersectionObserver(entries => {
   for (const e of entries) {
@@ -33,7 +34,8 @@ const drawObs = typeof IntersectionObserver === 'function' ? new IntersectionObs
     }
   }
 }, {
-  threshold: 0.25
+  threshold: 0,
+  rootMargin: '0px 0px 40px 0px'
 }) : null;
 export const drawRef = el => {
   if (!el) return;
