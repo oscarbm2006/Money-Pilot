@@ -226,6 +226,44 @@ const STYLE = `
     }
   }
   @media print{.read-progress{display:none!important;}}
+
+  /* Progreso de lectura de la guía: lo rellena el script de la guía; sin JavaScript no se muestra nada */
+  .gp{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:18px 20px;margin:0 0 20px;box-shadow:var(--shadow);}
+  .gp[hidden],.gp-mini[hidden]{display:none;}
+  @media (scripting:enabled){
+    /* Reserva el hueco que ocupará (medido) para que no haya salto de contenido al aparecer */
+    .gp[hidden]{display:block;visibility:hidden;min-height:165px;}
+    .gp-mini[hidden]{display:flex;visibility:hidden;min-height:34px;}
+    @media (max-width:560px){.gp[hidden]{min-height:186px;}.gp-mini[hidden]{min-height:64px;}}
+  }
+  .gp-cab{display:flex;align-items:baseline;justify-content:space-between;gap:12px;}
+  .gp-titulo{font-family:var(--serif);font-size:1.08rem;color:var(--strong);}
+  .gp-pct{font-size:.82rem;font-weight:800;color:var(--primary);}
+  .gp-barra{height:8px;border-radius:999px;background:var(--bg);border:1px solid var(--border);overflow:hidden;margin:10px 0 8px;}
+  .gp-relleno{display:block;height:100%;border-radius:999px;background:var(--primary);transform-origin:0 50%;transform:scaleX(0);}
+  .gp-resto{margin:0;font-size:.84rem;color:var(--muted);}
+  .gp-continuar{display:inline-block;margin-top:12px;padding:9px 14px;border-radius:10px;background:var(--primary);color:#fff;font-size:.84rem;font-weight:700;text-decoration:none;transition:background-color var(--mp-rapido);}
+  .gp-continuar:hover{background:#4338ca;}
+  .gp-continuar[hidden]{display:none;}
+  .fase-item.leida strong:before,.card.leida h2:before{content:"✓";display:inline-block;margin-right:8px;width:1.3em;height:1.3em;line-height:1.3em;text-align:center;border-radius:50%;background:var(--primary);color:#fff;font:700 .7em var(--sans);vertical-align:.12em;}
+  .fase-item.leida,.card.leida{opacity:.85;}
+  details.fase summary .count{white-space:nowrap;}
+  details.fase.fase-completa summary .count{background:var(--primary-soft);border-color:rgba(79,70,229,.45);color:var(--navy);}
+  .sr-solo{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;}
+  .gp-mini{display:flex;align-items:center;flex-wrap:wrap;gap:10px 14px;margin:-6px 0 26px;font-size:.8rem;color:var(--muted);}
+  .gp-mini .gp-barra{flex:1 1 140px;min-width:120px;height:6px;margin:0;}
+  .gp-toggle{font:inherit;font-weight:700;font-size:.78rem;padding:6px 12px;border-radius:999px;border:1px solid var(--border);background:var(--surface);color:var(--ink);cursor:pointer;transition:border-color var(--mp-rapido),background-color var(--mp-rapido);}
+  .gp-toggle:hover{border-color:var(--primary);}
+  .gp-toggle[aria-pressed="true"]{background:var(--primary-soft);border-color:rgba(79,70,229,.45);color:var(--navy);}
+  .gp-aviso{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:70;max-width:calc(100% - 32px);background:rgba(6,10,19,.95);color:#fff;padding:11px 18px;border-radius:999px;font-size:.84rem;font-weight:700;text-align:center;box-shadow:0 12px 30px -10px rgba(0,0,0,.5);}
+  .gp-aviso[hidden]{display:none;}
+  @media (prefers-reduced-motion:no-preference){
+    .gp-relleno{transition:transform .7s var(--mp-curva);}
+    .gp:not([hidden]),.gp-mini:not([hidden]){animation:mpEntrada var(--mp-lento) var(--mp-curva) backwards;}
+    .gp-aviso{animation:mpAviso .3s var(--mp-curva) backwards;}
+    @keyframes mpAviso{from{opacity:0;transform:translate(-50%,10px);}}
+  }
+  @media print{.gp,.gp-mini,.gp-aviso{display:none!important;}}
   @media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important;}}
 `;
 
@@ -365,7 +403,7 @@ function extractoDe(post, max = 160) {
   return cortarFrase(base || textoPlano(post.excerpt) || post.title || '', max);
 }
 
-function postPage(post, seccion, anterior, siguiente) {
+function postPage(post, seccion, anterior, siguiente, guiaJson = '') {
   const url = `${SITE_URL}${seccion.urlBase}/${post.slug}.html`;
   const title = `${post.title} – MoneyPilot`;
   const desc = cortarFrase(extractoDe(post), 160);
@@ -380,6 +418,13 @@ function postPage(post, seccion, anterior, siguiente) {
   // En tesis/bolsa el disclaimer legal + el CTA de libro se mantienen fijos siempre.
   // En el resto de secciones se usa la llamada a la acción que se eligió en el panel.
   const ctaBlock = esInversion ? (disclaimer + ctaLibro) : ctaHtml(post);
+
+  const estadoGuia = `
+    <div class="gp-mini" id="guia-estado" hidden>
+      <span class="gp-mini-txt"></span>
+      <div class="gp-barra" role="progressbar" aria-label="Guías leídas" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span class="gp-relleno"></span></div>
+      <button type="button" class="gp-toggle" aria-pressed="false">Marcar como leída</button>
+    </div>`;
 
   const pager = (anterior || siguiente) ? `<nav class="pager" aria-label="Más artículos">
     ${anterior ? `<a class="prev" href="${seccion.urlBase}/${anterior.slug}.html"><small>← Anterior</small>${escHtml(anterior.title)}</a>` : ''}
@@ -441,23 +486,38 @@ ${jsonLd({
 ${headerHtml('blog')}
 <main>
   <p class="breadcrumb"><a href="/">Inicio</a> › <a href="${seccion.urlBase}/index.html">${escHtml(seccion.nombreTab)}</a></p>
-  <article>
+  <article${esGuia ? ` data-guia-slug="${escHtml(post.slug)}"` : ''}>
     <div class="article-cat">${escHtml(categoria)}</div>
     <h1>${escHtml(post.title)}</h1>
     <p class="meta">${meta}</p>
+    ${esGuia ? estadoGuia : ''}
     <div class="prose">${mdToHtml(sinTituloRepetido(post.content, post.title))}</div>
+    ${esGuia ? '<div id="guia-fin" aria-hidden="true"></div>' : ''}
     ${ctaBlock}
   </article>
   ${pager}
+  ${esGuia ? guiaJson : ''}
 </main>
 ${FOOTER}
 </body>
 </html>`;
 }
 
+// Guía: orden de lectura (por fases) y datos para el progreso de lectura (/guia-progreso.js).
+// Es el MISMO orden que usan los botones Anterior/Siguiente.
+function ordenLecturaGuia(posts) {
+  return posts.filter(p => p.slug).sort((a, b) => (Number(a.fase) || 99) - (Number(b.fase) || 99));
+}
+// Bloque JSON (no ejecutable) con la lista de guías. Se escapa "<" para que un título no pueda cerrar el bloque.
+function guiaDatosHtml(lectura, seccion) {
+  const guias = lectura.map(p => ({ s: p.slug, t: String(p.title || ''), m: minutosLectura(p.content), u: `${seccion.urlBase}/${p.slug}.html` }));
+  return `<script type="application/json" id="guia-datos">${jsonLd({ guias })}</script>
+<script src="/guia-progreso.js" defer></script>`;
+}
+
 function tarjetaHtml(p, seccion) {
   return `
-  <a class="card" href="${seccion.urlBase}/${p.slug}.html">
+  <a class="card" href="${seccion.urlBase}/${p.slug}.html" data-slug="${escHtml(p.slug)}">
     <div class="emoji" aria-hidden="true">${escHtml(p.cover_emoji || '📊')}</div>
     <div>
       <div class="cat">${escHtml(p.category || 'General')}</div>
@@ -490,7 +550,7 @@ function indexPageGuia(posts, seccion) {
     porFase[f].push(p);
   }
   const fila = p => `
-      <a class="fase-item" href="${seccion.urlBase}/${p.slug}.html">
+      <a class="fase-item" href="${seccion.urlBase}/${p.slug}.html" data-slug="${escHtml(p.slug)}">
         <strong>${escHtml(p.title)}</strong>
         <span>${escHtml(extractoDe(p))}</span>
       </a>`;
@@ -510,6 +570,13 @@ function indexPageGuia(posts, seccion) {
   <h1>${escHtml(seccion.tituloIndex)}</h1>
   <p class="lead">${escHtml(seccion.descIndex)}</p>
   ${tabsHtml(seccion.key)}
+  <section class="gp" id="guia-progreso" hidden aria-label="Tu progreso en la guía">
+    <div class="gp-cab"><strong class="gp-titulo"></strong><span class="gp-pct"></span></div>
+    <div class="gp-barra" role="progressbar" aria-label="Guías leídas" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span class="gp-relleno"></span></div>
+    <p class="gp-resto"></p>
+    <a class="gp-continuar" href="#" hidden></a>
+  </section>
+  ${guiaDatosHtml(ordenLecturaGuia(posts), seccion)}
   ${bloques}
   ${sinFase.length ? `<h2 style="font-family:var(--serif);color:var(--strong);margin:28px 0 12px;">Otros artículos de la guía</h2><div class="cards">${sinFase.map(p => tarjetaHtml(p, seccion)).join('\n')}</div>` : ''}
   `, !posts.some(p => p.slug));
@@ -555,12 +622,12 @@ function generarSeccion(posts, seccion) {
   // Orden de lectura para los botones anterior/siguiente. En la guía se lee fase a fase.
   const conSlug = posts.filter(p => p.slug);
   const lectura = seccion.key === 'guia'
-    ? [...conSlug].sort((a, b) => (Number(a.fase) || 99) - (Number(b.fase) || 99))
+    ? ordenLecturaGuia(posts)
     : conSlug;
   lectura.forEach((post, i) => {
     fs.writeFileSync(
       path.join(outDir, `${post.slug}.html`),
-      postPage(post, seccion, lectura[i - 1] || null, lectura[i + 1] || null)
+      postPage(post, seccion, lectura[i - 1] || null, lectura[i + 1] || null, seccion.key === 'guia' ? guiaDatosHtml(lectura, seccion) : '')
     );
   });
 }
