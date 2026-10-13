@@ -164,6 +164,10 @@ html, body { overflow-x: hidden; max-width: 100%; }
     .border.cursor-pointer:hover { transform: translateY(-3px); }
   }
 
+  /* Fundido suave al saltar entre la app y las páginas estáticas (blog, Recursos, legales). Donde el
+     navegador no lo soporta se ignora. Cada página destino debe llevar la misma regla. */
+  @media (prefers-reduced-motion: no-preference) { @view-transition { navigation: auto; } }
+
   /* Exportación a PDF: se usa la impresión nativa del navegador (Guardar como PDF).
      Ocultamos la app y mostramos solo el resumen imprimible, con colores legibles en papel. */
   .print-only { display: none; }
