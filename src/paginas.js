@@ -2473,7 +2473,8 @@ export function Diagnostico({
   objetivoSeleccionadoId,
   onEliminarSeleccionado,
   liquidezReal,
-  irADeudas
+  irADeudas,
+  onIrASimuladorDeudas
 }) {
   /* UX: wizard de 3 pasos. Los datos siguen viviendo en `datos` y se persisten
      exactamente por los mecanismos existentes; solo cambia cuándo se muestran. */
@@ -2962,7 +2963,25 @@ export function Diagnostico({
       border: "1px solid " + C.border,
       color: C.muted
     }
-  }, "Añade tu primera deuda con el botón de arriba."))), /*#__PURE__*/React.createElement(ObjetivosFinancieros, {
+  }, "Añade tu primera deuda con el botón de arriba."), datos.deudas.some(d => Number(d.pendiente) > 0) && onIrASimuladorDeudas && /*#__PURE__*/React.createElement("div", {
+    className: "rounded-xl p-4 mt-3 flex flex-wrap items-center justify-between gap-3",
+    style: {
+      backgroundColor: C.paper,
+      border: "1px solid " + C.border
+    }
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "text-xs flex-1",
+    style: {
+      color: C.muted
+    }
+  }, "¿Quieres ver cuánto tardarías en liquidarlas y qué orden de pago te conviene?"), /*#__PURE__*/React.createElement("button", {
+    onClick: onIrASimuladorDeudas,
+    className: "px-3 py-2 rounded-lg border text-xs font-bold",
+    style: {
+      borderColor: C.border,
+      color: C.ink
+    }
+  }, "Abrir simulador de deudas")))), /*#__PURE__*/React.createElement(ObjetivosFinancieros, {
     datos: datos,
     setDatos: setDatos,
     objetivoSeleccionadoId: objetivoSeleccionadoId,
@@ -3757,9 +3776,25 @@ export function Patrimonio({
   onEliminarActivo,
   onIrACuentas,
   onIrAInversiones,
-  onIrADiagnostico
+  onIrADiagnostico,
+  onIrASimuladorDeudas
 }) {
   const el = React.createElement;
+  // Aviso "¿has indicado tus deudas?": se puede ocultar y se recuerda en este dispositivo
+  const CLAVE_AVISO_DEUDAS = "salud-financiera:aviso-deudas-patrimonio-oculto";
+  const [avisoDeudasOculto, setAvisoDeudasOculto] = useState(() => {
+    try {
+      return localStorage.getItem(CLAVE_AVISO_DEUDAS) === "1";
+    } catch (e) {
+      return false;
+    }
+  });
+  const ocultarAvisoDeudas = () => {
+    try {
+      localStorage.setItem(CLAVE_AVISO_DEUDAS, "1");
+    } catch (e) {}
+    setAvisoDeudasOculto(true);
+  };
   const [editando, setEditando] = useState(null);
   const [borrador, setBorrador] = useState(null);
 
@@ -3810,6 +3845,28 @@ export function Patrimonio({
     className: "text-sm sm:text-base mt-3",
     style: { color: C.muted }
   }, "Todo lo que tienes (cuentas, inversiones y otros bienes) menos todo lo que debes. Se actualiza automáticamente según lo que registres en Cuentas, Inversiones, Deudas y aquí abajo."));
+
+  const avisoDeudas = deudasActivas.length === 0 && !avisoDeudasOculto ? el("div", {
+    className: "rounded-xl p-4 flex flex-col sm:flex-row sm:items-center gap-3",
+    style: { backgroundColor: C.paper, border: "1px solid " + C.border },
+    role: "note"
+  }, el("div", { className: "flex-1" }, el("div", {
+    className: "text-sm font-bold",
+    style: { color: C.ink }
+  }, "¿Has indicado tus deudas?"), el("p", {
+    className: "text-xs mt-1",
+    style: { color: C.muted }
+  }, "El patrimonio neto resta lo que debes. Ahora mismo no hay ninguna deuda registrada, así que la cifra de abajo podría estar sobrestimada.")), el("div", {
+    className: "flex flex-wrap gap-2"
+  }, el("button", {
+    onClick: onIrADiagnostico,
+    className: "px-3 py-2 rounded-lg text-xs font-bold",
+    style: { backgroundColor: C.sand, color: "#FFFFFF" }
+  }, "Indicar mis deudas"), el("button", {
+    onClick: ocultarAvisoDeudas,
+    className: "px-3 py-2 rounded-lg border text-xs font-bold",
+    style: { borderColor: C.border, color: C.ink }
+  }, "No tengo deudas"))) : null;
 
   const filaResumen = (etiqueta, valor, color) => el("div", {
     key: etiqueta,
@@ -3890,7 +3947,11 @@ export function Patrimonio({
   }, "Gestionar deudas")), el("p", {
     className: "text-xs mt-2",
     style: { color: C.muted }
-  }, deudasActivas.length === 0 ? "No tienes deudas pendientes registradas." : `${deudasActivas.length} deuda(s) activa(s).`));
+  }, deudasActivas.length === 0 ? "No tienes deudas pendientes registradas." : `${deudasActivas.length} deuda(s) activa(s).`), onIrASimuladorDeudas ? el("button", {
+    onClick: onIrASimuladorDeudas,
+    className: "text-xs font-bold mt-3 underline",
+    style: { color: C.navy }
+  }, "Probar el simulador de deudas") : null);
 
   const iconoPorTipoActivo = tipo => tipo === "Vivienda" ? I.house : tipo === "Vehículo" ? I.car : I.landmark;
 
@@ -4018,7 +4079,7 @@ export function Patrimonio({
     className: "py-16 sm:py-24 section-tinted"
   }, el("div", {
     className: "max-w-4xl mx-auto px-4 sm:px-6 space-y-6"
-  }, cabecera, tarjetaResumen, el("div", {
+  }, cabecera, avisoDeudas, tarjetaResumen, el("div", {
     className: "grid grid-cols-1 sm:grid-cols-3 gap-4"
   }, seccionCuentas, seccionInversiones, seccionDeudas), seccionActivos, formularioActivo, notaFinal));
 }
