@@ -7,8 +7,11 @@ import { PrivacyNotice } from './secciones.js';
 // Aparición al hacer scroll: un único observador compartido por todas las tarjetas.
 // Si el navegador no soporta IntersectionObserver, las tarjetas se muestran sin animar.
 const revealObs = typeof IntersectionObserver === 'function' ? new IntersectionObserver(entries => {
+  let k = 0;
   for (const e of entries) {
     if (e.isIntersecting) {
+      // Si varias cajas aparecen a la vez, entran en cascada (90 ms entre una y otra, hasta 4 pasos)
+      e.target.style.animationDelay = Math.min(k++, 4) * 90 + 'ms';
       e.target.setAttribute('data-rv', '');
       revealObs.unobserve(e.target);
     }
@@ -32,7 +35,7 @@ const drawObs = typeof IntersectionObserver === 'function' ? new IntersectionObs
 }, {
   threshold: 0.25
 }) : null;
-const drawRef = el => {
+export const drawRef = el => {
   if (!el) return;
   if (drawObs) drawObs.observe(el);else el.setAttribute('data-drawn', '');
 };
