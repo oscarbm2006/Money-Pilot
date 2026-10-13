@@ -1,9 +1,16 @@
 const { useState, useEffect, useRef, useCallback, useMemo, useId } = React;
 
 import { C, GASTOS_DISC_DEF, GASTOS_FIJOS_DEF, GASTOS_HORMIGA_EJEMPLOS, I, STATS_REALES, TASA_INDICE_GLOBAL } from './constantes.js';
-import { Card, EvidenciaModal, Eyebrow, FadeSwitch, FreqField, NumberField, SimpleStackedBarChart } from './ui-basicos.js';
+import { Card, EvidenciaModal, Eyebrow, FadeSwitch, FreqField, NumberField, SimpleStackedBarChart, drawRef } from './ui-basicos.js';
 import { euros, numEs, proyeccionInteres, totalMensual } from './calculos.js';
 
+// Longitud de una polilínea (en unidades del viewBox) a partir de su atributo points; sirve para trazarla al aparecer
+const longitudPolilinea = pts => {
+  const a = pts.split(' ').map(t => t.split(',').map(Number));
+  let L = 0;
+  for (let i = 1; i < a.length; i++) L += Math.hypot(a[i][0] - a[i - 1][0], a[i][1] - a[i - 1][1]);
+  return Math.ceil(L) + 1;
+};
 export function AnimatedStatValue({
   raw
 }) {
@@ -289,6 +296,8 @@ export function PoderAdquisitivoSection() {
     infl: aporte / Math.pow(1 + inflacion / 100, i),
     comp: aporte * Math.pow(1 + rentabilidad / 100, i)
   }));
+  const puntosInfl = serie.map((p, i) => `${i * (600 / Math.max(1, anios))},${120 - p.infl / aporte * 100}`).join(" ");
+  const puntosComp = serie.map((p, i) => `${i * (600 / Math.max(1, anios))},${120 - Math.min(100, p.comp / max * 100)}`).join(" ");
   return /*#__PURE__*/React.createElement(Card, {
     className: "p-5 sm:p-7 overflow-hidden",
     style: {
@@ -425,6 +434,8 @@ export function PoderAdquisitivoSection() {
     }
   }), /*#__PURE__*/React.createElement("div", {
     className: "mt-4 h-28 relative border-l border-b",
+    "data-draw": "",
+    ref: drawRef,
     style: {
       borderColor: C.border
     }
@@ -433,15 +444,25 @@ export function PoderAdquisitivoSection() {
     preserveAspectRatio: "none",
     className: "absolute inset-0 w-full h-full"
   }, /*#__PURE__*/React.createElement("polyline", {
+    className: "mp-line-len",
+    style: {
+      "--len": longitudPolilinea(puntosInfl),
+      animationDelay: "400ms"
+    },
     fill: "none",
     stroke: C.mej,
     strokeWidth: "3",
-    points: serie.map((p, i) => `${i * (600 / Math.max(1, anios))},${120 - p.infl / aporte * 100}`).join(" ")
+    points: puntosInfl
   }), /*#__PURE__*/React.createElement("polyline", {
+    className: "mp-line-len",
+    style: {
+      "--len": longitudPolilinea(puntosComp),
+      animationDelay: "520ms"
+    },
     fill: "none",
     stroke: C.exc,
     strokeWidth: "3",
-    points: serie.map((p, i) => `${i * (600 / Math.max(1, anios))},${120 - Math.min(100, p.comp / max * 100)}`).join(" ")
+    points: puntosComp
   }))), /*#__PURE__*/React.createElement("div", {
     className: "flex flex-wrap gap-4 mt-3 text-[11px] font-bold"
   }, /*#__PURE__*/React.createElement("span", {
