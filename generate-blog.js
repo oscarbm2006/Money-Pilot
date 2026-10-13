@@ -193,6 +193,39 @@ const STYLE = `
   footer{border-top:1px solid var(--border);padding:24px;text-align:center;color:var(--muted);font-size:.8rem;background:rgba(255,255,255,.6);}
   footer a{color:var(--muted);margin:0 8px;text-decoration:none;}
   footer a:hover{color:var(--primary);text-decoration:underline;}
+
+  /* Movimiento: mismas duraciones y curvas que la app. Todo va dentro de "sin preferencia de reducir
+     movimiento", así que con reduced-motion y al imprimir las páginas se ven estáticas y completas. */
+  :root{--mp-rapido:160ms;--mp-medio:240ms;--mp-lento:400ms;--mp-curva:cubic-bezier(.16,1,.3,1);--mp-curva-suave:cubic-bezier(.4,0,.2,1);}
+  @media (prefers-reduced-motion:no-preference){
+    /* Fundido entre páginas (la app y las demás páginas estáticas llevan la misma regla) */
+    @view-transition{navigation:auto;}
+    @keyframes mpEntrada{from{opacity:0;transform:translateY(12px);}}
+    /* Listados: las tarjetas entran en cascada con CSS puro (sin JS). El texto de los artículos no se anima. */
+    .cards>.card{animation:mpEntrada var(--mp-lento) var(--mp-curva) backwards;}
+    .cards>.card:nth-child(2){animation-delay:50ms;}
+    .cards>.card:nth-child(3){animation-delay:100ms;}
+    .cards>.card:nth-child(4){animation-delay:150ms;}
+    .cards>.card:nth-child(5){animation-delay:200ms;}
+    .cards>.card:nth-child(6){animation-delay:250ms;}
+    .cards>.card:nth-child(7){animation-delay:300ms;}
+    .cards>.card:nth-child(n+8){animation-delay:350ms;}
+    /* Guía: las filas de cada fase entran al abrirla (y la primera al cargar la página) */
+    details.fase[open] .fase-item{animation:mpEntrada var(--mp-medio) var(--mp-curva) backwards;}
+    details.fase[open] .fase-item:nth-child(2){animation-delay:40ms;}
+    details.fase[open] .fase-item:nth-child(3){animation-delay:80ms;}
+    details.fase[open] .fase-item:nth-child(4){animation-delay:120ms;}
+    details.fase[open] .fase-item:nth-child(n+5){animation-delay:160ms;}
+  }
+  /* Barra de progreso de lectura en los artículos: solo donde el navegador admite animaciones ligadas al scroll */
+  .read-progress{display:none;}
+  @supports (animation-timeline:scroll()){
+    @media (prefers-reduced-motion:no-preference){
+      .read-progress{display:block;position:fixed;top:0;left:0;right:0;height:3px;z-index:60;background:var(--primary);transform-origin:0 50%;transform:scaleX(0);pointer-events:none;animation:mpLectura auto linear both;animation-timeline:scroll(root block);}
+      @keyframes mpLectura{to{transform:scaleX(1);}}
+    }
+  }
+  @media print{.read-progress{display:none!important;}}
   @media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important;}}
 `;
 
@@ -404,6 +437,7 @@ ${jsonLd({
 <style>${STYLE}</style>
 </head>
 <body>
+<div class="read-progress" aria-hidden="true"></div>
 ${headerHtml('blog')}
 <main>
   <p class="breadcrumb"><a href="/">Inicio</a> › <a href="${seccion.urlBase}/index.html">${escHtml(seccion.nombreTab)}</a></p>
