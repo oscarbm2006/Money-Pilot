@@ -130,6 +130,26 @@ html, body { overflow-x: hidden; max-width: 100%; }
   button:not(:disabled):not([class*="active:scale"]):active,
   [role=button]:not([aria-disabled=true]):not([class*="active:scale"]):active { scale: 0.98; }
 
+  /* Gráficos que se dibujan al hacerse visibles (el JS marca el contenedor con data-drawn).
+     Todo va dentro de "sin preferencia de reducir movimiento" y solo en pantalla: con reduced-motion
+     o al imprimir los gráficos se ven completos desde el principio. Los estados finales no se
+     conservan (fill-mode backwards), así que el hover y los cambios de datos no se ven afectados. */
+  .mp-bar { transform-box: fill-box; transform-origin: 50% 100%; }
+  @keyframes mpGrowY { from { transform: scaleY(0); } }
+  @keyframes mpDraw  { from { stroke-dasharray: 1; stroke-dashoffset: 1; } to { stroke-dasharray: 1; stroke-dashoffset: 0; } }
+  @keyframes mpFade  { from { opacity: 0; } }
+  @keyframes mpDonut { from { opacity: 0; transform: rotate(-70deg) scale(0.88); } }
+  @media screen and (prefers-reduced-motion: no-preference) {
+    [data-draw]:not([data-drawn]) .mp-bar   { transform: scaleY(0); }
+    [data-draw]:not([data-drawn]) .mp-line  { stroke-dasharray: 1; stroke-dashoffset: 1; }
+    [data-draw]:not([data-drawn]) .mp-area  { opacity: 0; }
+    [data-draw]:not([data-drawn]) .mp-donut { opacity: 0; transform: rotate(-70deg) scale(0.88); }
+    [data-draw][data-drawn] .mp-bar   { animation: mpGrowY var(--mp-grafico) var(--mp-curva) backwards; }
+    [data-draw][data-drawn] .mp-line  { animation: mpDraw calc(var(--mp-grafico) * 1.4) var(--mp-curva-suave) backwards; }
+    [data-draw][data-drawn] .mp-area  { animation: mpFade var(--mp-grafico) ease-out backwards; }
+    [data-draw][data-drawn] .mp-donut { animation: mpDonut var(--mp-grafico) var(--mp-curva) backwards; }
+  }
+
   /* Exportación a PDF: se usa la impresión nativa del navegador (Guardar como PDF).
      Ocultamos la app y mostramos solo el resumen imprimible, con colores legibles en papel. */
   .print-only { display: none; }
