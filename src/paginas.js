@@ -2796,8 +2796,16 @@ export function Diagnostico({
       color: C.muted
     }
   }, fondo.coberturaMeses == null ? "Cuando tengamos tus gastos esenciales podremos estimarla." : `Con lo que tienes hoy, tu colchón cubre aproximadamente ${fondo.coberturaMeses.toFixed(1)} meses de gastos esenciales.`)), /*#__PURE__*/React.createElement("div", {
-    className: "flex justify-end mt-5"
+    className: "flex flex-wrap justify-end gap-2 mt-5"
   }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => setSubPasoRedSeguridad("listaDeudas"),
+    className: "inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border text-sm font-bold",
+    style: {
+      borderColor: C.border,
+      backgroundColor: C.paper,
+      color: C.ink
+    }
+  }, "Añadir mis deudas"), /*#__PURE__*/React.createElement("button", {
     onClick: () => setSubPasoRedSeguridad("preguntaDeuda"),
     className: "inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold",
     style: {
