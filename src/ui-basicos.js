@@ -358,12 +358,14 @@ export function ProgressBar({
 }) {
   return /*#__PURE__*/React.createElement("div", {
     className: "w-full rounded-full overflow-hidden",
+    "data-draw": "",
+    ref: drawRef,
     style: {
       backgroundColor: bg,
       height
     }
   }, /*#__PURE__*/React.createElement("div", {
-    className: "h-full rounded-full",
+    className: "h-full rounded-full mp-prog",
     style: {
       width: Math.min(Math.max(pctValue, 0), 100) + "%",
       backgroundColor: color,
