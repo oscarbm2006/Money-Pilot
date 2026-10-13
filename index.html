@@ -62,11 +62,13 @@
     --mp-medio: 240ms;    /* entradas de página, menús, avisos */
     --mp-lento: 400ms;    /* aparición de tarjetas y secciones */
     --mp-grafico: 700ms;  /* barras, anillos y gráficos */
+    --mp-aparicion: 600ms; /* aparición de cajas al hacer scroll */
     --mp-curva: cubic-bezier(0.16,1,0.3,1);      /* entradas: arranca rápido y frena suave */
     --mp-curva-suave: cubic-bezier(0.4,0,0.2,1); /* cambios de estado */
+    --mp-curva-aparicion: cubic-bezier(0.25,0.7,0.3,1); /* más gradual que --mp-curva: no "salta" al empezar */
   }
   @media (prefers-reduced-motion: reduce) {
-    :root { --mp-rapido: .01ms; --mp-medio: .01ms; --mp-lento: .01ms; --mp-grafico: .01ms; }
+    :root { --mp-rapido: .01ms; --mp-medio: .01ms; --mp-lento: .01ms; --mp-grafico: .01ms; --mp-aparicion: .01ms; }
   }
 html, body { overflow-x: hidden; max-width: 100%; }
   html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
@@ -118,9 +120,9 @@ html, body { overflow-x: hidden; max-width: 100%; }
      Se usa un atributo (data-rv) y no una clase para que React no lo borre al re-renderizar.
      El estado final de la animación NO se conserva (fill-mode backwards), así que no interfiere
      con los transform de hover de cada tarjeta. */
-  @keyframes mpReveal { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:translateY(0); } }
+  @keyframes mpReveal { from { opacity:0; transform:translateY(18px); } to { opacity:1; transform:translateY(0); } }
   [data-reveal]:not([data-rv]) { opacity: 0; }
-  [data-reveal][data-rv] { animation: mpReveal var(--mp-lento) var(--mp-curva) backwards; }
+  [data-reveal][data-rv] { animation: mpReveal var(--mp-aparicion) var(--mp-curva-aparicion) backwards; }
   @media (prefers-reduced-motion: reduce) { [data-reveal]:not([data-rv]) { opacity: 1; } }
   @media print { [data-reveal] { opacity: 1 !important; animation: none !important; } }
 
@@ -137,15 +139,18 @@ html, body { overflow-x: hidden; max-width: 100%; }
   .mp-bar { transform-box: fill-box; transform-origin: 50% 100%; }
   @keyframes mpGrowY { from { transform: scaleY(0); } }
   @keyframes mpDraw  { from { stroke-dasharray: 1; stroke-dashoffset: 1; } to { stroke-dasharray: 1; stroke-dashoffset: 0; } }
+  @keyframes mpDrawLen { from { stroke-dasharray: var(--len); stroke-dashoffset: var(--len); } to { stroke-dasharray: var(--len); stroke-dashoffset: 0; } }
   @keyframes mpFade  { from { opacity: 0; } }
   @keyframes mpDonut { from { opacity: 0; transform: rotate(-70deg) scale(0.88); } }
   @media screen and (prefers-reduced-motion: no-preference) {
     [data-draw]:not([data-drawn]) .mp-bar   { transform: scaleY(0); }
     [data-draw]:not([data-drawn]) .mp-line  { stroke-dasharray: 1; stroke-dashoffset: 1; }
+    [data-draw]:not([data-drawn]) .mp-line-len { stroke-dasharray: var(--len); stroke-dashoffset: var(--len); }
     [data-draw]:not([data-drawn]) .mp-area  { opacity: 0; }
     [data-draw]:not([data-drawn]) .mp-donut { opacity: 0; transform: rotate(-70deg) scale(0.88); }
     [data-draw][data-drawn] .mp-bar   { animation: mpGrowY var(--mp-grafico) var(--mp-curva) backwards; }
     [data-draw][data-drawn] .mp-line  { animation: mpDraw calc(var(--mp-grafico) * 1.4) var(--mp-curva-suave) backwards; }
+    [data-draw][data-drawn] .mp-line-len { animation: mpDrawLen calc(var(--mp-grafico) * 1.4) var(--mp-curva-suave) backwards; }
     [data-draw][data-drawn] .mp-area  { animation: mpFade var(--mp-grafico) ease-out backwards; }
     [data-draw][data-drawn] .mp-donut { animation: mpDonut var(--mp-grafico) var(--mp-curva) backwards; }
   }
