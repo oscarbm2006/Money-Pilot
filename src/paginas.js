@@ -2,7 +2,7 @@ const { useState, useEffect, useRef, useCallback, useMemo, useId } = React;
 
 import { ACTIVOS_DEF, ASIGNACION, BLOG_ADMIN_EMAIL, C, CUENTA_TIPOS_DEF, I, NOMBRES_FASE_BLOG, OBJETIVOS_DEF, PERFILES_INFO, PRIORIDADES_OBJETIVO, PRIORIDAD_LABEL, QUIZ_DEF, SECCIONES_BLOG, TIPOS_ACTIVO_DEF, TIPOS_INVERSION_DEF, supa, MAX_IMPORTE } from './constantes.js';
 import { aportacionNecesariaParaObjetivo, calcularCapacidadFinanciera, calcularFondoEmergencia, calcularPerfilMultidimensional, calcularPlanObjetivos, calcularSaludFinanciera, crearIdObjetivo, estadoAhorro, euros, fmtFecha, formatMeses, getNextQuestionId, mdToHtml, normalizarObjetivo, normalizarObjetivos, pct, proyeccionInteres, quizNumero, recomendacionObjetivoPorHorizonte, reconstruirEstadoQuiz, rentabilidadNecesariaParaObjetivo, simularAmortizacion, sincronizarObjetivos, slugify, tiempoNecesarioParaObjetivo, totalMensual, numEs } from './calculos.js';
-import { AnimatedNumber, Badge, BlogLinkCard, Card, DesgloseBarra, Eyebrow, FadeSwitch, NumberField, ProgressBar, SimpleAreaChart, SimpleDonut, SimpleStackedBarChart, StatCard, Termometro } from './ui-basicos.js';
+import { AnimatedNumber, quitarConSalida, Badge, BlogLinkCard, Card, DesgloseBarra, Eyebrow, FadeSwitch, NumberField, ProgressBar, SimpleAreaChart, SimpleDonut, SimpleStackedBarChart, StatCard, Termometro } from './ui-basicos.js';
 import { AcordeonFase, GastosTabs } from './secciones.js';
 import { LIBROS } from './libros-guia.js';
 
@@ -276,7 +276,10 @@ export function Dashboard({
     style: {
       color: salud.color
     }
-  }, salud.score), /*#__PURE__*/React.createElement("span", {
+  }, /*#__PURE__*/React.createElement(AnimatedNumber, {
+    value: salud.score,
+    format: v => String(Math.round(v))
+  })), /*#__PURE__*/React.createElement("span", {
     className: "text-xs font-bold",
     style: {
       color: C.muted
@@ -306,17 +309,20 @@ export function Dashboard({
     label: "Fondo de emergencia",
     pts: salud.desglose.ptsFondo,
     max: 30,
-    color: C.salu
+    color: C.salu,
+    delay: 120
   }), /*#__PURE__*/React.createElement(DesgloseBarra, {
     label: "Peso de tus deudas sobre tus ingresos",
     pts: salud.desglose.ptsDeuda,
     max: 20,
-    color: C.mej
+    color: C.mej,
+    delay: 240
   }), /*#__PURE__*/React.createElement(DesgloseBarra, {
     label: "Perfil de riesgo",
     pts: salud.desglose.ptsPerfil,
     max: 10,
-    color: C.sand
+    color: C.sand,
+    delay: 360
   })))), /*#__PURE__*/React.createElement("div", {
     className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
   }, /*#__PURE__*/React.createElement(StatCard, {
@@ -1686,7 +1692,9 @@ export function Estrategia({
     style: {
       color: C.ink
     }
-  }, planObjetivos.capacidadMensual == null ? "—" : euros(planObjetivos.capacidadMensual))), /*#__PURE__*/React.createElement("div", {
+  }, planObjetivos.capacidadMensual == null ? "—" : /*#__PURE__*/React.createElement(AnimatedNumber, {
+    value: planObjetivos.capacidadMensual
+  }))), /*#__PURE__*/React.createElement("div", {
     className: "rounded-xl p-3 flex flex-col justify-between min-h-[92px] overflow-hidden",
     style: {
       backgroundColor: C.paper
@@ -1716,7 +1724,10 @@ export function Estrategia({
     style: {
       color: C.ink
     }
-  }, deudaActiva.length ? euros(planObjetivos.cuotasDeuda) + "/mes" : "Sin deuda")), /*#__PURE__*/React.createElement("div", {
+  }, deudaActiva.length ? /*#__PURE__*/React.createElement(AnimatedNumber, {
+    value: planObjetivos.cuotasDeuda,
+    format: v => euros(v) + "/mes"
+  }) : "Sin deuda")), /*#__PURE__*/React.createElement("div", {
     className: "rounded-xl p-3 flex flex-col justify-between min-h-[92px] overflow-hidden",
     style: {
       backgroundColor: C.paper
@@ -1731,7 +1742,9 @@ export function Estrategia({
     style: {
       color: C.ink
     }
-  }, euros(planObjetivos.ahorroActual))), /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement(AnimatedNumber, {
+    value: planObjetivos.ahorroActual
+  }))), /*#__PURE__*/React.createElement("div", {
     className: "rounded-xl p-3 flex flex-col justify-between min-h-[92px] overflow-hidden",
     style: {
       backgroundColor: C.paper
@@ -2211,7 +2224,7 @@ export function ObjetivosFinancieros({
     const deficitObjetivo = o.aportacionMensual != null && plan.capacidadParaObjetivos != null ? Math.max(0, o.aportacionMensual - plan.capacidadParaObjetivos) : null;
     return /*#__PURE__*/React.createElement("div", {
       key: o.id,
-      className: "rounded-xl border p-4",
+      className: "rounded-xl border p-4 fila-entra",
       style: {
         borderColor: C.border,
         backgroundColor: C.paper
@@ -2906,7 +2919,7 @@ export function Diagnostico({
     const originalIndex = datos.deudas.indexOf(d);
     return /*#__PURE__*/React.createElement("div", {
       key: originalIndex,
-      className: "rounded-xl p-3.5 border",
+      className: "rounded-xl p-3.5 border fila-entra",
       style: {
         backgroundColor: C.paper,
         border: "1px solid " + C.border
@@ -3256,7 +3269,9 @@ export function Cuentas({
     style: {
       color: C.ink
     }
-  }, euros(totalLiquidez))), /*#__PURE__*/React.createElement("button", {
+  }, /*#__PURE__*/React.createElement(AnimatedNumber, {
+    value: totalLiquidez
+  }))), /*#__PURE__*/React.createElement("button", {
     onClick: abrirNueva,
     className: "inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-bold",
     style: {
@@ -3421,7 +3436,7 @@ export function Cuentas({
     className: "space-y-2"
   }, porBanco[banco].map(c => /*#__PURE__*/React.createElement("div", {
     key: c.id,
-    className: "flex items-center justify-between gap-3 rounded-lg px-3.5 py-2.5",
+    className: "flex items-center justify-between gap-3 rounded-lg px-3.5 py-2.5 fila-entra",
     style: {
       backgroundColor: C.paper
     }
@@ -3453,7 +3468,7 @@ export function Cuentas({
   }, /*#__PURE__*/React.createElement(I.edit, {
     size: 15
   })), /*#__PURE__*/React.createElement("button", {
-    onClick: () => onEliminar(c.id),
+    onClick: ev => quitarConSalida(ev, () => onEliminar(c.id)),
     style: {
       color: C.crit
     },
@@ -3572,13 +3587,13 @@ export function Inversiones({
         "aria-label": "Editar inversión"
       }, el(I.edit, { size: 15 }));
       const botonBorrar = el("button", {
-        onClick: () => onEliminar(inv.id),
+        onClick: ev => quitarConSalida(ev, () => onEliminar(inv.id)),
         style: { color: C.crit },
         "aria-label": "Eliminar inversión"
       }, el(I.trash, { size: 15 }));
       return el("div", {
         key: inv.id,
-        className: "flex items-center justify-between gap-3 rounded-lg px-3.5 py-2.5",
+        className: "flex items-center justify-between gap-3 rounded-lg px-3.5 py-2.5 fila-entra",
         style: { backgroundColor: C.paper }
       }, el("div", {
         className: "min-w-0"
@@ -3623,10 +3638,10 @@ export function Inversiones({
   }, el("div", null, el(Eyebrow, null, "Valor total de la cartera"), el("div", {
     className: "font-serif text-3xl font-bold mt-1",
     style: { color: C.ink }
-  }, euros(totalInvertido))), rentabilidadGlobal != null ? el("div", null, el(Eyebrow, null, "Rentabilidad estimada"), el("div", {
+  }, el(AnimatedNumber, { value: totalInvertido }))), rentabilidadGlobal != null ? el("div", null, el(Eyebrow, null, "Rentabilidad estimada"), el("div", {
     className: "font-serif text-3xl font-bold mt-1",
     style: { color: rentabilidadGlobal >= 0 ? C.salu : C.crit }
-  }, (rentabilidadGlobal >= 0 ? "+" : "") + euros(rentabilidadGlobal))) : null), el("button", {
+  }, el(AnimatedNumber, { value: rentabilidadGlobal, format: v => (v >= 0 ? "+" : "") + euros(v) }))) : null), el("button", {
     onClick: abrirNueva,
     className: "inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-bold",
     style: { backgroundColor: C.sand, color: C.navy }
@@ -3878,7 +3893,7 @@ export function Patrimonio({
   }, etiqueta), el("span", {
     className: "text-sm font-bold",
     style: { color: color || C.ink }
-  }, euros(valor)));
+  }, el(AnimatedNumber, { value: valor })));
 
   const tarjetaResumen = el(Card, {
     className: "p-6"
@@ -3897,7 +3912,7 @@ export function Patrimonio({
   }, el(Eyebrow, null, "Patrimonio neto"), el("div", {
     className: "font-serif text-4xl font-bold mt-1",
     style: { color: patrimonioNeto >= 0 ? C.ink : C.crit }
-  }, euros(patrimonioNeto)), el("div", {
+  }, el(AnimatedNumber, { value: patrimonioNeto })), el("div", {
     className: "space-y-2 mt-4"
   }, filaResumen("Total en cuentas (liquidez)", totalCuentas, C.exc), filaResumen("Total en inversiones", totalInversiones, C.sand), filaResumen("Total en otros activos", totalActivos, C.mej), filaResumen("Total en deudas pendientes", -totalDeudas, C.crit), totalPendienteActivos > 0 ? filaResumen("Pendiente de pago de tus inmuebles", -totalPendienteActivos, C.crit) : null))));
 
@@ -3908,7 +3923,7 @@ export function Patrimonio({
   }, el("div", null, el(Eyebrow, null, "Liquidez"), el("div", {
     className: "font-serif text-lg font-bold mt-1",
     style: { color: C.ink }
-  }, euros(totalCuentas))), el("button", {
+  }, el(AnimatedNumber, { value: totalCuentas }))), el("button", {
     onClick: onIrACuentas,
     className: "text-xs font-bold px-3 py-2 rounded-lg border",
     style: { borderColor: C.border, color: C.navy }
@@ -3924,7 +3939,7 @@ export function Patrimonio({
   }, el("div", null, el(Eyebrow, null, "Inversiones"), el("div", {
     className: "font-serif text-lg font-bold mt-1",
     style: { color: C.ink }
-  }, euros(totalInversiones))), el("button", {
+  }, el(AnimatedNumber, { value: totalInversiones }))), el("button", {
     onClick: onIrAInversiones,
     className: "text-xs font-bold px-3 py-2 rounded-lg border",
     style: { borderColor: C.border, color: C.navy }
@@ -3940,7 +3955,7 @@ export function Patrimonio({
   }, el("div", null, el(Eyebrow, null, "Deudas"), el("div", {
     className: "font-serif text-lg font-bold mt-1",
     style: { color: totalDeudas > 0 ? C.crit : C.ink }
-  }, euros(totalDeudas))), el("button", {
+  }, el(AnimatedNumber, { value: totalDeudas }))), el("button", {
     onClick: onIrADiagnostico,
     className: "text-xs font-bold px-3 py-2 rounded-lg border",
     style: { borderColor: C.border, color: C.navy }
@@ -4022,7 +4037,7 @@ export function Patrimonio({
     const Icono = iconoPorTipoActivo(a.tipo);
     return el("div", {
       key: a.id,
-      className: "flex items-center justify-between gap-3 rounded-lg px-3.5 py-2.5",
+      className: "flex items-center justify-between gap-3 rounded-lg px-3.5 py-2.5 fila-entra",
       style: { backgroundColor: C.paper }
     }, el("div", {
       className: "flex items-center gap-3 min-w-0"
@@ -4047,7 +4062,7 @@ export function Patrimonio({
       style: { color: C.navy },
       "aria-label": "Editar activo"
     }, el(I.edit, { size: 15 })), el("button", {
-      onClick: () => onEliminarActivo(a.id),
+      onClick: ev => quitarConSalida(ev, () => onEliminarActivo(a.id)),
       style: { color: C.crit },
       "aria-label": "Eliminar activo"
     }, el(I.trash, { size: 15 }))));
