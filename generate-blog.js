@@ -119,9 +119,9 @@ const STYLE = `
   @media(min-width:640px){.nav-inner{padding-left:1.5rem;padding-right:1.5rem;}}
   .logo-pill{display:flex;align-items:center;background:#fff;border-radius:8px;padding:3px 9px;text-decoration:none;}
   .logo-pill img{display:block;height:20px;width:auto;}
-  .main-nav{margin-left:auto;display:flex;align-items:center;flex-wrap:wrap;gap:4px;font-size:.75rem;font-weight:700;}
-  .main-nav a{padding:.5rem .625rem;border-radius:8px;color:#94a3b8;text-decoration:none;transition:background-color .15s,color .25s;}
-  .main-nav a:hover{color:#e2e8f0;background:rgba(255,255,255,.10);}
+  .main-nav{margin-left:auto;display:flex;align-items:center;flex-wrap:wrap;gap:4px;font-size:.8125rem;font-weight:700;}
+  .main-nav a{padding:.5rem .625rem;border-radius:8px;color:#cbd5e1;text-decoration:none;transition:background-color .15s,color .25s;}
+  .main-nav a:hover{color:#fff;background:rgba(255,255,255,.10);}
   .main-nav a.active{color:#fff;background:rgba(79,70,229,.45);}
   .main-nav a.cta-nav{background:var(--primary);color:#fff;}
   .main-nav a.cta-nav:hover{background:#4338ca;}
