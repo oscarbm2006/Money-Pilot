@@ -272,6 +272,25 @@ export function limpiarDatosLocales(almacen = window.localStorage) {
   } catch (e) {}
 }
 
+// Borra de la nube TODOS los datos del usuario (no su cuenta) y comprueba que no queda nada.
+export async function borrarDatosNube(userId, cliente = supa) {
+  const fallidas = [];
+  for (const tabla of TABLAS_USUARIO) {
+    try {
+      const { error } = await cliente.from(tabla).delete().eq("user_id", userId);
+      if (error) {
+        fallidas.push(tabla);
+        continue;
+      }
+      const { count, error: errCuenta } = await cliente.from(tabla).select("user_id", { count: "exact", head: true }).eq("user_id", userId);
+      if (errCuenta || (count || 0) > 0) fallidas.push(tabla);
+    } catch (e) {
+      fallidas.push(tabla);
+    }
+  }
+  return { ok: fallidas.length === 0, fallidas };
+}
+
 export async function solicitarEliminarCuenta(cliente = supa, llamar = fetch) {
   const { data } = await cliente.auth.getSession();
   const token = data && data.session ? data.session.access_token : null;
@@ -348,4 +367,57 @@ export function MiCuentaModal({ user, onClose, onToast }) {
     role: "dialog",
     "aria-label": "Mi cuenta"
   }, el("div", { className: "flex items-center justify-between mb-1" }, el("h2", { className: "font-serif text-xl font-bold", style: { color: C.ink } }, "Mi cuenta"), el("button", { onClick: onClose, "aria-label": "Cerrar", style: { color: C.muted } }, el(I.x, { size: 18 }))), el("p", { className: "text-sm mb-5 break-words", style: { color: C.muted } }, user && user.email), el("div", { className: "rounded-xl p-4 mb-4", style: { backgroundColor: C.paper } }, el("div", { className: "text-sm font-bold", style: { color: C.ink } }, "Descargar mis datos"), el("p", { className: "text-xs mt-1", style: { color: C.muted } }, "Obtén una copia de todo lo que MoneyPilot guarda de ti. El informe se abre en tu navegador con tablas fáciles de leer, y puedes imprimirlo o guardarlo como PDF."), el("button", { onClick: () => descargar("informe"), disabled: descargando, className: "mt-3 px-4 py-2 rounded-lg text-xs font-bold", style: { ...estiloBoton, opacity: descargando ? 0.6 : 1 } }, descargando ? "Preparando…" : "Descargar mi informe"), el("button", { onClick: () => descargar("json"), disabled: descargando, className: "block mt-3 text-xs font-bold underline", style: { color: C.muted } }, "Descargar en formato técnico (JSON)")), el("div", { className: "rounded-xl p-4", style: { backgroundColor: C.paper, border: "1px solid " + C.crit } }, el("div", { className: "text-sm font-bold", style: { color: C.critText } }, "Eliminar mi cuenta"), el("p", { className: "text-xs mt-1", style: { color: C.muted } }, "Se borrarán tu cuenta y todos tus datos guardados. Esta acción no se puede deshacer. Te recomendamos descargar antes tus datos."), !confirmando ? el("button", { onClick: () => setConfirmando(true), className: "mt-3 px-4 py-2 rounded-lg text-xs font-bold border", style: { borderColor: C.crit, color: C.critText } }, "Eliminar mi cuenta") : el("div", { className: "mt-3" }, el("label", { className: "block text-xs font-bold mb-1.5", style: { color: C.ink } }, "Escribe ", PALABRA_CONFIRMACION, " para confirmar"), el("input", { value: texto, onChange: e => setTexto(e.target.value), autoComplete: "off", placeholder: PALABRA_CONFIRMACION, className: "w-full rounded-lg px-3 py-2 text-sm font-bold border outline-none", style: { borderColor: C.border, color: C.ink, backgroundColor: C.white } }), el("div", { className: "flex gap-2 mt-3" }, el("button", { onClick: eliminar, disabled: !puedeEliminar, className: "px-4 py-2 rounded-lg text-xs font-bold", style: { backgroundColor: C.crit, color: C.white, opacity: puedeEliminar ? 1 : 0.4 } }, eliminando ? "Eliminando…" : "Sí, eliminar definitivamente"), el("button", { onClick: () => { setConfirmando(false); setTexto(""); setError(null); }, disabled: eliminando, className: "px-4 py-2 rounded-lg text-xs font-bold border", style: { borderColor: C.border, color: C.muted } }, "Cancelar")))), error ? el("p", { className: "text-xs font-bold mt-4", style: { color: C.crit }, role: "alert" }, error) : null));
+}
+
+export const PALABRA_REINICIO = "BORRAR";
+
+// Reinicio completo para usuarios con sesión: borra también lo guardado en su cuenta.
+export function ReiniciarTodoModal({ user, onClose, onDone, onToast }) {
+  const [descargando, setDescargando] = useState(false);
+  const [texto, setTexto] = useState("");
+  const [borrando, setBorrando] = useState(false);
+  const [error, setError] = useState(null);
+
+  const descargar = async () => {
+    setError(null);
+    setDescargando(true);
+    try {
+      const datos = await reunirDatosUsuario(user);
+      descargarArchivo(nombreArchivoInforme(), construirInformeHtml(datos), "text/html;charset=utf-8");
+      onToast && onToast("Descarga lista", "ok");
+    } catch (e) {
+      setError("No se pudieron reunir tus datos. Inténtalo de nuevo en unos minutos.");
+    } finally {
+      setDescargando(false);
+    }
+  };
+
+  const puedeBorrar = texto.trim().toUpperCase() === PALABRA_REINICIO && !borrando;
+  const borrar = async () => {
+    if (!puedeBorrar) return;
+    setError(null);
+    setBorrando(true);
+    const r = await borrarDatosNube(user.id);
+    if (!r.ok) {
+      setBorrando(false);
+      setError("No se pudieron borrar todos los datos de tu cuenta. Inténtalo de nuevo; si sigue fallando, escríbenos a soporte.");
+      return;
+    }
+    limpiarDatosLocales();
+    setBorrando(false);
+    onDone && onDone();
+  };
+
+  const estiloBoton = { backgroundColor: C.sand, color: C.navy };
+  return el("div", {
+    className: "fixed inset-0 z-50 flex items-center justify-center px-4",
+    style: { backgroundColor: "rgba(5,8,16,0.7)" },
+    onClick: borrando ? undefined : onClose
+  }, el("div", {
+    onClick: e => e.stopPropagation(),
+    className: "w-full max-w-md rounded-2xl p-6 overflow-y-auto",
+    style: { backgroundColor: C.surface, maxHeight: "90vh" },
+    role: "dialog",
+    "aria-label": "Borrar todo y empezar de nuevo"
+  }, el("div", { className: "flex items-center justify-between mb-1" }, el("h2", { className: "font-serif text-xl font-bold", style: { color: C.ink } }, "Borrar todo y empezar de nuevo"), el("button", { onClick: onClose, disabled: borrando, "aria-label": "Cerrar", style: { color: C.muted } }, el(I.x, { size: 18 }))), el("p", { className: "text-sm mb-5", style: { color: C.muted } }, "Se borrarán todos tus datos, también los guardados en tu cuenta (diagnóstico, cuentas, inversiones, deudas, objetivos y seguimiento). Tu cuenta y tu inicio de sesión se mantienen. Esta acción no se puede deshacer."), el("div", { className: "rounded-xl p-4 mb-4", style: { backgroundColor: C.paper } }, el("div", { className: "text-sm font-bold", style: { color: C.ink } }, "Descarga una copia antes (recomendado)"), el("button", { onClick: descargar, disabled: descargando || borrando, className: "mt-3 px-4 py-2 rounded-lg text-xs font-bold", style: { ...estiloBoton, opacity: descargando ? 0.6 : 1 } }, descargando ? "Preparando…" : "Descargar mi informe")), el("div", { className: "rounded-xl p-4", style: { backgroundColor: C.paper, border: "1px solid " + C.crit } }, el("label", { className: "block text-xs font-bold mb-1.5", style: { color: C.ink } }, "Escribe ", PALABRA_REINICIO, " para confirmar"), el("input", { value: texto, onChange: e => setTexto(e.target.value), autoComplete: "off", placeholder: PALABRA_REINICIO, className: "w-full rounded-lg px-3 py-2 text-sm font-bold border outline-none", style: { borderColor: C.border, color: C.ink, backgroundColor: C.white } }), el("div", { className: "flex gap-2 mt-3" }, el("button", { onClick: borrar, disabled: !puedeBorrar, className: "px-4 py-2 rounded-lg text-xs font-bold", style: { backgroundColor: C.crit, color: C.white, opacity: puedeBorrar ? 1 : 0.4 } }, borrando ? "Borrando…" : "Sí, borrar todo"), el("button", { onClick: onClose, disabled: borrando, className: "px-4 py-2 rounded-lg text-xs font-bold border", style: { borderColor: C.border, color: C.muted } }, "Cancelar"))), error ? el("p", { className: "text-xs font-bold mt-4", style: { color: C.crit }, role: "alert" }, error) : null));
 }
