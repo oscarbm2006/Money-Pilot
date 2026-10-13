@@ -4,6 +4,22 @@ import { C, FRECUENCIAS, I, supa, MAX_IMPORTE } from './constantes.js';
 import { euros, niceTicks, traducirErrorAuth } from './calculos.js';
 import { PrivacyNotice } from './secciones.js';
 
+// Aparición al hacer scroll: un único observador compartido por todas las tarjetas.
+// Si el navegador no soporta IntersectionObserver, las tarjetas se muestran sin animar.
+const revealObs = typeof IntersectionObserver === 'function' ? new IntersectionObserver(entries => {
+  for (const e of entries) {
+    if (e.isIntersecting) {
+      e.target.setAttribute('data-rv', '');
+      revealObs.unobserve(e.target);
+    }
+  }
+}) : null;
+const revealRef = el => {
+  if (!el) return;
+  if (revealObs) revealObs.observe(el);else el.setAttribute('data-rv', '');
+};
+const reducirMovimiento = () => typeof window !== 'undefined' && !!window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
 export function Toast({
   toast
 }) {
@@ -57,6 +73,11 @@ export function Card({
       boxShadow: "0 0 0 1px rgba(79,70,229,0.22), 0 0 46px -4px rgba(79,70,229,0.5), 0 0 90px -20px rgba(62,111,168,0.35), 0 16px 34px -14px rgba(0,0,0,0.65)",
       ...style
     },
+    // Las tarjetas con entrada escalonada propia (stagger-item) no usan la aparición al scroll
+    ...(className.indexOf("stagger-item") === -1 ? {
+      "data-reveal": "",
+      ref: revealRef
+    } : {}),
     ...rest
   }, children);
 }
@@ -271,19 +292,34 @@ export function AnimatedNumber({
   value,
   format = v => euros(v)
 }) {
-  const [display, setDisplay] = useState(value);
-  const fromRef = useRef(value);
+  // Al aparecer por primera vez cuenta desde 0; cuando el valor cambia, desde el valor mostrado.
+  const inicial = Number.isFinite(value) && !reducirMovimiento() ? 0 : value;
+  const [display, setDisplay] = useState(inicial);
+  const fromRef = useRef(inicial);
   const rafRef = useRef(null);
+  const montadoRef = useRef(false);
   useEffect(() => {
     const from = fromRef.current,
       to = value;
-    if (from === to) return;
+    if (from === to) {
+      montadoRef.current = true;
+      return;
+    }
+    if (!Number.isFinite(to) || reducirMovimiento()) {
+      fromRef.current = to;
+      setDisplay(to);
+      montadoRef.current = true;
+      return;
+    }
     const start = performance.now();
-    const duration = 450;
+    const duration = montadoRef.current ? 450 : 800;
+    montadoRef.current = true;
     const tick = now => {
       const t = Math.min(1, (now - start) / duration);
       const eased = 1 - Math.pow(1 - t, 3);
-      setDisplay(from + (to - from) * eased);
+      const v = from + (to - from) * eased;
+      fromRef.current = v;
+      setDisplay(v);
       if (t < 1) rafRef.current = requestAnimationFrame(tick);else fromRef.current = to;
     };
     rafRef.current = requestAnimationFrame(tick);
@@ -309,7 +345,7 @@ export function ProgressBar({
     style: {
       width: Math.min(Math.max(pctValue, 0), 100) + "%",
       backgroundColor: color,
-      transition: "width 600ms cubic-bezier(0.16,1,0.3,1)"
+      transition: "width var(--mp-grafico) var(--mp-curva)"
     }
   }));
 }
@@ -352,7 +388,7 @@ export function EmergencyGauge({
     strokeDasharray: circumference,
     strokeDashoffset: offset,
     style: {
-      transition: "stroke-dashoffset 700ms cubic-bezier(0.16,1,0.3,1), stroke 400ms"
+      transition: "stroke-dashoffset var(--mp-grafico) var(--mp-curva), stroke var(--mp-lento)"
     }
   })), /*#__PURE__*/React.createElement("div", {
     className: "text-center -mt-2"
@@ -414,7 +450,7 @@ export function Termometro({
     rx: tubeW / 2,
     fill: color,
     style: {
-      transition: "y 800ms cubic-bezier(0.16,1,0.3,1), height 800ms cubic-bezier(0.16,1,0.3,1)"
+      transition: "y var(--mp-grafico) var(--mp-curva), height var(--mp-grafico) var(--mp-curva)"
     }
   }), /*#__PURE__*/React.createElement("circle", {
     cx: w / 2,
@@ -821,7 +857,7 @@ export function SimpleDonut({
     strokeDasharray: seg.dash + " " + seg.gap,
     transform: "rotate(" + seg.rotation + " " + size / 2 + " " + size / 2 + ")",
     style: {
-      transition: "stroke-width 200ms ease, opacity 200ms ease",
+      transition: "stroke-width var(--mp-rapido) var(--mp-curva-suave), opacity var(--mp-rapido) var(--mp-curva-suave)",
       opacity: hover == null || hover === seg.i ? 1 : 0.35,
       cursor: "pointer"
     },
