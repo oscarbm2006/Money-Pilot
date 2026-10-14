@@ -4,11 +4,15 @@ import { C, I, supa, GASTOS_FIJOS_DEF, GASTOS_DISC_DEF } from './constantes.js';
 import { euros, pct, totalMensual } from './calculos.js';
 
 // Tablas con datos del usuario (todas tienen la columna user_id)
-export const TABLAS_USUARIO = ["cuentas", "deudas", "inversiones", "activos", "seguimiento", "finanzas_perfil", "finanzas_historial", "finanzas_quiz", "plan_financiero"];
+export const TABLAS_USUARIO = ["cuentas", "deudas", "inversiones", "activos", "seguimiento", "finanzas_perfil", "finanzas_historial", "finanzas_quiz", "plan_financiero", "guia_progreso"];
 export const PALABRA_CONFIRMACION = "ELIMINAR";
 const PAGINA = 1000;
-// finanzas_perfil y finanzas_quiz tienen una sola fila por usuario y no tienen columna id
-const SIN_ID = new Set(["finanzas_perfil", "finanzas_quiz"]);
+// finanzas_perfil, finanzas_quiz y guia_progreso tienen una sola fila por usuario y no tienen columna id
+const SIN_ID = new Set(["finanzas_perfil", "finanzas_quiz", "guia_progreso"]);
+// Tablas que pueden no existir todavía en Supabase (se crean con supabase-guia-progreso.sql): si faltan, se tratan como vacías
+// en vez de romper la descarga o el borrado. Cualquier otro error en ellas sí se notifica.
+const OPCIONALES = new Set(["guia_progreso"]);
+const tablaAusente = e => !!e && (e.code === "PGRST205" || e.code === "42P01" || /does not exist|schema cache|could not find the table/i.test(String(e.message || "")));
 
 async function leerTabla(cliente, tabla, userId) {
   const filas = [];
@@ -16,7 +20,10 @@ async function leerTabla(cliente, tabla, userId) {
     let q = cliente.from(tabla).select("*").eq("user_id", userId);
     if (!SIN_ID.has(tabla)) q = q.order("id", { ascending: true });
     const { data, error } = await q.range(desde, desde + PAGINA - 1);
-    if (error) throw new Error("No se pudo leer " + tabla);
+    if (error) {
+      if (OPCIONALES.has(tabla) && tablaAusente(error)) return [];
+      throw new Error("No se pudo leer " + tabla);
+    }
     filas.push(...(data || []));
     if (!data || data.length < PAGINA) break;
   }
@@ -63,7 +70,7 @@ export function nombreArchivoInforme(ahora = new Date()) {
 // Informe legible ("Mis datos"): un único archivo HTML que se abre en el navegador,
 // se puede imprimir o guardar como PDF y no carga nada de internet.
 // ---------------------------------------------------------------------------
-export const SECCIONES_INFORME = ["cuentas", "deudas", "inversiones", "activos", "seguimiento", "finanzas_perfil", "finanzas_historial", "finanzas_quiz", "plan_financiero"];
+export const SECCIONES_INFORME = ["cuentas", "deudas", "inversiones", "activos", "seguimiento", "finanzas_perfil", "finanzas_historial", "finanzas_quiz", "plan_financiero", "guia_progreso"];
 
 const esc = v => String(v === undefined || v === null ? "" : v).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 const num = v => {
@@ -220,6 +227,8 @@ export function construirInformeHtml(datos, ahora = new Date()) {
   const quiz = (d.finanzas_quiz || [])[0] || null;
   const historial = [...(d.finanzas_historial || [])].sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
   const planes = d.plan_financiero || [];
+  const guiaMapa = ((d.guia_progreso || [])[0] || {}).leidos;
+  const guiaLeidas = guiaMapa && typeof guiaMapa === "object" ? Object.keys(guiaMapa).filter(k => Number(guiaMapa[k]) > 0).map(k => ({ slug: k, t: Number(guiaMapa[k]) })).sort((a, b) => b.t - a.t) : [];
   const usuario = d.usuario || {};
 
   // Mismas cuentas que hace la app: patrimonio = liquidez + inversiones + activos − (deudas + lo que queda por pagar de los activos)
@@ -254,10 +263,12 @@ export function construirInformeHtml(datos, ahora = new Date()) {
   const sQuiz = seccion("Cuestionario de perfil de inversor", !quiz ? '<p class="vacio">Aún no has hecho el cuestionario.</p>' : '<div class="datos">' + [dato("Completado", quiz.terminado ? "Sí" : "No"), dato("Perfil resultante", resultadoQuiz && resultadoQuiz.perfil ? resultadoQuiz.perfil : "—"), dato("Actualizado", fecha(quiz.updated_at))].join("") + "</div>");
   const sHistorial = seccion("Historial de tu ahorro", tabla([{ t: "Fecha", v: f => fecha(f.created_at) }, { t: "Ahorro sobre ingresos", num: true, v: f => num(f.ratio_ahorro) === null ? "—" : porcentaje(num(f.ratio_ahorro) * 100) }], historial));
   const sPlan = seccion("Plan financiero", tabla([{ t: "Versión", num: true, v: f => numero(f.version) }, { t: "Estado", v: f => texto(f.estado) }, { t: "Generado", v: f => fecha(f.generado_at) }, { t: "Fases del plan", v: f => (Array.isArray(f.fases) ? f.fases.map(x => x && x.titulo).filter(Boolean).join(" → ") : "") || "—" }], planes, "No hay un plan financiero guardado."));
+  const fechaMs = t => { const d = new Date(t); return isNaN(d.getTime()) ? null : d.toISOString(); };
+  const sGuia = seccion("Progreso de lectura de la guía", tabla([{ t: "Guía (identificador)", v: f => f.slug }, { t: "Leída el", v: f => fecha(fechaMs(f.t)) }], guiaLeidas, "Aún no has marcado ninguna guía como leída."));
 
   const generado = ahora.toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric" }) + " a las " + ahora.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
   const estilos = "*{box-sizing:border-box}body{margin:0;background:#f4f5fb;color:#1f2433;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;line-height:1.5}.pagina{max-width:980px;margin:0 auto;padding:28px 18px 60px}header{background:#4f46e5;color:#fff;border-radius:16px;padding:26px 26px 22px;margin-bottom:22px}header .marca{font-weight:800;letter-spacing:.02em;opacity:.9;font-size:.95rem}header h1{margin:6px 0 4px;font-size:1.9rem;line-height:1.15}header p{margin:2px 0;opacity:.92;font-size:.95rem;word-break:break-word}.resumen{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-bottom:8px}.tarjeta{background:#fff;border-radius:14px;padding:16px;box-shadow:0 1px 3px rgba(20,24,50,.08)}.tarjeta span{display:block;font-size:.8rem;color:#6a7086;text-transform:uppercase;letter-spacing:.05em}.tarjeta b{display:block;font-size:1.4rem;margin:4px 0 2px;color:#2b2f6b}.tarjeta small{color:#8a90a6}section{background:#fff;border-radius:16px;padding:20px 20px 12px;margin-top:18px;box-shadow:0 1px 3px rgba(20,24,50,.08)}h2{margin:0 0 12px;font-size:1.25rem;color:#2b2f6b;border-bottom:2px solid #eceefb;padding-bottom:8px}h3{margin:20px 0 8px;font-size:1rem;color:#454a73}.nota{margin:-4px 0 12px;color:#6a7086;font-size:.9rem}.scroll{overflow-x:auto;margin-bottom:10px}table{border-collapse:collapse;width:100%;font-size:.92rem}th{text-align:left;background:#f1f2fb;color:#454a73;font-weight:700;padding:9px 10px;white-space:nowrap}td{padding:9px 10px;border-top:1px solid #eef0f7;vertical-align:top}tbody tr:nth-child(even) td{background:#fafbff}.n{text-align:right;white-space:nowrap}.vacio{color:#8a90a6;font-style:italic;margin:6px 0 14px}.datos{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;margin-bottom:6px}.dato{background:#f7f8fe;border-radius:10px;padding:10px 12px}.dato span{display:block;font-size:.78rem;color:#6a7086}.dato b{font-size:1rem}.grafico{margin:0 0 12px}.grafico h2{margin:0 0 10px}.grafico h3{margin:14px 0 6px}.grafico svg{width:100%;height:auto;display:block;background:#fbfbff;border-radius:12px}.leyenda{font-size:.82rem;color:#6a7086;margin:6px 2px 0}.leyenda i{display:inline-block;width:11px;height:11px;border-radius:3px;margin:0 4px 0 10px;vertical-align:-1px}.leyenda i:first-child{margin-left:0}footer{margin-top:26px;font-size:.85rem;color:#6a7086;text-align:center}@media print{body{background:#fff;font-size:11px}table{font-size:.8rem}th{white-space:normal}.n{white-space:normal}header{background:#fff;color:#000;border:1px solid #bbb}section,.tarjeta{box-shadow:none;border:1px solid #ddd;break-inside:avoid}.scroll{overflow:visible}}";
-  return '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src \'none\'; style-src \'unsafe-inline\'; img-src data:"><title>Mis datos · MoneyPilot</title><style>' + estilos + '</style></head><body><div class="pagina"><header><div class="marca">MoneyPilot</div><h1>Mis datos</h1><p>' + esc(usuario.email || "") + "</p><p>Informe generado el " + esc(generado) + "</p></header>" + resumen + "<section>" + grafPatrimonio + "</section>" + sCuentas + sDeudas + sInversiones + sActivos + sSeguimiento + sDiagnostico + sQuiz + sHistorial + sPlan + "<footer>Este informe contiene tus datos personales y financieros: guárdalo en un lugar seguro.<br>Puedes imprimirlo o guardarlo como PDF desde tu navegador.</footer></div></body></html>";
+  return '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src \'none\'; style-src \'unsafe-inline\'; img-src data:"><title>Mis datos · MoneyPilot</title><style>' + estilos + '</style></head><body><div class="pagina"><header><div class="marca">MoneyPilot</div><h1>Mis datos</h1><p>' + esc(usuario.email || "") + "</p><p>Informe generado el " + esc(generado) + "</p></header>" + resumen + "<section>" + grafPatrimonio + "</section>" + sCuentas + sDeudas + sInversiones + sActivos + sSeguimiento + sDiagnostico + sQuiz + sHistorial + sPlan + sGuia + "<footer>Este informe contiene tus datos personales y financieros: guárdalo en un lugar seguro.<br>Puedes imprimirlo o guardarlo como PDF desde tu navegador.</footer></div></body></html>";
 }
 
 // Borra del dispositivo lo que la app guardó (no toca nada ajeno a MoneyPilot)
@@ -279,11 +290,11 @@ export async function borrarDatosNube(userId, cliente = supa) {
     try {
       const { error } = await cliente.from(tabla).delete().eq("user_id", userId);
       if (error) {
-        fallidas.push(tabla);
+        if (!(OPCIONALES.has(tabla) && tablaAusente(error))) fallidas.push(tabla);
         continue;
       }
       const { count, error: errCuenta } = await cliente.from(tabla).select("user_id", { count: "exact", head: true }).eq("user_id", userId);
-      if (errCuenta || (count || 0) > 0) fallidas.push(tabla);
+      if ((errCuenta && !(OPCIONALES.has(tabla) && tablaAusente(errCuenta))) || (count || 0) > 0) fallidas.push(tabla);
     } catch (e) {
       fallidas.push(tabla);
     }
