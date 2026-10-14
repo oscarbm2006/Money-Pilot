@@ -535,7 +535,7 @@ export function App() {
       backgroundRepeat: "no-repeat",
       backgroundSize: "cover",
       backgroundPosition: "center",
-      opacity: 0.35,
+      opacity: 0.7,
       mixBlendMode: "multiply"
     }
   }), /*#__PURE__*/React.createElement("header", {
