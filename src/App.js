@@ -29,7 +29,7 @@ export function App() {
     if (typeof window === "undefined") return "inicio";
     try {
       const guardada = window.localStorage.getItem("salud-financiera:ultima-vista") || "inicio";
-      return guardada === "blog" ? "inicio" : guardada;
+      return guardada === "blog" || guardada === "privacidad" ? "inicio" : guardada;
     } catch (e) {
       return "inicio";
     }
@@ -58,9 +58,10 @@ export function App() {
     const onPop = e => {
       const v = e.state && e.state.mpVista;
       if (!v) return;
-      setVistaActualBase(v);
+      const destino = v === "privacidad" ? "inicio" : v; // la política ya no es una vista de la app: es /privacidad.html
+      setVistaActualBase(destino);
       try {
-        window.localStorage.setItem("salud-financiera:ultima-vista", v);
+        window.localStorage.setItem("salud-financiera:ultima-vista", destino);
       } catch (err) {}
     };
     window.addEventListener("popstate", onPop);
@@ -969,20 +970,7 @@ export function App() {
     }, "Cargando…")
   }, /*#__PURE__*/React.createElement(Blog, {
     user: user
-  }))), vistaActual === 'privacidad' && /*#__PURE__*/React.createElement("div", {
-    key: "privacidad",
-    className: "fade-switch-enter"
-  }, /*#__PURE__*/React.createElement(PaginaLegal, {
-    titulo: "Política de Privacidad"
-  }, /*#__PURE__*/React.createElement("p", null, /*#__PURE__*/React.createElement("b", null, "1. Responsable del tratamiento."), " Óscar Baca Martínez, particular residente en España, con contacto en soportemoneypilot@gmail.com, es el responsable de los datos tratados a través de MoneyPilot."), /*#__PURE__*/React.createElement("p", null, /*#__PURE__*/React.createElement("b", null, "2. Datos que recogemos."), " Los datos financieros que introduces voluntariamente en la herramienta (ingresos, gastos, ahorros) se usan únicamente para generar tu diagnóstico, además de datos técnicos de navegación (dirección IP, tipo de dispositivo, páginas visitadas) recogidos de forma automática."), /*#__PURE__*/React.createElement("p", null, /*#__PURE__*/React.createElement("b", null, "3. Cookies y publicidad."), " Este sitio utiliza cookies propias y de terceros, incluyendo Google AdSense, para mostrar anuncios personalizados según tus intereses. Google, como proveedor externo, utiliza cookies para publicar anuncios basados en tus visitas anteriores a este sitio o a otros sitios web. Puedes inhabilitar el uso de cookies de personalización de anuncios visitando la ", /*#__PURE__*/React.createElement("a", {
-    href: "https://adssettings.google.com",
-    target: "_blank",
-    rel: "noopener",
-    style: {
-      color: C.sand,
-      textDecoration: "underline"
-    }
-  }, "Configuración de anuncios de Google"), "."), /*#__PURE__*/React.createElement("p", null, /*#__PURE__*/React.createElement("b", null, "4. Finalidad del tratamiento."), " Los datos se usan para prestar el servicio solicitado, mejorar la experiencia de usuario y, en su caso, mostrar publicidad relevante a través de terceros como Google AdSense."), /*#__PURE__*/React.createElement("p", null, /*#__PURE__*/React.createElement("b", null, "5. Conservación de los datos."), " Los datos financieros que introduces se guardan en tu dispositivo y, si creas una cuenta, en la nube, únicamente mientras mantengas tu cuenta activa o decidas borrarlos tú mismo desde la propia aplicación."), /*#__PURE__*/React.createElement("p", null, /*#__PURE__*/React.createElement("b", null, "6. Derechos del usuario."), " Puedes ejercer tus derechos de acceso, rectificación, supresión, oposición y portabilidad escribiendo a soportemoneypilot@gmail.com."), /*#__PURE__*/React.createElement("p", null, /*#__PURE__*/React.createElement("b", null, "7. Cambios en esta política."), " Esta política puede actualizarse para adaptarse a cambios legales o del servicio. Recomendamos revisarla periódicamente."))), vistaActual === 'aviso-legal' && /*#__PURE__*/React.createElement("div", {
+  }))), vistaActual === 'aviso-legal' && /*#__PURE__*/React.createElement("div", {
     key: "aviso-legal",
     className: "fade-switch-enter"
   }, /*#__PURE__*/React.createElement(PaginaLegal, {
@@ -1072,8 +1060,8 @@ export function App() {
     style: {
       color: C.mutedLight
     }
-  }, "Mi cuenta") : null, /*#__PURE__*/React.createElement("button", {
-    onClick: () => setVistaActual('privacidad'),
+  }, "Mi cuenta") : null, /*#__PURE__*/React.createElement("a", {
+    href: "/privacidad.html",
     className: "hover:underline",
     style: {
       color: C.mutedLight
