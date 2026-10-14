@@ -2,6 +2,7 @@ const { useState, useEffect, useRef, useCallback, useMemo, useId } = React;
 
 import { ACTIVOS_STORAGE_KEY, CUENTAS_STORAGE_KEY, DEUDAS_DEF, GASTOS_DISC_DEF, GASTOS_FIJOS_DEF, INVERSIONES_STORAGE_KEY, STORAGE_KEY, supa } from './constantes.js';
 import { calcularPerfilMultidimensional, deudaTieneContenido, emptyCampo, mapDeudaParaSupabase, normalizarObjetivos, normalizarRespuestasQuiz, numOrNull, objetivoLegadoDesdeColeccion, reconstruirEstadoQuiz } from './calculos.js';
+import { GUIA_CLAVE, GUIA_CLAVE_SYNC, GUIA_CLAVE_V1, fusionarMapas, leidosDe, mapaDesdeLista, mapasIguales, mismosLeidos, normalizarMapa } from './guia-progreso.js';
 
 export function useDatosPersistidos() {
   const [ready, setReady] = useState(false);
@@ -1255,4 +1256,122 @@ export async function migrarANube(userId, {
       await supa.from("finanzas_historial").insert(filas);
     } catch (e) {/* fallo silencioso */}
   }
+}
+
+
+// ---------------------------------------------------------------------------
+// Progreso de lectura de la guía del blog (ver src/guia-progreso.js y public/guia-progreso.js)
+// Se guarda en este dispositivo: lo escriben las propias páginas del blog. Con la sesión iniciada se sincroniza
+// con la tabla guia_progreso de la cuenta, con las mismas reglas que los datos:
+//  - cuenta sin progreso -> se sube lo de este dispositivo; dispositivo sin progreso -> se baja el de la cuenta;
+//  - los dos con progreso distinto, la primera vez en este dispositivo -> se pregunta (conservar todo / usar solo la cuenta);
+//  - después se fusionan solos (para cada guía gana lo más reciente).
+// Si la tabla no existe o no hay red, todo sigue funcionando en local y sin avisar.
+function guiaLeerLocal() {
+  try {
+    const raw = window.localStorage.getItem(GUIA_CLAVE);
+    if (raw) return normalizarMapa(JSON.parse(raw));
+    const v1 = window.localStorage.getItem(GUIA_CLAVE_V1);
+    if (v1) return mapaDesdeLista(JSON.parse(v1));
+  } catch (e) {/* sin datos guardados */}
+  return {};
+}
+function guiaEscribirLocal(mapa) {
+  try {
+    window.localStorage.setItem(GUIA_CLAVE, JSON.stringify(mapa));
+  } catch (e) {/* fallo silencioso */}
+}
+function guiaYaReconciliado(uid) {
+  try {
+    const o = JSON.parse(window.localStorage.getItem(GUIA_CLAVE_SYNC) || "null");
+    return !!o && o.uid === uid;
+  } catch (e) {
+    return false;
+  }
+}
+function guiaMarcarReconciliado(uid) {
+  try {
+    window.localStorage.setItem(GUIA_CLAVE_SYNC, JSON.stringify({ uid, t: Date.now() }));
+  } catch (e) {/* fallo silencioso */}
+}
+export function useGuiaProgresoSync({
+  user,
+  onSaved
+}) {
+  const [conflicto, setConflicto] = useState(null);
+  const avisadoRef = useRef(false);
+  const subir = useCallback(async (uid, mapa) => {
+    const { error } = await supa.from("guia_progreso").upsert({ user_id: uid, leidos: mapa, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
+    if (error && !avisadoRef.current) {
+      avisadoRef.current = true;
+      onSaved && onSaved("No se pudo sincronizar tu progreso de lectura. Sigue guardado en este dispositivo.", "error");
+    }
+    return !error;
+  }, [onSaved]);
+  const sincronizar = useCallback(async uid => {
+    const { data, error } = await supa.from("guia_progreso").select("leidos").eq("user_id", uid).maybeSingle();
+    if (error) {
+      console.warn("guia_progreso:", error.message); // sin tabla o sin red: se queda en local
+      return;
+    }
+    const local = guiaLeerLocal();
+    const nube = normalizarMapa(data && data.leidos);
+    if (!data) {
+      if (Object.keys(local).length) await subir(uid, local);
+      guiaMarcarReconciliado(uid);
+      return;
+    }
+    if (guiaYaReconciliado(uid)) {
+      // Ya se decidió en este dispositivo: se fusiona sin preguntar (gana lo más reciente de cada guía)
+      const fus = fusionarMapas(local, nube);
+      if (!mapasIguales(fus, local)) guiaEscribirLocal(fus);
+      if (!mapasIguales(fus, nube)) await subir(uid, fus);
+      return;
+    }
+    const lLocal = leidosDe(local),
+      lNube = leidosDe(nube);
+    if (lLocal.length === 0 || lNube.length === 0 || mismosLeidos(local, nube)) {
+      const fus = fusionarMapas(local, nube);
+      guiaEscribirLocal(fus);
+      if (!mapasIguales(fus, nube)) await subir(uid, fus);
+      guiaMarcarReconciliado(uid);
+      return;
+    }
+    // Progreso distinto en este dispositivo y en la cuenta: se pregunta
+    setConflicto({ locales: lLocal, nube: lNube, mapaLocal: local, mapaNube: nube });
+  }, [subir]);
+  useEffect(() => {
+    if (!user) {
+      setConflicto(null);
+      return;
+    }
+    let cancelado = false;
+    sincronizar(user.id).catch(() => {});
+    // Al volver a esta pestaña (p. ej. tras leer en el blog) se vuelve a fusionar, solo si ya estaba decidido
+    const alVolver = () => {
+      if (!cancelado && document.visibilityState === "visible" && guiaYaReconciliado(user.id)) sincronizar(user.id).catch(() => {});
+    };
+    document.addEventListener("visibilitychange", alVolver);
+    return () => {
+      cancelado = true;
+      document.removeEventListener("visibilitychange", alVolver);
+    };
+  }, [user, sincronizar]);
+  const resolverConflicto = useCallback(async opcion => {
+    const cf = conflicto;
+    if (!cf || !user) return;
+    if (opcion === "fusionar") {
+      const fus = fusionarMapas(cf.mapaLocal, cf.mapaNube);
+      guiaEscribirLocal(fus);
+      await subir(user.id, fus);
+    } else {
+      guiaEscribirLocal(cf.mapaNube);
+    }
+    guiaMarcarReconciliado(user.id);
+    setConflicto(null);
+  }, [conflicto, user, subir]);
+  return {
+    conflicto,
+    resolverConflicto
+  };
 }
