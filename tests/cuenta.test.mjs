@@ -102,7 +102,7 @@ describe('Descargar mis datos', () => {
   });
   const ANA = { id: 'ana', email: 'ana@ejemplo.com' };
 
-  test('reúne las 9 tablas con SOLO los datos del usuario (nada de otras personas)', async () => {
+  test('reúne las 10 tablas con SOLO los datos del usuario (nada de otras personas)', async () => {
     const db = tablas({
       cuentas: [{ id: 1, user_id: 'ana', nombre: 'Nómina', saldo: 100 }, { id: 2, user_id: 'beto', nombre: 'Secreta de Beto', saldo: 999 }],
       deudas: [{ id: 1, user_id: 'beto', nombre: 'Deuda de Beto' }],
@@ -133,6 +133,28 @@ describe('Descargar mis datos', () => {
   test('nombre del archivo con la fecha', () => {
     assert.equal(M.nombreArchivoDatos(new Date('2026-10-04T23:30:00Z')), 'moneypilot-mis-datos-2026-10-04.json');
   });
+  const tablaFaltante = { code: 'PGRST205', message: 'Could not find the table public.guia_progreso in the schema cache' };
+  const conErrorEn = (db, tabla, error) => {
+    const c = clienteDatos(db), orig = c.from.bind(c);
+    c.from = t => t !== tabla ? orig(t) : { select() { return this; }, eq() { return this; }, order() { return this; }, range() { return this; }, then(res) { res({ data: null, error }); } };
+    return c;
+  };
+  test('si la tabla guia_progreso aún no existe en Supabase, la descarga sigue funcionando (sección vacía)', async () => {
+    const r = await M.reunirDatosUsuario(ANA, conErrorEn(tablas(), 'guia_progreso', tablaFaltante), new Date('2026-10-04T10:00:00Z'));
+    assert.deepEqual(r.guia_progreso, []);
+    for (const t of M.TABLAS_USUARIO) assert.ok(Array.isArray(r[t]), t);
+  });
+  test('un fallo DISTINTO a "tabla inexistente" en guia_progreso sí interrumpe la descarga (no se entrega un archivo incompleto)', async () => {
+    await assert.rejects(() => M.reunirDatosUsuario(ANA, conErrorEn(tablas(), 'guia_progreso', { code: '500', message: 'timeout' })), /guia_progreso/);
+  });
+  test('la sección de la guía del informe lista las guías leídas, ordenadas, e ignora las quitadas y las fechas rotas', () => {
+    const base = Object.fromEntries(M.SECCIONES_INFORME.map(t => [t, []]));
+    const html = M.construirInformeHtml({ ...base, guia_progreso: [{ user_id: 'ana', leidos: { 'guia-uno': Date.UTC(2026, 9, 1), 'guia-dos': Date.UTC(2026, 9, 5), 'guia-quitada': -Date.UTC(2026, 9, 9), 'guia-rota': 1e20 } }] });
+    assert.ok(html.includes('Progreso de lectura de la guía') && html.includes('guia-uno') && html.includes('guia-dos'));
+    assert.ok(!html.includes('guia-quitada'));
+    assert.ok(html.indexOf('guia-dos') < html.indexOf('guia-uno'), 'la más reciente va primero');
+    assert.ok(html.includes('guia-rota'), 'una fecha inválida no debe romper el informe');
+  });
   test('GUARDA: cualquier tabla de usuario que use la app debe estar en la descarga (menos el blog público)', () => {
     const usadas = new Set();
     for (const f of readdirSync(resolve(raiz, 'src')).filter(x => x.endsWith('.js'))) {
@@ -154,6 +176,17 @@ describe('Eliminar mi cuenta (lado navegador)', () => {
   });
   test('limpiarDatosLocales nunca lanza error, aunque el almacenamiento falle', () => {
     assert.doesNotThrow(() => M.limpiarDatosLocales({ get length() { throw new Error('bloqueado'); } }));
+  });
+  const clienteBorrado = (errores = {}) => ({ from: t => ({ delete: () => ({ eq: async () => ({ error: errores[t] || null }) }), select: () => ({ eq: async () => ({ count: 0, error: errores[t] || null }) }) }) });
+  test('borrarDatosNube: si guia_progreso aún no existe en Supabase, el borrado sigue siendo correcto', async () => {
+    const r = await M.borrarDatosNube('ana', clienteBorrado({ guia_progreso: { code: 'PGRST205', message: 'Could not find the table public.guia_progreso in the schema cache' } }));
+    assert.deepEqual(r, { ok: true, fallidas: [] });
+  });
+  test('borrarDatosNube: un fallo distinto en guia_progreso, o en cualquier otra tabla, sí se notifica', async () => {
+    const r1 = await M.borrarDatosNube('ana', clienteBorrado({ guia_progreso: { code: '500', message: 'timeout' } }));
+    assert.deepEqual(r1, { ok: false, fallidas: ['guia_progreso'] });
+    const r2 = await M.borrarDatosNube('ana', clienteBorrado({ cuentas: { code: 'PGRST205', message: 'Could not find the table' } }));
+    assert.deepEqual(r2, { ok: false, fallidas: ['cuentas'] }, 'solo las tablas opcionales toleran "tabla inexistente"');
   });
   const sesion = token => ({ auth: { getSession: async () => ({ data: { session: token ? { access_token: token } : null } }) } });
 
