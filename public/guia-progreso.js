@@ -1,11 +1,14 @@
 /* Progreso de lectura de la guía (blog de MoneyPilot).
    Es un archivo externo porque la política de seguridad (CSP) no admite scripts en línea.
    Sin JavaScript las páginas se ven y funcionan igual: todo esto es una mejora progresiva.
-   Qué guías has leído se guarda SOLO en este dispositivo (localStorage); no se envía a ningún sitio. */
+   Qué guías has leído se guarda en este dispositivo (localStorage). Esta página no envía nada a ningún sitio: si
+   inicias sesión en MoneyPilot, es la aplicación la que, con tu permiso, lo sincroniza con tu cuenta (como tus datos).
+   Formato: { slug: marca } con marca > 0 = leída y marca < 0 = quitada de leídas (instante en ms), para poder fusionar. */
 (function () {
   'use strict';
 
-  var CLAVE = 'salud-financiera:guia-leidos-v1';
+  var CLAVE = 'salud-financiera:guia-leidos-v2';
+  var CLAVE_V1 = 'salud-financiera:guia-leidos-v1'; // formato antiguo: lista de slugs leídos
   var ESPERA_MIN_MS = 10000; // una guía cuenta como leída al llegar al final, tras al menos 10 s en la página
 
   var elDatos = document.getElementById('guia-datos');
@@ -29,15 +32,22 @@
   }
 
   /* ---------- Estado (guías leídas) ---------- */
-  function leidas() {
-    var v;
-    try { v = JSON.parse(localStorage.getItem(CLAVE) || '[]'); } catch (e) { v = []; }
-    var set = {};
-    (Array.isArray(v) ? v : []).forEach(function (s) { if (porSlug[s]) set[s] = true; }); // se ignoran guías que ya no existen
-    return set;
+  function leerMapa() {
+    try {
+      var raw = localStorage.getItem(CLAVE);
+      if (raw) { var o = JSON.parse(raw); return (o && typeof o === 'object' && !Array.isArray(o)) ? o : {}; }
+      var v1 = JSON.parse(localStorage.getItem(CLAVE_V1) || 'null'); // migración desde el formato antiguo
+      if (Array.isArray(v1)) { var m = {}; v1.forEach(function (s) { if (typeof s === 'string' && s) m[s] = 1; }); return m; }
+    } catch (e) { /* datos ilegibles: se empieza de cero */ }
+    return {};
   }
-  function guardar(set) {
-    try { localStorage.setItem(CLAVE, JSON.stringify(Object.keys(set))); } catch (e) { /* sin espacio o bloqueado */ }
+  function guardarMapa(m) {
+    try { localStorage.setItem(CLAVE, JSON.stringify(m)); } catch (e) { /* sin espacio o bloqueado */ }
+  }
+  function leidas() {
+    var m = leerMapa(), set = {};
+    Object.keys(m).forEach(function (s) { if (porSlug[s] && Number(m[s]) > 0) set[s] = true; }); // se ignoran guías que ya no existen
+    return set;
   }
   function resumen(set) {
     var n = 0, min = 0, sig = null;
@@ -147,12 +157,12 @@
     var slug = art.getAttribute('data-guia-slug');
 
     var marcar = function (valor) {
-      var set = leidas(), ya = !!set[slug];
+      var m = leerMapa(), ya = Number(m[slug]) > 0;
       if (valor === ya) return;
-      if (valor) set[slug] = true; else delete set[slug];
-      guardar(set);
+      m[slug] = (valor ? 1 : -1) * Date.now(); // la marca negativa recuerda que se quitó, para que una copia antigua no la reactive
+      guardarMapa(m);
       pintar();
-      var r = resumen(set);
+      var r = resumen(leidas());
       aviso(!valor ? 'Guía quitada de las leídas'
         : (r.n === r.total ? '¡Has completado toda la guía!' : 'Guía leída ✓ · llevas ' + r.n + ' de ' + r.total));
     };
