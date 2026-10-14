@@ -1,0 +1,70 @@
+import { test, describe, before, after } from 'node:test';
+import assert from 'node:assert/strict';
+import { cargarModulo, cerrar } from './cargar.mjs';
+
+let G;
+before(async () => { G = await cargarModulo('/src/guia-progreso.js'); });
+after(async () => { await cerrar(); });
+
+describe('Progreso de lectura de la guía: fusión entre dispositivo y cuenta', () => {
+  test('normalizarMapa descarta todo lo que no sea una marca numérica con un slug razonable', () => {
+    const sucio = { bien: 5, quitada: -7, cero: 0, texto: 'abc', nulo: null, nan: NaN, '': 3, ['x'.repeat(200)]: 9, decimal: 12.9 };
+    assert.deepEqual(G.normalizarMapa(sucio), { bien: 5, quitada: -7, decimal: 12 });
+    assert.deepEqual(G.normalizarMapa(null), {});
+    assert.deepEqual(G.normalizarMapa(['a', 'b']), {});
+    assert.deepEqual(G.normalizarMapa('hola'), {});
+  });
+
+  test('el formato antiguo (lista de slugs) se convierte en leídas', () => {
+    assert.deepEqual(G.mapaDesdeLista(['a', 'b', '', 3, null]), { a: 1, b: 1 });
+    assert.deepEqual(G.leidosDe(G.mapaDesdeLista(['b', 'a'])), ['a', 'b']);
+  });
+
+  test('leidosDe solo cuenta las leídas (las quitadas no)', () => {
+    assert.deepEqual(G.leidosDe({ a: 10, b: -20, c: 30 }), ['a', 'c']);
+  });
+
+  test('para cada guía gana la marca más reciente', () => {
+    const local = { a: 100, b: 200, c: -300 };
+    const nube = { a: 150, b: -250, d: 50 };
+    // a: la nube es más reciente (150 > 100); b: la nube quitó la guía después (250 > 200); c: solo local; d: solo nube
+    assert.deepEqual(G.fusionarMapas(local, nube), { a: 150, b: -250, c: -300, d: 50 });
+  });
+
+  test('una guía quitada más tarde no resucita desde la copia antigua (y al revés)', () => {
+    const antigua = { x: 100 }; // leída en t=100
+    const reciente = { x: -500 }; // quitada en t=500
+    assert.deepEqual(G.leidosDe(G.fusionarMapas(antigua, reciente)), []);
+    assert.deepEqual(G.leidosDe(G.fusionarMapas(reciente, antigua)), []);
+    // y si se vuelve a leer después, gana la lectura
+    assert.deepEqual(G.leidosDe(G.fusionarMapas({ x: 900 }, reciente)), ['x']);
+  });
+
+  test('en empate exacto gana "leída"', () => {
+    assert.deepEqual(G.fusionarMapas({ x: 100 }, { x: -100 }), { x: 100 });
+    assert.deepEqual(G.fusionarMapas({ x: -100 }, { x: 100 }), { x: 100 });
+  });
+
+  test('la fusión es conmutativa, idempotente y asociativa (dos dispositivos siempre convergen)', () => {
+    const a = { p: 10, q: -20, r: 30 }, b = { p: -15, q: 25, s: 5 }, c = { r: -40, t: 7 };
+    const f = G.fusionarMapas;
+    assert.deepEqual(f(a, b), f(b, a));
+    assert.deepEqual(f(a, a), G.normalizarMapa(a));
+    assert.deepEqual(f(f(a, b), c), f(a, f(b, c)));
+  });
+
+  test('mismosLeidos compara solo las guías leídas, no las marcas de tiempo ni las quitadas', () => {
+    assert.ok(G.mismosLeidos({ a: 10, b: -5 }, { a: 99 }));
+    assert.ok(!G.mismosLeidos({ a: 10 }, { a: 10, b: 3 }));
+    assert.ok(G.mismosLeidos({}, { z: -1 }));
+  });
+
+  test('mapasIguales distingue marcas distintas', () => {
+    assert.ok(G.mapasIguales({ a: 1, b: -2 }, { b: -2, a: 1 }));
+    assert.ok(!G.mapasIguales({ a: 1 }, { a: 2 }));
+  });
+
+  test('las claves de almacenamiento llevan el prefijo que borra "Empezar de nuevo"', () => {
+    for (const k of [G.GUIA_CLAVE, G.GUIA_CLAVE_SYNC, G.GUIA_CLAVE_V1]) assert.ok(k.startsWith('salud-financiera:'), k);
+  });
+});
