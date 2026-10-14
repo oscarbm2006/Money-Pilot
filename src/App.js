@@ -2,7 +2,7 @@ const { useState, useEffect, useRef, useCallback, useMemo, useId } = React;
 
 import { BLOG_ADMIN_EMAIL, C, I, OBJETIVOS_DEF, PATTERN_URI_STATIC, PERFILES_INFO } from './constantes.js';
 import { calcularCapacidadFinanciera, calcularDiagnosticoAmpliado, calcularPerfilMultidimensional, calcularPlanFinanciero, calcularPlanObjetivos, calcularPrioridades, datosVacios, normalizarObjetivos, objetivoLegadoDesdeColeccion, reconstruirEstadoQuiz, totalMensual } from './calculos.js';
-import { useActivosPersistidos, useActivosSync, useAuth, useCloudSync, useCuentasPersistidas, useCuentasSync, useDatosPersistidos, useDebouncedEffect, useDeudasMirrorSync, useInversionesPersistidas, useInversionesSync, useSeguimiento, useToast } from './hooks-datos.js';
+import { useActivosPersistidos, useActivosSync, useAuth, useCloudSync, useCuentasPersistidas, useCuentasSync, useDatosPersistidos, useDebouncedEffect, useDeudasMirrorSync, useGuiaProgresoSync, useInversionesPersistidas, useInversionesSync, useSeguimiento, useToast } from './hooks-datos.js';
 import { AuthModal, ConflictoDatosModal, ContinuarBar, ErrorBoundary, Eyebrow, FeedbackModal, Toast } from './ui-basicos.js';
 import { AmortizacionDeuda, SimuladorDeudas, Contacto, Cuentas, Dashboard, Diagnostico, Estrategia, Inversiones, NavDesktop, PaginaLegal, PanelDiagnostico, PanelPrioridad, Patrimonio, PerfilRiesgo, PlanFinanciero, PrintSummary, Seguimiento, Simulador } from './paginas.js';
 const Blog = React.lazy(() => import('./blog.js'));
@@ -103,6 +103,53 @@ export function App() {
       clearTimeout(t);
       raiz.removeAttribute("data-scrolled");
       raiz.removeAttribute("data-scrolling");
+    };
+  }, []);
+  // Fondo animado de la portada: si el equipo no va sobrado (menos de ≈ 36 fps medidos a los 3 s), se queda quieto y se recuerda
+  useEffect(() => {
+    const raiz = document.documentElement,
+      CLAVE_QUIETO = "salud-financiera:ambiente-quieto";
+    try {
+      if (window.localStorage.getItem(CLAVE_QUIETO) === "1") {
+        raiz.setAttribute("data-ambiente", "quieto");
+        return;
+      }
+    } catch (e) {}
+    if (!window.matchMedia || !window.matchMedia("(min-width: 1024px) and (hover: hover) and (prefers-reduced-motion: no-preference)").matches) return;
+    let cancelado = false,
+      raf = 0;
+    const inicio = setTimeout(() => {
+      let n = 0,
+        suma = 0,
+        ultimo = performance.now();
+      const medir = ahora => {
+        if (cancelado) return;
+        const d = ahora - ultimo;
+        ultimo = ahora;
+        if (document.visibilityState !== "visible" || d > 200) {
+          n = 0;
+          suma = 0; // pestaña en segundo plano o pausa larga: se vuelve a empezar
+        } else {
+          n++;
+          suma += d;
+        }
+        if (n < 60) {
+          raf = requestAnimationFrame(medir);
+          return;
+        }
+        if (suma / n > 28) {
+          raiz.setAttribute("data-ambiente", "quieto");
+          try {
+            window.localStorage.setItem(CLAVE_QUIETO, "1");
+          } catch (e) {}
+        }
+      };
+      raf = requestAnimationFrame(medir);
+    }, 3000);
+    return () => {
+      cancelado = true;
+      clearTimeout(inicio);
+      cancelAnimationFrame(raf);
     };
   }, []);
   useEffect(() => {
@@ -228,6 +275,14 @@ export function App() {
     if (!activosHidratados) return;
     guardarActivosLocal(activos);
   }, [activos, activosHidratados]);
+  // Progreso de lectura de la guía del blog: se guarda en el dispositivo y, con sesión, se sincroniza como los datos
+  const {
+    conflicto: conflictoGuia,
+    resolverConflicto: resolverConflictoGuia
+  } = useGuiaProgresoSync({
+    user,
+    onSaved: (msg, tone) => showToast(msg, tone)
+  });
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showCuentaModal, setShowCuentaModal] = useState(false);
   const [showReinicioModal, setShowReinicioModal] = useState(false);
@@ -1050,7 +1105,7 @@ export function App() {
     signUp: signUp,
     signIn: signIn
   }), user && (() => {
-    const cf = conflictoCuentas ? { etiqueta: "cuentas", c: conflictoCuentas, r: resolverConflictoCuentas } : conflictoInversiones ? { etiqueta: "inversiones", c: conflictoInversiones, r: resolverConflictoInversiones } : conflictoActivos ? { etiqueta: "otros bienes", c: conflictoActivos, r: resolverConflictoActivos } : null;
+    const cf = conflictoCuentas ? { etiqueta: "cuentas", c: conflictoCuentas, r: resolverConflictoCuentas } : conflictoInversiones ? { etiqueta: "inversiones", c: conflictoInversiones, r: resolverConflictoInversiones } : conflictoActivos ? { etiqueta: "otros bienes", c: conflictoActivos, r: resolverConflictoActivos } : conflictoGuia ? { etiqueta: "guías leídas", c: conflictoGuia, r: resolverConflictoGuia } : null;
     return cf ? /*#__PURE__*/React.createElement(ConflictoDatosModal, {
       key: cf.etiqueta,
       etiqueta: cf.etiqueta,
