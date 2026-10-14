@@ -188,18 +188,17 @@ html, body { overflow-x: hidden; max-width: 100%; }
     .fila-entra { animation: mpFila var(--mp-medio) var(--mp-curva) backwards; }
     .glass-nav { transition: background-color var(--mp-medio) var(--mp-curva-suave), box-shadow var(--mp-medio) var(--mp-curva-suave); }
   }
-  /* El fondo de la portada es ESTÁTICO por defecto (coste cero medido). Animarlo es opcional: añade
-     data-ambiente="anim" a <html> (p. ej. en las herramientas del navegador) para probarlo en tu equipo.
-     En mi entorno de pruebas, sin GPU, la animación subía el tiempo por fotograma de 17 a 49 ms en
-     escritorio, por eso no se activa sola. Con prefers-reduced-motion nunca se anima. */
-  @media (prefers-reduced-motion: no-preference) {
-    @keyframes mpFlota1 { to { transform: translate3d(70px, 50px, 0) scale(1.10); } }
-    @keyframes mpFlota2 { to { transform: translate3d(-60px, 60px, 0) scale(0.92); } }
-    @keyframes mpFlota3 { to { transform: translate3d(50px, -50px, 0) scale(1.08); } }
-    html[data-ambiente="anim"] .mp-orbe { will-change: transform; }
-    html[data-ambiente="anim"] .mp-orbe-1 { animation: mpFlota1 28s ease-in-out 4 alternate; }
-    html[data-ambiente="anim"] .mp-orbe-2 { animation: mpFlota2 36s ease-in-out 4 alternate; }
-    html[data-ambiente="anim"] .mp-orbe-3 { animation: mpFlota3 32s ease-in-out 4 alternate; }
+  /* Fondo de la portada: en pantallas anchas con ratón las manchas flotan despacio (4 ciclos, ≈ 2 min, y se detienen);
+     en móvil y tablet queda estático (medido: estático = coste cero; animado ≈ 2x el tiempo por fotograma sin GPU).
+     App.js mide la fluidez a los 3 s y, si el equipo va justo, pone data-ambiente="quieto" en <html> (y lo recuerda):
+     entonces no se anima. Con prefers-reduced-motion nunca se anima. Se pausa mientras se hace scroll. */
+  @media (prefers-reduced-motion: no-preference) and (min-width: 1024px) and (hover: hover) {
+    @keyframes mpFlota1 { to { transform: translate3d(60px, 44px, 0) scale(1.10); } }
+    @keyframes mpFlota2 { to { transform: translate3d(-52px, 52px, 0) scale(0.92); } }
+    @keyframes mpFlota3 { to { transform: translate3d(44px, -44px, 0) scale(1.08); } }
+    html:not([data-ambiente="quieto"]) .mp-orbe-1 { width: 380px; height: 380px; will-change: transform; animation: mpFlota1 28s ease-in-out 4 alternate; }
+    html:not([data-ambiente="quieto"]) .mp-orbe-2 { width: 340px; height: 340px; will-change: transform; animation: mpFlota2 36s ease-in-out 4 alternate; }
+    html:not([data-ambiente="quieto"]) .mp-orbe-3 { width: 300px; height: 300px; will-change: transform; animation: mpFlota3 32s ease-in-out 4 alternate; }
   }
   html[data-scrolling] .mp-orbe { animation-play-state: paused; }
   @media print { .mp-ambiente { display: none; } }
