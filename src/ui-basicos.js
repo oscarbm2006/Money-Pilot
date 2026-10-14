@@ -1373,7 +1373,8 @@ export function ConflictoDatosModal({ etiqueta, nLocales, nNube, onNube, onFusio
   const NOMBRES = {
     "cuentas": ["cuenta bancaria", "cuentas bancarias"],
     "inversiones": ["inversión", "inversiones"],
-    "otros bienes": ["bien", "bienes"]
+    "otros bienes": ["bien", "bienes"],
+    "guías leídas": ["guía leída", "guías leídas"]
   };
   const [sing, plur] = NOMBRES[etiqueta] || [etiqueta, etiqueta];
   const nombre = n => n + " " + (n === 1 ? sing : plur);
