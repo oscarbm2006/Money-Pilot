@@ -312,6 +312,8 @@ function Barras3D({ datos, escalaMax }) {
 }
 
 /* ---------- Un pequeño experimento: gasto hormiga ---------- */
+// Misma utilidad de siempre (eliges un gasto y los años y ves lo que habrías acumulado), con el aspecto del
+// prototipo: textos y controles a la izquierda, cifra grande y reparto debajo, y las barras 3D a la derecha.
 export function GastoHormigaSection() {
   const [gasto, setGasto] = useState(0);
   const [anios, setAnios] = useState(10);
@@ -330,40 +332,51 @@ export function GastoHormigaSection() {
   // Escala fija: lo que acumularías con este gasto en el máximo del control (30 años)
   const escala = useMemo(() => proyeccionInteres(0, gasto, TASA_INDICE_GLOBAL, 30).valorFuturo, [gasto]);
   const pctInteres = proyeccion.valorFuturo > 0 ? proyeccion.interesGenerado / proyeccion.valorFuturo * 100 : 0;
-  return ce("section", { className: "mp-seccion mp-sans" },
-    ce("div", { className: "mp-ancho mp-hormiga" },
-      ce(Aparece, null,
-        ce("p", { className: "mp-antetitulo" }, "Un pequeño experimento"),
-        ce("h2", { className: "mp-h2" }, "Piensa en un gasto mensual totalmente prescindible"),
-        ce("p", { className: "mp-sub" }, "Por ejemplo, desayunar fuera todos los días, pedir comida a domicilio por falta de organización, o una suscripción que casi no usas. Elige un ejemplo o escribe el tuyo."),
-        ce("div", { className: "mp-chips" }, GASTOS_HORMIGA_EJEMPLOS.map(g => ce("button", {
-          key: g.label, type: "button", "aria-pressed": seleccion === g.label, className: "mp-chip",
-          onClick: () => { setSeleccion(g.label); setGasto(g.valor); }
-        }, g.label))),
-        ce("div", { className: "mp-hormiga-campos" },
-          ce(NumberField, { label: "¿Cuánto gastas al mes en esto?", value: gasto, onChange: v => { setGasto(v); setSeleccion(null); } }),
-          ce("div", null,
-            ce("label", { className: "mp-etiqueta-campo", htmlFor: "mp-hormiga-anios" }, "Durante cuántos años"),
-            ce("input", { id: "mp-hormiga-anios", type: "range", min: "1", max: "30", value: anios, onChange: e => setAnios(Number(e.target.value)), className: "mp-rango" }),
-            ce("div", { className: "mp-rango-valor" }, anios, " años")))),
-      gasto > 0 && ce("div", { className: "mp-hormiga-resultado fade-switch-enter" },
-        ce("div", { className: "mp-hormiga-texto" },
-          ce("p", null, "¿Sabías que si hubieses ahorrado esos ", ce("b", null, euros(gasto), "/mes"), " durante ", ce("b", null, anios, " años"), ", tendrías ", ce("b", null, euros(ahorroSinInvertir)), "?"),
-          ce("p", null, "Y si los hubieses invertido en un índice con las empresas más grandes del mundo (rentabilidad histórica media aproximada del ", TASA_INDICE_GLOBAL, "%/año), el interés compuesto te habría dado ", ce("b", { className: "mp-verde" }, euros(proyeccion.interesGenerado)), " extra — un total de ", ce("b", null, euros(proyeccion.valorFuturo)), "."),
-          ce("div", { className: "mp-reparto" },
-            ce("div", null, ce("span", null, ce("i", { className: "mp-c-aportado" }), "Aportado"), ce("strong", { className: "mp-num" }, euros(proyeccion.totalAportado))),
-            ce("div", null, ce("span", null, ce("i", { className: "mp-c-interes" }), "Intereses generados"), ce("strong", { className: "mp-num" }, euros(proyeccion.interesGenerado)))),
-          ce("div", { className: "mp-reparto-barra", "aria-hidden": "true" },
-            ce("b", { className: "mp-c-aportado", style: { width: 100 - pctInteres + "%" } }), ce("b", { className: "mp-c-interes", style: { width: pctInteres + "%" } })),
-          ce("p", { className: "mp-reparto-nota" }, "El interés genera ", ce("strong", null, Math.round(pctInteres), " %"), " de todo lo que acumularías.")),
-        ce(Barras3D, { datos: columnas, escalaMax: escala }),
-        ce("p", { className: "mp-nota" }, "Proyección educativa con la rentabilidad histórica media de un índice global. Rentabilidades pasadas no garantizan resultados futuros."))));
+  const cifra = useRef(null), cifraA = useRef(null), cifraI = useRef(null);
+  useEffect(() => {
+    contarHasta(cifra.current, proyeccion.valorFuturo, euros);
+    contarHasta(cifraA.current, proyeccion.totalAportado, euros);
+    contarHasta(cifraI.current, proyeccion.interesGenerado, euros);
+  }, [proyeccion.valorFuturo, proyeccion.totalAportado, proyeccion.interesGenerado]);
+  return ce("section", { className: "mp-seccion mp-superficie mp-sans" },
+    ce("div", { className: "mp-ancho" },
+      ce("div", { className: "mp-hormiga-rejilla" },
+        ce(Aparece, { className: "mp-hormiga-izq" },
+          ce("p", { className: "mp-antetitulo" }, "Un pequeño experimento"),
+          ce("h2", { className: "mp-h2" }, "Piensa en un gasto mensual totalmente prescindible"),
+          ce("p", { className: "mp-sub" }, "Por ejemplo, desayunar fuera todos los días, pedir comida a domicilio por falta de organización, o una suscripción que casi no usas. Elige un ejemplo o escribe el tuyo."),
+          ce("div", { className: "mp-chips" }, GASTOS_HORMIGA_EJEMPLOS.map(g => ce("button", {
+            key: g.label, type: "button", "aria-pressed": seleccion === g.label, className: "mp-chip",
+            onClick: () => { setSeleccion(g.label); setGasto(g.valor); }
+          }, g.label))),
+          ce("div", { className: "mp-hormiga-campos" },
+            ce(NumberField, { label: "¿Cuánto gastas al mes en esto?", value: gasto, onChange: v => { setGasto(v); setSeleccion(null); } }),
+            ce("div", null,
+              ce("label", { className: "mp-etiqueta-campo", htmlFor: "mp-hormiga-anios" }, "Durante cuántos años"),
+              ce("input", { id: "mp-hormiga-anios", type: "range", min: "1", max: "30", value: anios, onChange: e => setAnios(Number(e.target.value)), className: "mp-rango" }),
+              ce("div", { className: "mp-rango-valor" }, anios, " años"))),
+          ce("div", { className: "mp-hormiga-total" },
+            ce("p", { className: "mp-hormiga-total-et" }, gasto > 0 ? "Habrías acumulado en " + anios + " años" : "Aquí verás cuánto habrías acumulado"),
+            ce("p", { className: "mp-num mp-hormiga-cifra", ref: cifra }),
+            ce("div", { className: "mp-reparto" },
+              ce("div", null, ce("span", null, ce("i", { className: "mp-c-aportado" }), "Aportado"), ce("strong", { className: "mp-num", ref: cifraA })),
+              ce("div", null, ce("span", null, ce("i", { className: "mp-c-interes" }), "Intereses generados"), ce("strong", { className: "mp-num", ref: cifraI }))),
+            ce("div", { className: "mp-reparto-barra", "aria-hidden": "true" },
+              ce("b", { className: "mp-c-aportado", style: { width: (gasto > 0 ? 100 - pctInteres : 100) + "%" } }), ce("b", { className: "mp-c-interes", style: { width: (gasto > 0 ? pctInteres : 0) + "%" } })),
+            gasto > 0 && ce("p", { className: "mp-reparto-nota" }, "El interés genera ", ce("strong", null, Math.round(pctInteres), " %"), " de todo lo que acumularías.")),
+          gasto > 0 && ce("div", { className: "mp-hormiga-texto fade-switch-enter" },
+            ce("p", null, "¿Sabías que si hubieses ahorrado esos ", ce("b", null, euros(gasto), "/mes"), " durante ", ce("b", null, anios, " años"), ", tendrías ", ce("b", null, euros(ahorroSinInvertir)), "?"),
+            ce("p", null, "Y si los hubieses invertido en un índice con las empresas más grandes del mundo (rentabilidad histórica media aproximada del ", TASA_INDICE_GLOBAL, "%/año), el interés compuesto te habría dado ", ce("b", { className: "mp-verde" }, euros(proyeccion.interesGenerado)), " extra — un total de ", ce("b", null, euros(proyeccion.valorFuturo)), "."))),
+        ce(Aparece, { className: "mp-hormiga-der", retraso: 0.12 },
+          ce(Barras3D, { datos: columnas, escalaMax: escala }),
+          gasto === 0 && ce("p", { className: "mp-hormiga-pista" }, "Elige un ejemplo o escribe tu gasto y verás crecer tu dinero año a año."))),
+      ce("p", { className: "mp-nota" }, "Proyección educativa con la rentabilidad histórica media de un índice global. Rentabilidades pasadas no garantizan resultados futuros.")));
 }
 
 /* ---------- ¿Qué pasa con 1.000 € si no haces nada? ---------- */
 export function PoderAdquisitivoSection() {
   const [anios, setAnios] = useState(10);
-  const [aporte] = useState(1000);
+  const [aporte, setAporte] = useState(1000);
   const inflacion = 2.5;
   const rentabilidad = 8;
   const valorInflacion = aporte / Math.pow(1 + inflacion / 100, anios);
@@ -374,13 +387,14 @@ export function PoderAdquisitivoSection() {
     ce("div", { className: "mp-ancho" },
       ce(Aparece, null,
         ce("p", { className: "mp-antetitulo" }, "Un minuto que puede cambiar tu perspectiva"),
-        ce("h2", { className: "mp-h2" }, "¿Qué pasa con 1.000 € si no haces nada?"),
+        ce("h2", { className: "mp-h2" }, "¿Qué pasa con ", euros(aporte), " si no haces nada?"),
         ce("p", { className: "mp-sub" }, "La inflación reduce el poder de compra. La capitalización, en cambio, puede hacer crecer un capital con el tiempo. No es una promesa de rentabilidad: es una demostración sencilla del efecto matemático.")),
       ce("div", { className: "mp-infl-rejilla" },
         ce(Aparece, { className: "mp-infl-control" },
+          ce("label", { htmlFor: "mp-infl-cap" }, "Cantidad: ", ce("span", null, euros(aporte))),
+          ce("input", { id: "mp-infl-cap", "aria-label": "Cantidad inicial", type: "range", min: "500", max: "20000", step: "500", value: aporte, onChange: e => setAporte(+e.target.value), className: "mp-rango" }),
           ce("label", { htmlFor: "mp-infl-anios" }, "Horizonte: ", ce("span", null, anios, " años")),
-          ce("input", { id: "mp-infl-anios", "aria-label": "Horizonte temporal", type: "range", min: "1", max: "30", value: anios, onChange: e => setAnios(+e.target.value), className: "mp-rango" }),
-          ce("p", null, "Capital inicial: ", euros(aporte))),
+          ce("input", { id: "mp-infl-anios", "aria-label": "Horizonte temporal", type: "range", min: "1", max: "30", value: anios, onChange: e => setAnios(+e.target.value), className: "mp-rango" })),
         ce("div", { className: "mp-infl-valores" },
           ce(Aparece, { className: "mp-valor" },
             ce("h3", null, "Si la inflación fuese ", inflacion, "%"),
