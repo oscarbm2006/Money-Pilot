@@ -11,7 +11,7 @@ const cargarThree = () => (promesaThree = promesaThree || import('three'));
 /* ---------- Piezas comunes ---------- */
 
 function crearRenderizador(THREE, canvas) {
-  const r = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: !esPantallaPequena(), powerPreference: 'low-power' });
+  const r = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: !esPantallaPequena() });
   r.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
   r.outputColorSpace = THREE.SRGBColorSpace;
   return r;
@@ -44,10 +44,10 @@ function fabrica(THREE) {
   const guardar = (x) => { recursos.push(x); return x; };
   const metal = (color) => guardar(new THREE.MeshStandardMaterial({ color, metalness: 0.85, roughness: 0.22 }));
 
-  const caraMat = guardar(new THREE.MeshStandardMaterial({ map: guardar(caraMoneda(THREE)), metalness: 0.55, roughness: 0.3 }));
+  const caraMat = guardar(new THREE.MeshStandardMaterial({ map: guardar(caraMoneda(THREE)), metalness: 0.3, roughness: 0.4 }));
   const cantoGeo = guardar(new THREE.CylinderGeometry(0.62, 0.62, 0.12, 64, 1, true));
   const caraGeo = guardar(new THREE.CircleGeometry(0.62, 64));
-  const cantoMat = metal('#4F46E5');
+  const cantoMat = guardar(new THREE.MeshStandardMaterial({ color: '#8B93F5', metalness: 0.8, roughness: 0.28 }));
 
   const billeteTex = guardar(textura(THREE, 512, 256, (g, w, h) => {
     const gr = g.createLinearGradient(0, 0, w, h); gr.addColorStop(0, '#C7D2FE'); gr.addColorStop(1, '#818CF8');
@@ -111,9 +111,9 @@ function fabrica(THREE) {
 function crearEntorno(THREE, renderer) {
   const sala = new THREE.Scene();
   sala.background = new THREE.Color('#1E1B4B');
-  // Luces redondas (no cuadradas) para que los brillos del cristal y del metal se vean naturales
-  const panel = new THREE.CircleGeometry(3, 48), mats = [];
-  [['#C7D2FE', [0, 6, 0], [Math.PI / 2, 0, 0]], ['#818CF8', [6, 0, 0], [0, -Math.PI / 2, 0]], ['#4F46E5', [-6, 0, 0], [0, Math.PI / 2, 0]], ['#E0E7FF', [2, 2, 6], [0, Math.PI, 0]]].forEach(([c, p, r]) => {
+  // Cuatro paneles de color a los lados (los mismos del prototipo): son lo que reflejan los metales
+  const panel = new THREE.PlaneGeometry(6, 6), mats = [];
+  [['#C7D2FE', [0, 6, 0], [Math.PI / 2, 0, 0]], ['#818CF8', [6, 0, 0], [0, -Math.PI / 2, 0]], ['#4F46E5', [-6, 0, 0], [0, Math.PI / 2, 0]], ['#FFFFFF', [0, 0, 6], [0, Math.PI, 0]]].forEach(([c, p, r]) => {
     const mat = new THREE.MeshBasicMaterial({ color: c, side: THREE.DoubleSide }); mats.push(mat);
     const m = new THREE.Mesh(panel, mat); m.position.set(...p); m.rotation.set(...r); sala.add(m);
   });
@@ -148,8 +148,12 @@ export async function montarPortada3D(canvas, contenedor, { alFallar } = {}) {
   camara.position.set(0, 0, 11);
   const entorno = crearEntorno(THREE, renderer);
   escena.environment = entorno.textura;
-  escena.add(new THREE.AmbientLight('#A5B4FC', 0.5));
-  const luz = new THREE.DirectionalLight('#FFFFFF', 1.4); luz.position.set(4, 6, 6); escena.add(luz);
+  // Luces equivalentes a las del prototipo: Three.js moderno mide la luz en unidades físicas, así que
+  // las mismas cifras de antes (0,45 / 1,2 / 3) se multiplican para obtener el mismo brillo.
+  escena.add(new THREE.AmbientLight('#A5B4FC', 1.3));
+  escena.add(new THREE.HemisphereLight('#E0E7FF', '#6366F1', 1.1));
+  const luz = new THREE.DirectionalLight('#FFFFFF', 2.4); luz.position.set(4, 6, 6); escena.add(luz);
+  const relleno = new THREE.PointLight('#818CF8', 40, 20); relleno.position.set(-4, -2, 3); escena.add(relleno);
 
   const raiz = new THREE.Group(); escena.add(raiz);
   const piezas = fabrica(THREE);
