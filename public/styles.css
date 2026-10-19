@@ -283,3 +283,44 @@ section.mp-seccion.mp-seccion.mp-superficie:not(.mp-oscura){background:var(--mp-
 .mp-portada>.mp-lienzo{opacity:0;transition:opacity .9s ease}
 .mp-portada>.mp-lienzo.mp-lienzo-listo{opacity:1}
 @media (prefers-reduced-motion: reduce){.mp-portada>.mp-lienzo{transition:none}}
+
+/* ============================================================
+   MoneyPilot · Rediseño 3D — HERRAMIENTAS (Fase 2)
+   La piel (.mp-piel) solo afecta a las pantallas que la llevan: Diagnóstico y simuladores.
+   ============================================================ */
+/* Cabecera oscura con iconos 3D */
+.mp-cab{position:relative;display:flex;align-items:center;min-height:250px;background:var(--mp-noche);color:#fff;overflow:hidden}
+.mp-cab-luz{position:absolute;right:-100px;top:-220px;width:480px;height:480px;border-radius:50%;background:var(--mp-indigo);filter:blur(120px);opacity:.3;pointer-events:none}
+.mp-cab-texto{position:relative;z-index:1;width:100%;padding-top:52px;padding-bottom:48px}
+.mp-cab-ante{margin:0 0 12px;font-size:14px;font-weight:700;color:var(--mp-lavanda)}
+.mp-cab-titulo{margin:0;max-width:34rem;font-size:clamp(30px,4.2vw,50px);line-height:1.05;font-weight:800;letter-spacing:-.035em;color:#fff}
+.mp-cab-frase{margin:14px 0 0;max-width:34rem;font-size:17px;line-height:1.6;color:var(--mp-lavanda-clara)}
+@media (max-width:720px){.mp-cab{min-height:0}.mp-cab .mp-lienzo{display:none}.mp-cab-texto{padding-top:38px;padding-bottom:34px}}
+
+/* Piel común */
+.mp-piel{font-family:var(--mp-fuente)}
+.mp-piel>section{padding-top:48px;padding-bottom:96px}
+/* Títulos en la tipografía nueva; las cifras grandes en la serif de los números */
+.mp-piel :is(h1,h2,h3,h4).font-serif{font-family:var(--mp-fuente);font-weight:800;letter-spacing:-.025em}
+.mp-piel :is(div,span,p,strong,b).font-serif{font-family:var(--mp-fuente-cifras);font-weight:400}
+/* Etiquetas pequeñas de color ámbar → índigo, en minúsculas */
+.mp-piel .uppercase[style*="245, 158, 11"]{color:var(--mp-indigo)!important;text-transform:none;letter-spacing:0!important;font-size:13px}
+/* Tarjetas limpias, sin el brillo fuerte */
+.mp-piel .rounded-2xl.border{background-color:var(--mp-superficie)!important;background-image:none!important;border:1px solid var(--mp-linea)!important;border-radius:28px;box-shadow:0 1px 2px rgba(30,27,75,.04),0 28px 56px -36px rgba(49,46,129,.28)!important}
+.mp-piel .rounded-xl{border-radius:18px}
+.mp-piel .rounded-lg{border-radius:14px}
+/* Botones redondeados; el principal con texto blanco */
+.mp-piel button.rounded-xl.inline-flex{border-radius:999px;min-height:48px;transition:transform .35s cubic-bezier(.2,.8,.2,1),box-shadow .35s}
+.mp-piel button.rounded-xl.inline-flex:hover{transform:translateY(-2px)}
+.mp-piel button[style*="background-color: rgb(79, 70, 229)"]{color:#fff!important;box-shadow:0 10px 26px -12px rgba(79,70,229,.9)}
+/* Campos y opciones */
+.mp-piel input.rounded-lg{border-radius:14px;border-width:1.5px;min-height:48px}
+.mp-piel input:focus{border-color:var(--mp-indigo)!important;box-shadow:0 0 0 4px rgba(79,70,229,.15)}
+.mp-piel button.rounded-lg.border{border-radius:16px;min-height:52px;border-width:1.5px}
+/* Barra de progreso de los pasos */
+.mp-piel .h-2.rounded-full.overflow-hidden{height:8px;background:var(--mp-linea)!important}
+.mp-piel .h-2.rounded-full.overflow-hidden>.h-full{background:linear-gradient(90deg,#A5B4FC,#4F46E5)!important}
+/* Cada paso del diagnóstico entra girando en 3D */
+.mp-paso-entra{transform-origin:0 50%;animation:mpPasoEntra .7s cubic-bezier(.2,.8,.2,1)}
+@keyframes mpPasoEntra{from{opacity:0;transform:perspective(1400px) rotateY(-22deg) translateX(50px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion: reduce){.mp-paso-entra{animation:none}.mp-piel button.rounded-xl.inline-flex{transition:none}}
