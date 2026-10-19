@@ -1114,8 +1114,8 @@ export function Simulador({
     aportadoKey: "aportado",
     interesKey: "interesGenerado",
     height: 280,
-    colorAportado: C.slate,
-    colorInteres: C.salu,
+    colorAportado: "#A5B4FC",
+    colorInteres: "#4F46E5",
     formatY: v => numEs(v) + " €",
     marcaAnio: anioMarcaGrafico
   })), /*#__PURE__*/React.createElement("div", {
@@ -1128,14 +1128,14 @@ export function Simulador({
   }, /*#__PURE__*/React.createElement("span", {
     className: "w-2.5 h-2.5 rounded-sm inline-block",
     style: {
-      backgroundColor: C.slate
+      backgroundColor: "#A5B4FC"
     }
   }), "Aportado"), /*#__PURE__*/React.createElement("span", {
     className: "inline-flex items-center gap-1.5"
   }, /*#__PURE__*/React.createElement("span", {
     className: "w-2.5 h-2.5 rounded-sm inline-block",
     style: {
-      backgroundColor: C.salu
+      backgroundColor: "#4F46E5"
     }
   }), "Intereses generados")), /*#__PURE__*/React.createElement("p", {
     className: "text-[11px] readable-note mt-3"
@@ -2546,18 +2546,6 @@ export function Diagnostico({
   }, /*#__PURE__*/React.createElement("div", {
     className: "max-w-6xl mx-auto px-4 sm:px-6"
   }, /*#__PURE__*/React.createElement("div", {
-    className: "max-w-3xl mb-8 section-intro"
-  }, /*#__PURE__*/React.createElement(Eyebrow, null, "Diagnóstico financiero"), /*#__PURE__*/React.createElement("h2", {
-    className: "font-serif text-3xl sm:text-4xl font-bold mt-2",
-    style: {
-      color: C.ink
-    }
-  }, "Construye tu foto financiera, paso a paso"), /*#__PURE__*/React.createElement("p", {
-    className: "text-sm sm:text-base mt-3",
-    style: {
-      color: C.muted
-    }
-  }, "Empezamos por lo esencial y añadimos detalle solo cuando lo necesitas. Tus cálculos se actualizan en cada paso.")), /*#__PURE__*/React.createElement("div", {
     className: "mb-6"
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex items-center justify-between text-xs font-bold mb-2",
@@ -2587,7 +2575,7 @@ export function Diagnostico({
       color: paso === i + 1 ? C.ink : C.muted
     }
   }, i + 1, ". ", label)))), paso === 1 && /*#__PURE__*/React.createElement(Card, {
-    className: "p-5 sm:p-7"
+    className: "p-5 sm:p-7 mp-paso-entra"
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex items-start justify-between gap-4 mb-6"
   }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(Eyebrow, null, "01 · Tu punto de partida"), /*#__PURE__*/React.createElement("h3", {
@@ -2666,7 +2654,7 @@ export function Diagnostico({
   }, "Ver mi primer avance ", /*#__PURE__*/React.createElement(I.arrowRight, {
     size: 16
   })))), paso === 2 && /*#__PURE__*/React.createElement("div", {
-    className: "space-y-5"
+    className: "space-y-5 mp-paso-entra"
   }, /*#__PURE__*/React.createElement(Card, {
     className: "p-5 sm:p-7"
   }, /*#__PURE__*/React.createElement("div", {
@@ -2748,7 +2736,7 @@ export function Diagnostico({
   }, "Continuar ", /*#__PURE__*/React.createElement(I.arrowRight, {
     size: 16
   })))), paso === 3 && /*#__PURE__*/React.createElement("div", {
-    className: "space-y-5"
+    className: "space-y-5 mp-paso-entra"
   }, /*#__PURE__*/React.createElement(Card, {
     className: "p-5 sm:p-7"
   }, /*#__PURE__*/React.createElement("div", {
