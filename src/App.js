@@ -6,7 +6,7 @@ import { useActivosPersistidos, useActivosSync, useAuth, useCloudSync, useCuenta
 import { AuthModal, ConflictoDatosModal, ContinuarBar, ErrorBoundary, Eyebrow, FeedbackModal, Toast } from './ui-basicos.js';
 import { AmortizacionDeuda, SimuladorDeudas, Contacto, Cuentas, Dashboard, Diagnostico, Estrategia, Inversiones, NavDesktop, PaginaLegal, PanelDiagnostico, PanelPrioridad, Patrimonio, PerfilRiesgo, PlanFinanciero, PrintSummary, Seguimiento, Simulador } from './paginas.js';
 const Blog = React.lazy(() => import('./blog.js'));
-import { ConfianzaPrivacidad, HeroSection } from './secciones.js';
+import { CabeceraHerramienta, ConfianzaPrivacidad, HeroSection } from './secciones.js';
 import { MiCuentaModal } from './cuenta.js';
 import { ReiniciarTodoModal } from './cuenta.js';
 
@@ -636,8 +636,14 @@ export function App() {
     }
   }), /*#__PURE__*/React.createElement(ConfianzaPrivacidad, null)), vistaActual === 'diagnostico' && /*#__PURE__*/React.createElement("div", {
     key: "diagnostico",
-    className: "fade-switch-enter"
-  }, /*#__PURE__*/React.createElement(Diagnostico, {
+    className: "fade-switch-enter mp-piel"
+  }, /*#__PURE__*/React.createElement(CabeceraHerramienta, {
+    id: "mp-cab-diag",
+    antetitulo: "Diagnóstico financiero",
+    titulo: "Construye tu foto financiera, paso a paso",
+    frase: "Empezamos por lo esencial y añadimos detalle solo cuando lo necesitas. Tus cálculos se actualizan en cada paso.",
+    iconos: [["moneda", 0.32, 0.3, 0.8, 0.3], ["barras", 0.55, -0.25, 0.85, -0.3], ["billete", 0.76, 0.35, 0.75, 0.6], ["moneda", 0.96, -0.2, 0.6, 1.1]]
+  }), /*#__PURE__*/React.createElement(Diagnostico, {
     key: irADeudas ? 'diag-deudas' : 'diag',
     irADeudas: irADeudas,
     onIrASimuladorDeudas: () => setVistaActual('simulador-deudas'),
@@ -902,24 +908,18 @@ export function App() {
     onBack: () => setVistaActual('plan')
   })))), vistaActual === 'simulador' && /*#__PURE__*/React.createElement("div", {
     key: "simulador",
-    className: "fade-switch-enter"
-  }, /*#__PURE__*/React.createElement("section", {
+    className: "fade-switch-enter mp-piel"
+  }, /*#__PURE__*/React.createElement(CabeceraHerramienta, {
+    id: "mp-cab-sim",
+    antetitulo: "Simulador de ahorro",
+    titulo: "¿Qué puede hacer tu ahorro con el tiempo?",
+    frase: "Ajusta los números y mira qué puede hacer tu ahorro con el tiempo. Si ya hiciste tu diagnóstico, partirá de tus propios datos.",
+    iconos: [["flecha", 0.32, 0.25, 0.85, 0.2], ["barras", 0.56, -0.25, 0.85, -0.4], ["moneda", 0.8, 0.3, 0.7, 1], ["moneda", 0.97, -0.3, 0.55, 2]]
+  }), /*#__PURE__*/React.createElement("section", {
     className: "py-16 sm:py-24 section-tinted"
   }, /*#__PURE__*/React.createElement("div", {
     className: "max-w-6xl mx-auto px-4 sm:px-6"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "max-w-3xl mb-10 section-intro"
-  }, /*#__PURE__*/React.createElement(Eyebrow, null, "Simulador de ahorro"), /*#__PURE__*/React.createElement("h2", {
-    className: "font-serif text-3xl sm:text-4xl font-bold mt-2",
-    style: {
-      color: C.ink
-    }
-  }, "¿Qué puede hacer tu ahorro con el tiempo?"), /*#__PURE__*/React.createElement("p", {
-    className: "text-sm sm:text-base mt-3",
-    style: {
-      color: C.muted
-    }
-  }, "Ajusta los números y mira qué puede hacer tu ahorro con el tiempo. Si ya hiciste tu diagnóstico, partirá de tus propios datos.")), /*#__PURE__*/React.createElement(Simulador, {
+  }, /*#__PURE__*/React.createElement(Simulador, {
     sim: sim,
     setSim: setSim,
     objetivos: planObjetivos.objetivos,
@@ -936,24 +936,18 @@ export function App() {
     onIrAResultados: () => setVistaActual('estrategia')
   })))), vistaActual === 'simulador-deudas' && /*#__PURE__*/React.createElement("div", {
     key: "simulador-deudas",
-    className: "fade-switch-enter"
-  }, /*#__PURE__*/React.createElement("section", {
+    className: "fade-switch-enter mp-piel"
+  }, /*#__PURE__*/React.createElement(CabeceraHerramienta, {
+    id: "mp-cab-deu",
+    antetitulo: "Simulador de deudas",
+    titulo: "¿Cuánto tardarás en salir de tus deudas?",
+    frase: "Escribe tus deudas y compara dos formas de pagarlas. Es una proyección educativa.",
+    iconos: [["tarjeta", 0.34, 0.2, 0.9, -0.4], ["billete", 0.62, -0.2, 0.85, 0.5], ["moneda", 0.88, 0.3, 0.7, 0.9]]
+  }), /*#__PURE__*/React.createElement("section", {
     className: "py-16 sm:py-24 section-tinted"
   }, /*#__PURE__*/React.createElement("div", {
     className: "max-w-6xl mx-auto px-4 sm:px-6"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "max-w-3xl mb-10 section-intro"
-  }, /*#__PURE__*/React.createElement(Eyebrow, null, "Simulador de deudas"), /*#__PURE__*/React.createElement("h2", {
-    className: "font-serif text-3xl sm:text-4xl font-bold mt-2",
-    style: {
-      color: C.ink
-    }
-  }, "¿Cuánto tardarás en salir de tus deudas?"), /*#__PURE__*/React.createElement("p", {
-    className: "text-sm sm:text-base mt-3",
-    style: {
-      color: C.muted
-    }
-  }, "Escribe tus deudas y compara dos formas de pagarlas. Es una proyección educativa.")), /*#__PURE__*/React.createElement(SimuladorDeudas, {
+  }, /*#__PURE__*/React.createElement(SimuladorDeudas, {
     deudasDiagnostico: datos.deudas,
     diagnosticoHecho: Number(capacidadFinanciera.ingresos) > 0,
     onIrADiagnostico: () => {
