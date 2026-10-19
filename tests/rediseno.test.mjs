@@ -99,3 +99,29 @@ describe('Rediseño 3D: carga de la portada y gráfico del gasto hormiga (Fase 1
     assert.ok(src.includes('Math.max(ESCALA_HORMIGA, proyeccionInteres(0, gasto, TASA_INDICE_GLOBAL, 30).valorFuturo)'));
   });
 });
+
+describe('Rediseño 3D: herramientas (Fase 2)', () => {
+  const app = leer('src/App.js'), css = leer('public/styles.css'), pag = leer('src/paginas.js');
+  test('el diagnóstico y los dos simuladores usan la cabecera nueva y conservan sus textos', () => {
+    for (const id of ['mp-cab-diag', 'mp-cab-sim', 'mp-cab-deu']) assert.ok(app.includes('id: "' + id + '"'), 'falta la cabecera ' + id);
+    for (const t of ['Construye tu foto financiera, paso a paso', 'Empezamos por lo esencial y añadimos detalle solo cuando lo necesitas. Tus cálculos se actualizan en cada paso.',
+      '¿Qué puede hacer tu ahorro con el tiempo?', 'Ajusta los números y mira qué puede hacer tu ahorro con el tiempo. Si ya hiciste tu diagnóstico, partirá de tus propios datos.',
+      '¿Cuánto tardarás en salir de tus deudas?', 'Escribe tus deudas y compara dos formas de pagarlas. Es una proyección educativa.']) assert.ok(app.includes(t), 'falta el texto: ' + t);
+    assert.equal((app.match(/fade-switch-enter mp-piel/g) || []).length, 3);
+  });
+  test('las tres pantallas ya no llevan la tarjeta de introducción antigua', () => {
+    assert.ok(!pag.includes('Eyebrow, null, "Diagnóstico financiero"'));
+    assert.ok(!app.includes('Eyebrow, null, "Simulador de ahorro"') && !app.includes('Eyebrow, null, "Simulador de deudas"'));
+  });
+  test('la piel nueva (.mp-piel) no choca con clases de la portada (.mp-herr)', () => {
+    const fase2 = css.slice(css.indexOf('HERRAMIENTAS (Fase 2)'));
+    assert.ok(fase2.includes('.mp-piel') && !fase2.includes('.mp-herr'));
+  });
+  test('los pasos del diagnóstico entran con animación 3D y la cabecera no monta 3D en móvil', () => {
+    assert.equal((pag.match(/mp-paso-entra/g) || []).length, 3);
+    assert.match(leer('src/secciones.js'), /esPantallaPequena\(\) \? Promise\.resolve\(\(\) => \{\}\) : montarCapa3D/);
+  });
+  test('al salir de una escena 3D se libera la tarjeta gráfica', () => {
+    assert.ok((leer('src/efectos-3d.js').match(/forceContextLoss/g) || []).length >= 2);
+  });
+});
