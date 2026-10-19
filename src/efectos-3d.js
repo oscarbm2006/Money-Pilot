@@ -122,14 +122,33 @@ function crearEntorno(THREE, renderer) {
   return { textura, liberar: () => { textura.dispose(); pmrem.dispose(); panel.dispose(); mats.forEach((m) => m.dispose()); } };
 }
 
-// Bucle de animación que se detiene cuando el lienzo no está a la vista.
-function bucle(contenedor, dibujar) {
-  let visible = true, raf = 0, vivo = true;
-  const io = new IntersectionObserver((es) => { visible = es[0].isIntersecting; });
+// Bucle de animación que se detiene (y oculta el lienzo) cuando no está a la vista.
+// Vigila el rendimiento: si el dispositivo va lento, pide una calidad menor y, si aun así no puede,
+// deja la escena quieta (se redibuja solo al hacer scroll) en vez de ir a tirones.
+function bucle(contenedor, canvas, dibujar, alIrLento) {
+  let visible = true, raf = 0, vivo = true, ultimo = 0, nivel = 0, quieto = false;
+  const tiempos = [];
+  const io = new IntersectionObserver((es) => { visible = es[0].isIntersecting; canvas.style.visibility = visible ? '' : 'hidden'; ultimo = 0; tiempos.length = 0; });
   io.observe(contenedor);
-  const paso = () => { if (!vivo) return; raf = requestAnimationFrame(paso); if (visible) dibujar(); };
+  const alScroll = () => { if (quieto && visible) dibujar(); };
+  const paso = (t) => {
+    if (!vivo) return;
+    if (!quieto) raf = requestAnimationFrame(paso);
+    if (!visible) return;
+    if (ultimo) {
+      tiempos.push(t - ultimo);
+      if (tiempos.length === 24) {
+        const mediana = tiempos.slice().sort((a, b) => a - b)[12];
+        tiempos.length = 0;
+        if (mediana > 45 && nivel === 0) { nivel = 1; alIrLento && alIrLento(1); }
+        else if (mediana > 45 && nivel === 1) { nivel = 2; quieto = true; window.addEventListener('scroll', alScroll, { passive: true }); }
+      }
+    }
+    ultimo = t;
+    dibujar();
+  };
   raf = requestAnimationFrame(paso);
-  return () => { vivo = false; cancelAnimationFrame(raf); io.disconnect(); };
+  return () => { vivo = false; cancelAnimationFrame(raf); io.disconnect(); window.removeEventListener('scroll', alScroll); };
 }
 
 /* ---------- Portada: orbe de cristal con monedas en órbita ---------- */
@@ -141,6 +160,7 @@ export async function montarPortada3D(canvas, contenedor, { alFallar } = {}) {
   const pequena = esPantallaPequena(), quieto = prefiereMenosMovimiento();
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.1;
+  renderer.transmissionResolutionScale = 0.5; // el cristal se calcula a media resolución: casi igual de bonito, mucho más ligero
 
   const escena = new THREE.Scene();
   const camara = new THREE.PerspectiveCamera(40, 1, 0.1, 100);
@@ -213,7 +233,12 @@ export async function montarPortada3D(canvas, contenedor, { alFallar } = {}) {
 
   let parar;
   if (quieto) { dibujar(); const alScroll = () => dibujar(); window.addEventListener('scroll', alScroll, { passive: true }); parar = () => window.removeEventListener('scroll', alScroll); }
-  else parar = bucle(contenedor, dibujar);
+  else parar = bucle(contenedor, canvas, dibujar, () => {
+    // Dispositivo lento: cristal sin refracción (mucho más barato) y menos píxeles
+    const ligero = new THREE.MeshPhysicalMaterial({ color: '#A5B4FC', metalness: 0.1, roughness: 0.08, transparent: true, opacity: 0.42, clearcoat: 1, envMapIntensity: 1.6 });
+    orbe.material.dispose(); orbe.material = ligero;
+    renderer.setPixelRatio(1); ajustar();
+  });
 
   return () => {
     parar(); ro.disconnect(); window.removeEventListener('pointermove', alMover);
@@ -280,6 +305,6 @@ export async function montarCapa3D(canvas, banda, iconos, { alFallar } = {}) {
     });
     renderer.render(escena, camara);
   };
-  const parar = bucle(banda, dibujar);
+  const parar = bucle(banda, canvas, dibujar, () => { renderer.setPixelRatio(1); ajustar(); });
   return () => { parar(); ro.disconnect(); io.disconnect(); banda.removeEventListener('pointermove', alMover); piezas.liberar(); entorno.liberar(); renderer.dispose(); };
 }
