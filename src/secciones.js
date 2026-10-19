@@ -3,7 +3,7 @@ const { useState, useEffect, useRef, useCallback, useMemo, useId } = React;
 import { C, GASTOS_DISC_DEF, GASTOS_FIJOS_DEF, GASTOS_HORMIGA_EJEMPLOS, I, STATS_REALES, TASA_INDICE_GLOBAL } from './constantes.js';
 import { Card, EvidenciaModal, Eyebrow, FadeSwitch, FreqField, NumberField, SimpleStackedBarChart, drawRef } from './ui-basicos.js';
 import { euros, numEs, proyeccionInteres, totalMensual } from './calculos.js';
-import { useAparicion, useInclinacion, contarHasta, prefiereMenosMovimiento } from './movimiento.js';
+import { useAparicion, useInclinacion, contarHasta, prefiereMenosMovimiento, esPantallaPequena } from './movimiento.js';
 import { montarPortada3D, montarCapa3D } from './efectos-3d.js';
 
 // Longitud de una polilínea (en unidades del viewBox) a partir de su atributo points; sirve para trazarla al aparecer
@@ -180,6 +180,21 @@ function CapaTransicion({ id, lineas, frase, iconos, retraso }) {
     ce("div", { className: "mp-capa-texto" },
       ce("h2", { id, className: "mp-capa-titulo" }, lineas.map((l, i) => ce("span", { key: i, className: "mp-capa-linea" }, ce("span", null, l)))),
       ce("p", { className: "mp-capa-frase" }, frase)));
+}
+
+/* ---------- Cabecera de las herramientas ---------- */
+// Banda oscura con el título de la herramienta y unos iconos 3D a la derecha. Sustituye a la tarjeta de introducción
+// de cada herramienta. En móvil no monta el 3D (más ligero) y deja solo el texto.
+// iconos: lista de [tipo, x, y, escala, giroInicial], igual que en las capas de transición.
+export function CabeceraHerramienta({ id, antetitulo, titulo, frase, iconos }) {
+  const { lienzo, caja } = useEscena3D((c, b, fallar) => esPantallaPequena() ? Promise.resolve(() => {}) : montarCapa3D(c, b, iconos, { alFallar: fallar }), 250);
+  return ce("header", { ref: caja, className: "mp-cab mp-sans", "aria-labelledby": id },
+    ce("canvas", { ref: lienzo, className: "mp-lienzo", "aria-hidden": "true" }),
+    ce("div", { className: "mp-cab-luz", "aria-hidden": "true" }),
+    ce("div", { className: "max-w-6xl mx-auto px-4 sm:px-6 mp-cab-texto" },
+      ce("p", { className: "mp-cab-ante mp-sube", style: { "--mp-retraso": ".05s" } }, antetitulo),
+      ce("h1", { id, className: "mp-cab-titulo mp-sube", style: { "--mp-retraso": ".12s" } }, titulo),
+      ce("p", { className: "mp-cab-frase mp-sube", style: { "--mp-retraso": ".22s" } }, frase)));
 }
 
 /* ---------- Gráfico 3D por capas: inflación frente a interés compuesto ---------- */
