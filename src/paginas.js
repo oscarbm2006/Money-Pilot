@@ -3238,19 +3238,7 @@ export function Cuentas({
     className: "py-16 sm:py-24 section-tinted"
   }, /*#__PURE__*/React.createElement("div", {
     className: "max-w-4xl mx-auto px-4 sm:px-6 space-y-6"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "max-w-3xl section-intro"
-  }, /*#__PURE__*/React.createElement(Eyebrow, null, "Tu liquidez"), /*#__PURE__*/React.createElement("h2", {
-    className: "font-serif text-3xl sm:text-4xl font-bold mt-2",
-    style: {
-      color: C.ink
-    }
-  }, "Tus cuentas, en un solo sitio"), /*#__PURE__*/React.createElement("p", {
-    className: "text-sm sm:text-base mt-3",
-    style: {
-      color: C.muted
-    }
-  }, "Añade tus cuentas bancarias manualmente para ver tu liquidez total consolidada. No conectamos con tu banco: tú decides qué saldo introducir y cuándo actualizarlo.")), /*#__PURE__*/React.createElement(Card, {
+  }, /*#__PURE__*/React.createElement(Card, {
     className: "p-5 flex items-center justify-between gap-4 flex-wrap"
   }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(Eyebrow, null, "Liquidez total"), /*#__PURE__*/React.createElement("div", {
     className: "font-serif text-3xl font-bold mt-1",
@@ -3610,15 +3598,6 @@ export function Inversiones({
       className: "space-y-2"
     }, filas));
   });
-  const introDiv = el("div", {
-    className: "max-w-3xl section-intro"
-  }, el(Eyebrow, null, "Tu cartera"), el("h2", {
-    className: "font-serif text-3xl sm:text-4xl font-bold mt-2",
-    style: { color: C.ink }
-  }, "Tus inversiones, en un solo sitio"), el("p", {
-    className: "text-sm sm:text-base mt-3",
-    style: { color: C.muted }
-  }, "Añade tus acciones, fondos, ETFs u otros productos con lo que has aportado y la ganancia o pérdida acumulada; nosotros calculamos el valor actual. Los datos no se actualizan solos: revísalos cuando quieras."));
   const resumenCard = el(Card, {
     className: "p-5 flex items-center justify-between gap-4 flex-wrap"
   }, el("div", {
@@ -3766,7 +3745,7 @@ export function Inversiones({
     className: "py-16 sm:py-24 section-tinted"
   }, el("div", {
     className: "max-w-4xl mx-auto px-4 sm:px-6 space-y-6"
-  }, introDiv, resumenCard, formularioCard, estadoVacioCard, filasPorTipo, notaFinal));
+  }, resumenCard, formularioCard, estadoVacioCard, filasPorTipo, notaFinal));
 }
 
 export function Patrimonio({
@@ -3838,16 +3817,6 @@ export function Patrimonio({
     { name: "Inversiones", value: totalInversiones, color: C.sand },
     { name: "Otros activos", value: totalActivos, color: C.mej }
   ].filter(d => d.value > 0);
-
-  const cabecera = el("div", {
-    className: "max-w-3xl section-intro"
-  }, el(Eyebrow, null, "Tu foto completa"), el("h2", {
-    className: "font-serif text-3xl sm:text-4xl font-bold mt-2",
-    style: { color: C.ink }
-  }, "Tu patrimonio neto"), el("p", {
-    className: "text-sm sm:text-base mt-3",
-    style: { color: C.muted }
-  }, "Todo lo que tienes (cuentas, inversiones y otros bienes) menos todo lo que debes. Se actualiza automáticamente según lo que registres en Cuentas, Inversiones, Deudas y aquí abajo."));
 
   const avisoDeudas = deudasActivas.length === 0 && !avisoDeudasOculto ? el("div", {
     className: "rounded-xl p-4 flex flex-col sm:flex-row sm:items-center gap-3",
@@ -4082,7 +4051,7 @@ export function Patrimonio({
     className: "py-16 sm:py-24 section-tinted"
   }, el("div", {
     className: "max-w-4xl mx-auto px-4 sm:px-6 space-y-6"
-  }, cabecera, avisoDeudas, tarjetaResumen, el("div", {
+  }, avisoDeudas, tarjetaResumen, el("div", {
     className: "grid grid-cols-1 sm:grid-cols-3 gap-4"
   }, seccionCuentas, seccionInversiones, seccionDeudas), seccionActivos, formularioActivo, notaFinal));
 }
