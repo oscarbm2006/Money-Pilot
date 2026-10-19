@@ -51,3 +51,24 @@ describe('Rediseño 3D: la portada conserva su contenido', () => {
     assert.ok(src.includes('Rentabilidades pasadas no garantizan resultados futuros.'));
   });
 });
+
+describe('Rediseño 3D: ajustes de la portada (Fase 1c)', () => {
+  const src = leer('src/secciones.js'), css = leer('public/styles.css');
+  test('el titular de los motivos puede quedarse fijo: html y body usan overflow-x:clip y no hidden', () => {
+    assert.match(css, /html:root,html body\{overflow-x:clip\}/);
+  });
+  test('el simulador de inflación permite cambiar la cantidad además de los años', () => {
+    assert.ok(src.includes('id: "mp-infl-cap"') && src.includes('id: "mp-infl-anios"'));
+    assert.match(src, /const \[aporte, setAporte\] = useState\(1000\)/);
+  });
+  test('el gasto hormiga mantiene su cálculo y su aviso, con las barras 3D a escala fija', () => {
+    assert.match(src, /proyeccionInteres\(0, gasto, TASA_INDICE_GLOBAL, 30\)/);
+    assert.ok(src.includes('ce(Barras3D, { datos: columnas, escalaMax: escala })'));
+  });
+  test('en móvil el texto va antes que las monedas (el lienzo se coloca abajo)', () => {
+    assert.match(css, /@media \(max-width:720px\)\{\s*\.mp-portada\{align-items:flex-start\}[\s\S]*?\.mp-portada>\.mp-lienzo\{[^}]*bottom:0/);
+  });
+  test('el 3D no fuerza la tarjeta gráfica de bajo consumo', () => {
+    assert.ok(!leer('src/efectos-3d.js').includes('low-power'));
+  });
+});
