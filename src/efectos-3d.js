@@ -6,7 +6,7 @@ import { prefiereMenosMovimiento, esPantallaPequena } from './movimiento.js';
 
 const limitar = (v, a, b) => Math.max(a, Math.min(b, v));
 let promesaThree = null;
-const cargarThree = () => (promesaThree = promesaThree || import('three'));
+const cargarThree = () => (promesaThree = promesaThree || import('./three-minimo.js'));
 
 /* ---------- Piezas comunes ---------- */
 
@@ -118,7 +118,7 @@ function crearEntorno(THREE, renderer) {
     const m = new THREE.Mesh(panel, mat); m.position.set(...p); m.rotation.set(...r); sala.add(m);
   });
   const pmrem = new THREE.PMREMGenerator(renderer);
-  const textura = pmrem.fromScene(sala, 0.04).texture;
+  const textura = pmrem.fromScene(sala, 0.04, 0.1, 100, { size: 128 }).texture; // 128 basta para unos pocos paneles de color y se genera mucho más rápido
   return { textura, liberar: () => { textura.dispose(); pmrem.dispose(); panel.dispose(); mats.forEach((m) => m.dispose()); } };
 }
 
@@ -187,8 +187,6 @@ export async function montarPortada3D(canvas, contenedor, { alFallar } = {}) {
     raiz.position.x = pequena ? 0 : 0.6; // en escritorio, algo desplazadas a la derecha para dejar aire al titular
   };
   const ro = new ResizeObserver(ajustar); ro.observe(canvas); ajustar();
-  renderer.compile(escena, camara);
-
   const reloj = new THREE.Clock();
   const dibujar = () => {
     const t = quieto ? 0 : reloj.getElapsedTime();
@@ -205,6 +203,11 @@ export async function montarPortada3D(canvas, contenedor, { alFallar } = {}) {
     camara.position.z = 11 + prog * 4;
     renderer.render(escena, camara);
   };
+
+  // Los gráficos se preparan sin bloquear la página y solo entonces se muestra la escena, con un fundido
+  try { await renderer.compileAsync(escena, camara); } catch (e) { /* si el navegador no lo admite, se prepara en el primer fotograma */ }
+  dibujar();
+  requestAnimationFrame(() => canvas.classList.add('mp-lienzo-listo'));
 
   let parar;
   if (quieto) { dibujar(); const alScroll = () => dibujar(); window.addEventListener('scroll', alScroll, { passive: true }); parar = () => window.removeEventListener('scroll', alScroll); }
@@ -257,7 +260,7 @@ export async function montarCapa3D(canvas, banda, iconos, { alFallar } = {}) {
   }, { threshold: [0, 0.35, 0.6] });
   io.observe(banda);
 
-  renderer.compile(escena, camara);
+  try { await renderer.compileAsync(escena, camara); } catch (e) { /* se prepara en el primer fotograma */ } // sin tirón al llegar con el scroll
   const reloj = new THREE.Clock();
   const dibujar = () => {
     const t = reloj.getElapsedTime(), ahora = performance.now();
