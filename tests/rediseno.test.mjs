@@ -33,3 +33,21 @@ describe('Rediseño 3D: base común', () => {
     assert.match(leer('public/styles.css'), /prefers-reduced-motion: reduce\)\{\s*\.mp-aparece/);
   });
 });
+
+describe('Rediseño 3D: la portada conserva su contenido', () => {
+  const src = leer('src/secciones.js');
+  test('mantiene los textos principales de la portada', () => {
+    for (const t of ['Tu salud financiera puesta a prueba:', '¿sientes que el dinero se te escapa y no sabes por qué?', 'Ver mi situación financiera', 'Por qué importa la salud financiera', 'Comenzar mi diagnóstico', 'Tus datos se guardan solo en tu dispositivo salvo que crees una cuenta.']) assert.ok(src.includes(t), 'falta: ' + t);
+  });
+  test('mantiene los cinco motivos con sus fuentes', () => {
+    for (const f of ['Universidad de Princeton', 'Universidad Estatal de Utah', 'Asociación Americana de Psicología', 'Universidad de Stanford y Wharton School', 'Universidad de Chicago']) assert.ok(src.includes(f), 'falta la fuente: ' + f);
+  });
+  test('la comparación de inflación usa el 2,5 % y el 8 % de siempre', () => {
+    assert.match(src, /const inflacion = 2\.5;/);
+    assert.match(src, /const rentabilidad = 8;/);
+  });
+  test('el gasto hormiga sigue calculando con la rentabilidad del índice global y su aviso legal', () => {
+    assert.match(src, /proyeccionInteres\(0, gasto, TASA_INDICE_GLOBAL, anios\)/);
+    assert.ok(src.includes('Rentabilidades pasadas no garantizan resultados futuros.'));
+  });
+});
