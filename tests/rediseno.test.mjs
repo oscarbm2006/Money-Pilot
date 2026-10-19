@@ -107,7 +107,18 @@ describe('Rediseño 3D: herramientas (Fase 2)', () => {
     for (const t of ['Construye tu foto financiera, paso a paso', 'Empezamos por lo esencial y añadimos detalle solo cuando lo necesitas. Tus cálculos se actualizan en cada paso.',
       '¿Qué puede hacer tu ahorro con el tiempo?', 'Ajusta los números y mira qué puede hacer tu ahorro con el tiempo. Si ya hiciste tu diagnóstico, partirá de tus propios datos.',
       '¿Cuánto tardarás en salir de tus deudas?', 'Escribe tus deudas y compara dos formas de pagarlas. Es una proyección educativa.']) assert.ok(app.includes(t), 'falta el texto: ' + t);
-    assert.equal((app.match(/fade-switch-enter mp-piel/g) || []).length, 3);
+    assert.equal((app.match(/fade-switch-enter mp-piel/g) || []).length, 6);
+  });
+  test('Cuentas, Inversiones y Patrimonio (Mis finanzas) usan la cabecera nueva y conservan sus textos', () => {
+    for (const id of ['mp-cab-cuentas', 'mp-cab-inv', 'mp-cab-pat']) assert.ok(app.includes('id: "' + id + '"'), 'falta la cabecera ' + id);
+    for (const t of ['Tus cuentas, en un solo sitio', 'No conectamos con tu banco: tú decides qué saldo introducir y cuándo actualizarlo.',
+      'Tus inversiones, en un solo sitio', 'Los datos no se actualizan solos: revísalos cuando quieras.',
+      'Tu patrimonio neto', 'Se actualiza automáticamente según lo que registres en Cuentas, Inversiones, Deudas y aquí abajo.']) assert.ok(app.includes(t), 'falta el texto: ' + t);
+    for (const t of ['Tu liquidez', 'Tu cartera', 'Tu foto completa']) assert.ok(app.includes('antetitulo: "' + t + '"'));
+    assert.ok(!pag.includes('section-intro'), 'quedan introducciones antiguas en paginas.js');
+  });
+  test('las cifras de las herramientas usan una tipografía legible (no la serif fina de la portada)', () => {
+    assert.match(css, /\.mp-piel :is\(div,span,p,strong,b\)\.font-serif\{font-family:var\(--mp-fuente\);font-weight:700;font-variant-numeric:tabular-nums/);
   });
   test('las tres pantallas ya no llevan la tarjeta de introducción antigua', () => {
     assert.ok(!pag.includes('Eyebrow, null, "Diagnóstico financiero"'));
