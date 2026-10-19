@@ -3,6 +3,8 @@ const { useState, useEffect, useRef, useCallback, useMemo, useId } = React;
 import { C, GASTOS_DISC_DEF, GASTOS_FIJOS_DEF, GASTOS_HORMIGA_EJEMPLOS, I, STATS_REALES, TASA_INDICE_GLOBAL } from './constantes.js';
 import { Card, EvidenciaModal, Eyebrow, FadeSwitch, FreqField, NumberField, SimpleStackedBarChart, drawRef } from './ui-basicos.js';
 import { euros, numEs, proyeccionInteres, totalMensual } from './calculos.js';
+import { useAparicion, useInclinacion, contarHasta, prefiereMenosMovimiento } from './movimiento.js';
+import { montarPortada3D, montarCapa3D } from './efectos-3d.js';
 
 // Longitud de una polilínea (en unidades del viewBox) a partir de su atributo points; sirve para trazarla al aparecer
 const longitudPolilinea = pts => {
@@ -133,419 +135,329 @@ export function StatsCarousel() {
   })))));
 }
 
+/* ==================================================================
+   PORTADA · Rediseño 3D (Fase 1)
+   Solo cambia el aspecto: los textos, datos y cálculos son los mismos
+   que antes (inflación 2,5 %, rentabilidad 8 %, índice global, etc.).
+   ================================================================== */
+const ce = React.createElement;
+
+// Monta una escena 3D en un <canvas> y la desmonta al salir de la pantalla.
+// Con "perezosa", la escena solo existe mientras la sección está cerca de la pantalla (ahorra memoria y batería).
+function useEscena3D(montar, perezosa = false) {
+  const lienzo = useRef(null), caja = useRef(null);
+  const [fallo, setFallo] = useState(false);
+  const [cerca, setCerca] = useState(!perezosa);
+  useEffect(() => {
+    if (!perezosa) return;
+    const io = new IntersectionObserver(es => setCerca(es[0].isIntersecting), { rootMargin: "60% 0px" });
+    io.observe(caja.current);
+    return () => io.disconnect();
+  }, []);
+  useEffect(() => {
+    if (!cerca) return;
+    let desmontar = () => {}, vivo = true;
+    montar(lienzo.current, caja.current, () => setFallo(true)).then(f => { if (vivo) desmontar = f; else f(); });
+    return () => { vivo = false; desmontar(); };
+  }, [cerca]);
+  return { lienzo, caja, fallo };
+}
+
+// Bloque que aparece al llegar con el scroll y desaparece al irse
+function Aparece({ as = "div", retraso = 0, className = "", style = {}, children, ...rest }) {
+  const ref = useAparicion();
+  return ce(as, { ref, className: "mp-aparece " + className, style: { "--mp-retraso": retraso + "s", ...style }, ...rest }, children);
+}
+
+// Capa de transición: titular + iconos 3D que llegan girando
+function CapaTransicion({ id, lineas, frase, iconos }) {
+  const { lienzo, caja } = useEscena3D((c, b, fallar) => montarCapa3D(c, b, iconos, { alFallar: fallar }), true);
+  const visible = useAparicion();
+  return ce("section", { ref: el => { caja.current = el; visible.current = el; }, className: "mp-capa", "aria-labelledby": id },
+    ce("canvas", { ref: lienzo, className: "mp-lienzo", "aria-hidden": "true" }),
+    ce("div", { className: "mp-capa-luz", "aria-hidden": "true" }),
+    ce("div", { className: "mp-capa-texto" },
+      ce("h2", { id, className: "mp-capa-titulo" }, lineas.map((l, i) => ce("span", { key: i, className: "mp-capa-linea" }, ce("span", null, l)))),
+      ce("p", { className: "mp-capa-frase" }, frase)));
+}
+
+/* ---------- Gráfico 3D por capas: inflación frente a interés compuesto ---------- */
+function GraficoInflacion3D({ anios, aporte, inflacion, rentabilidad }) {
+  const ref = useRef(null), estado = useRef({ yv: 0.25, meta: anios, raf: 0, visto: false });
+  const W = 800, H = 380, L = 50, R = 770, T = 40, B = 330;
+  const dibujar = Y => {
+    const raiz = ref.current; if (!raiz) return;
+    Y = Math.max(Y, 0.25);
+    const fc = t => Math.pow(1 + rentabilidad / 100, t), fi = t => 1 / Math.pow(1 + inflacion / 100, t);
+    const ymax = fc(Y) * 1.12, X = t => L + t / Y * (R - L), Yp = v => B - v / ymax * (B - T);
+    let dc = "", di = "", vuelta = "";
+    for (let i = 0; i <= 60; i++) { const t = Y * i / 60; dc += (i ? "L" : "M") + X(t).toFixed(1) + " " + Yp(fc(t)).toFixed(1); di += (i ? "L" : "M") + X(t).toFixed(1) + " " + Yp(fi(t)).toFixed(1); }
+    for (let j = 60; j >= 0; j--) { const t = Y * j / 60; vuelta += "L" + X(t).toFixed(1) + " " + Yp(fi(t)).toFixed(1); }
+    const q = s => raiz.querySelector(s);
+    q("[data-c]").setAttribute("d", dc); q("[data-i]").setAttribute("d", di); q("[data-area]").setAttribute("d", dc + vuelta + "Z");
+    const yb = Yp(1); q("[data-base]").setAttribute("y1", yb); q("[data-base]").setAttribute("y2", yb); q("[data-base-t]").setAttribute("y", yb - 10);
+    q("[data-anios]").innerHTML = [0, Y / 2, Y].map(t => `<text x="${X(t)}" y="${B + 30}">${t === 0 ? "Hoy" : Math.round(t) + " años"}</text>`).join("");
+    const ce_ = fc(Y), ie = fi(Y), xc = X(Y), yc = Yp(ce_), yi = Yp(ie);
+    q("[data-pc]").setAttribute("cx", xc); q("[data-pc]").setAttribute("cy", yc); q("[data-pi]").setAttribute("cx", xc); q("[data-pi]").setAttribute("cy", yi);
+    const poner = (s, x, y, txt) => { const e = q(s); e.style.left = x / W * 100 + "%"; e.style.top = y / H * 100 + "%"; e.textContent = txt; };
+    poner("[data-tc]", xc - 14, yc - 22, euros(aporte * ce_));
+    poner("[data-ti]", xc - 14, yi + 26, euros(aporte * ie));
+    poner("[data-tg]", (L + xc) / 2 + (xc - L) * 0.18, (yc + yi) / 2 + 10, "Diferencia: " + euros(aporte * (ce_ - ie)));
+    q("[data-tg]").style.opacity = yi - yc > 70 ? 1 : 0;
+  };
+  const animar = () => {
+    const s = estado.current; cancelAnimationFrame(s.raf);
+    if (prefiereMenosMovimiento()) { s.yv = s.meta; dibujar(s.yv); return; }
+    const paso = () => { s.yv += (s.meta - s.yv) * 0.08; if (Math.abs(s.meta - s.yv) < 0.01) s.yv = s.meta; dibujar(s.yv); if (s.yv !== s.meta) s.raf = requestAnimationFrame(paso); };
+    s.raf = requestAnimationFrame(paso);
+  };
+  useEffect(() => { estado.current.meta = anios; if (estado.current.visto) animar(); else dibujar(estado.current.yv); }, [anios, aporte]);
+  useEffect(() => {
+    const el = ref.current, s = estado.current;
+    const io = new IntersectionObserver(es => {
+      if (es[0].isIntersecting) { if (!s.visto) { s.visto = true; s.yv = 0.25; animar(); } }
+      else { s.visto = false; cancelAnimationFrame(s.raf); s.yv = 0.25; dibujar(0.25); }
+    }, { threshold: 0.35 });
+    io.observe(el);
+    const caja = el.querySelector(".mp-grafico3d");
+    const mover = e => { if (prefiereMenosMovimiento()) return; const r = caja.getBoundingClientRect(), x = (e.clientX - r.left) / r.width - .5, y = (e.clientY - r.top) / r.height - .5; caja.classList.add("mp-siguiendo"); caja.style.setProperty("--mp-rx", (4 - y * 5) + "deg"); caja.style.setProperty("--mp-ry", (-3 + x * 7) + "deg"); };
+    const salir = () => { caja.classList.remove("mp-siguiendo"); caja.style.removeProperty("--mp-rx"); caja.style.removeProperty("--mp-ry"); };
+    caja.addEventListener("pointermove", mover); caja.addEventListener("pointerleave", salir);
+    return () => { io.disconnect(); cancelAnimationFrame(s.raf); caja.removeEventListener("pointermove", mover); caja.removeEventListener("pointerleave", salir); };
+  }, []);
+  const svg = (extra, hijos) => ce("svg", { viewBox: "0 0 800 380", className: "mp-capa-svg " + extra, "aria-hidden": "true" }, hijos);
+  return ce("div", { ref, className: "mp-grafico3d-marco" },
+    ce("div", { className: "mp-grafico3d", role: "img", "aria-label": "Evolución de tu dinero con inflación frente a interés compuesto" },
+      svg("mp-capa-fondo", [
+        ...[0, 1, 2, 3, 4].map(k => ce("line", { key: "g" + k, x1: L, x2: R, y1: T + (B - T) * k / 4, y2: T + (B - T) * k / 4, stroke: "rgba(199,210,254,.12)" })),
+        ce("line", { key: "b", "data-base": "", x1: L, x2: R, stroke: "rgba(199,210,254,.45)", strokeWidth: 1.5, strokeDasharray: "6 6" }),
+        ce("text", { key: "bt", "data-base-t": "", x: 56, fill: "#C7D2FE", fontSize: 13 }, "Tu dinero hoy"),
+        ce("g", { key: "a", "data-anios": "", fill: "#C7D2FE", fontSize: 13, textAnchor: "middle" })]),
+      svg("", [
+        ce("defs", { key: "d" }, ce("linearGradient", { id: "mpAreaInfl", x1: 0, y1: 0, x2: 0, y2: 1 }, ce("stop", { offset: 0, stopColor: "#818CF8", stopOpacity: .55 }), ce("stop", { offset: 1, stopColor: "#818CF8", stopOpacity: .05 }))),
+        ce("path", { key: "ar", "data-area": "", fill: "url(#mpAreaInfl)" })]),
+      svg("mp-capa-frente", [
+        ce("path", { key: "i", "data-i": "", fill: "none", stroke: "#FCD34D", strokeWidth: 4, strokeLinecap: "round" }),
+        ce("path", { key: "c", "data-c": "", fill: "none", stroke: "#A5B4FC", strokeWidth: 5, strokeLinecap: "round" }),
+        ce("circle", { key: "pi", "data-pi": "", r: 7, fill: "#FCD34D" }),
+        ce("circle", { key: "pc", "data-pc": "", r: 8, fill: "#A5B4FC" })]),
+      ce("span", { className: "mp-etiqueta mp-etiqueta-c", "data-tc": "" }),
+      ce("span", { className: "mp-etiqueta mp-etiqueta-i", "data-ti": "" }),
+      ce("span", { className: "mp-etiqueta mp-etiqueta-g", "data-tg": "" })));
+}
+
+/* ---------- Barras 3D (aportado frente a interés generado) ---------- */
+// datos: [{ etiqueta, aportado, interes }]. Se montan columna a columna al aparecer y se animan con suavidad al cambiar.
+function Barras3D({ datos }) {
+  const marco = useRef(null), escena = useRef(null), cols = useRef([]);
+  const s = useRef({ p: [], montado: false, t0: 0, raf: 0, vista: datos, actual: null });
+  const H = 300, ANCHO = 74 * 7 + 40;
+  const maximoBonito = v => { if (v <= 0) return 1; const e = Math.pow(10, Math.floor(Math.log10(v))); return [1, 2, 5, 10].map(m => m * e).find(x => x >= v); };
+  const facil = x => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+  const pintar = () => {
+    const st = s.current, d = st.actual || datos, max = maximoBonito(Math.max(...d.map(x => x.aportado + x.interes), 1));
+    cols.current.forEach((c, i) => {
+      if (!c || !c.a || !c.i || !d[i]) return;
+      const ha = Math.max(3, d[i].aportado / max * H), hi = Math.max(0, d[i].interes / max * H);
+      const h = (ha + hi) * facil(st.p[i] || 0), hL = Math.min(h, ha), hU = Math.max(0, h - ha);
+      c.a.style.height = H + "px"; c.i.style.height = H + "px";
+      c.a.style.transform = `scaleY(${Math.max(0.0001, hL / H)})`;
+      c.i.style.transform = `translateY(${-hL}px) scaleY(${Math.max(0.0001, hU / H)})`;
+    });
+  };
+  const bucle = ahora => {
+    const st = s.current; let ocupado = false;
+    if (!st.actual) st.actual = datos.map(x => ({ ...x }));
+    datos.forEach((x, i) => {
+      const a = st.actual[i] || (st.actual[i] = { ...x, aportado: 0, interes: 0 });
+      a.aportado += (x.aportado - a.aportado) * 0.12; a.interes += (x.interes - a.interes) * 0.12;
+      if (Math.abs(x.aportado - a.aportado) + Math.abs(x.interes - a.interes) > 1) ocupado = true; else { a.aportado = x.aportado; a.interes = x.interes; }
+    });
+    st.actual.length = datos.length;
+    if (st.montado) datos.forEach((_, i) => { const u = Math.min(1, Math.max(0, (ahora - st.t0 - i * 200) / 1300)); if (u > (st.p[i] || 0)) st.p[i] = u; if (st.p[i] < 1) ocupado = true; });
+    pintar();
+    st.raf = ocupado ? requestAnimationFrame(bucle) : 0;
+  };
+  const arrancar = () => { if (!s.current.raf) s.current.raf = requestAnimationFrame(bucle); };
+  useEffect(() => { if (s.current.montado) datos.forEach((_, i) => { if (s.current.p[i] === undefined) s.current.p[i] = 1; }); arrancar(); }, [datos]);
+  useEffect(() => {
+    const st = s.current;
+    const encajar = () => { const m = marco.current, k = Math.min(1, m.clientWidth / (ANCHO + 40)); escena.current.style.transform = `translateX(${(m.clientWidth - ANCHO * k) / 2}px) scale(${k})`; m.style.height = (H + 110) * k + "px"; };
+    const ro = new ResizeObserver(encajar); ro.observe(marco.current); encajar();
+    const io = new IntersectionObserver(es => {
+      const e = es[0];
+      if (e.intersectionRatio >= 0.5 && !st.montado) {
+        st.montado = true;
+        if (prefiereMenosMovimiento()) { st.p = datos.map(() => 1); st.actual = datos.map(x => ({ ...x })); pintar(); return; }
+        st.t0 = performance.now(); arrancar();
+      } else if (!e.isIntersecting && e.boundingClientRect.top > 0 && st.montado) { st.montado = false; st.p = []; pintar(); }
+    }, { threshold: [0, 0.5] });
+    io.observe(escena.current);
+    pintar();
+    return () => { ro.disconnect(); io.disconnect(); cancelAnimationFrame(st.raf); };
+  }, []);
+  const prisma = (clase, ref) => ce("div", { className: "mp-prisma " + clase, ref }, ce("div", { className: "mp-cara-f" }), ce("div", { className: "mp-cara-r" }), ce("div", { className: "mp-cara-t" }));
+  return ce("div", { ref: marco, className: "mp-barras-marco" },
+    ce("div", { ref: escena, className: "mp-barras-escena", role: "img", "aria-label": "Gráfico de lo aportado frente a lo generado por el interés, año a año" },
+      ce("div", { className: "mp-barras-iso" },
+        ce("div", { className: "mp-barras-suelo" }),
+        datos.map((d, i) => {
+          const r = cols.current[i] || (cols.current[i] = {});
+          return ce("div", { key: i, className: "mp-col", style: { left: 20 + i * 74 + "px" } },
+            prisma("mp-p-aportado", el => { r.a = el; }),
+            prisma("mp-p-interes", el => { r.i = el; }),
+            ce("div", { className: "mp-col-etiqueta" }, d.etiqueta));
+        }))));
+}
+
+/* ---------- Un pequeño experimento: gasto hormiga ---------- */
 export function GastoHormigaSection() {
   const [gasto, setGasto] = useState(0);
   const [anios, setAnios] = useState(10);
   const [seleccion, setSeleccion] = useState(null);
   const proyeccion = useMemo(() => proyeccionInteres(0, gasto, TASA_INDICE_GLOBAL, anios), [gasto, anios]);
   const ahorroSinInvertir = gasto * 12 * anios;
-  const serie = useMemo(() => {
-    const years = Math.max(1, Math.round(anios));
-    return Array.from({
-      length: years
-    }, (_, i) => {
-      const a = i + 1;
+  // Hasta 7 columnas repartidas entre el primer y el último año elegido (mismos cálculos que antes)
+  const columnas = useMemo(() => {
+    const total = Math.max(1, Math.round(anios)), n = Math.min(7, total);
+    const años = Array.from(new Set(Array.from({ length: n }, (_, k) => Math.max(1, Math.round(total * (k + 1) / n)))));
+    return años.map(a => {
       const p = proyeccionInteres(0, gasto, TASA_INDICE_GLOBAL, a);
-      return {
-        anio: a,
-        aportado: Math.round(p.totalAportado),
-        interesGenerado: Math.max(0, Math.round(p.valorFuturo - p.totalAportado))
-      };
+      return { etiqueta: a + (a === 1 ? " año" : " años"), aportado: Math.round(p.totalAportado), interes: Math.max(0, Math.round(p.valorFuturo - p.totalAportado)) };
     });
   }, [gasto, anios]);
-  return /*#__PURE__*/React.createElement(Card, {
-    className: "p-6 sm:p-8"
-  }, /*#__PURE__*/React.createElement(Eyebrow, null, "Un pequeño experimento"), /*#__PURE__*/React.createElement("h2", {
-    className: "font-serif text-xl sm:text-2xl font-bold",
-    style: {
-      color: C.ink
-    }
-  }, "Piensa en un gasto mensual totalmente prescindible"), /*#__PURE__*/React.createElement("p", {
-    className: "text-sm mt-2 max-w-2xl",
-    style: {
-      color: C.muted
-    }
-  }, "Por ejemplo, desayunar fuera todos los días, pedir comida a domicilio por falta de organización, o una suscripción que casi no usas. Elige un ejemplo o escribe el tuyo."), /*#__PURE__*/React.createElement("div", {
-    className: "flex flex-wrap gap-2 mt-4"
-  }, GASTOS_HORMIGA_EJEMPLOS.map(g => /*#__PURE__*/React.createElement("button", {
-    key: g.label,
-    onClick: () => {
-      setSeleccion(g.label);
-      setGasto(g.valor);
-    },
-    className: "px-3 py-2 rounded-lg text-xs font-bold border text-left transition-all hover:-translate-y-0.5",
-    style: {
-      borderColor: seleccion === g.label ? C.sand : C.border,
-      backgroundColor: seleccion === g.label ? C.sandLight : C.paper,
-      color: C.ink
-    }
-  }, g.label))), /*#__PURE__*/React.createElement("div", {
-    className: "grid grid-cols-1 sm:grid-cols-2 gap-5 mt-5"
-  }, /*#__PURE__*/React.createElement(NumberField, {
-    label: "¿Cuánto gastas al mes en esto?",
-    value: gasto,
-    onChange: v => {
-      setGasto(v);
-      setSeleccion(null);
-    }
-  }), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
-    className: "block text-sm font-bold mb-1.5",
-    style: {
-      color: C.ink
-    }
-  }, "Durante cuántos años"), /*#__PURE__*/React.createElement("input", {
-    type: "range",
-    min: "1",
-    max: "30",
-    value: anios,
-    onChange: e => setAnios(Number(e.target.value)),
-    className: "w-full",
-    style: {
-      accentColor: C.sand
-    }
-  }), /*#__PURE__*/React.createElement("div", {
-    className: "text-xs font-bold mt-1",
-    style: {
-      color: C.muted
-    }
-  }, anios, " años"))), gasto > 0 && /*#__PURE__*/React.createElement("div", {
-    className: "mt-6 space-y-4 fade-switch-enter"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "rounded-xl p-4 border",
-    style: {
-      backgroundColor: C.paper,
-      border: "1px solid " + C.border
-    }
-  }, /*#__PURE__*/React.createElement("p", {
-    className: "text-sm leading-relaxed",
-    style: {
-      color: C.ink
-    }
-  }, "¿Sabías que si hubieses ahorrado esos ", /*#__PURE__*/React.createElement("b", {
-    style: {
-      color: C.sand
-    }
-  }, euros(gasto), "/mes"), " durante ", /*#__PURE__*/React.createElement("b", {
-    style: {
-      color: C.sand
-    }
-  }, anios, " años"), ", tendrías ", /*#__PURE__*/React.createElement("b", {
-    style: {
-      color: C.sand
-    }
-  }, euros(ahorroSinInvertir)), "?"), /*#__PURE__*/React.createElement("p", {
-    className: "text-sm mt-2.5 leading-relaxed",
-    style: {
-      color: C.ink
-    }
-  }, "Y si los hubieses invertido en un índice con las empresas más grandes del mundo (rentabilidad histórica media aproximada del ", TASA_INDICE_GLOBAL, "%/año), el interés compuesto te habría dado ", /*#__PURE__*/React.createElement("b", {
-    style: {
-      color: C.salu
-    }
-  }, euros(proyeccion.interesGenerado)), " extra — un total de ", /*#__PURE__*/React.createElement("b", {
-    style: {
-      color: C.sand
-    }
-  }, euros(proyeccion.valorFuturo)), ".")), /*#__PURE__*/React.createElement("div", {
-    className: "mt-1"
-  }, /*#__PURE__*/React.createElement(SimpleStackedBarChart, {
-    data: serie,
-    xKey: "anio",
-    aportadoKey: "aportado",
-    interesKey: "interesGenerado",
-    height: 280,
-    colorAportado: C.slate,
-    colorInteres: C.salu,
-    formatY: v => numEs(v) + " €"
-  })), /*#__PURE__*/React.createElement("div", {
-    className: "flex gap-4 text-xs font-bold",
-    style: {
-      color: C.muted
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "inline-flex items-center gap-1.5"
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "w-2.5 h-2.5 rounded-sm inline-block",
-    style: {
-      backgroundColor: C.slate
-    }
-  }), "Aportado"), /*#__PURE__*/React.createElement("span", {
-    className: "inline-flex items-center gap-1.5"
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "w-2.5 h-2.5 rounded-sm inline-block",
-    style: {
-      backgroundColor: C.salu
-    }
-  }), "Intereses generados")), /*#__PURE__*/React.createElement("p", {
-    className: "text-[11px] readable-note"
-  }, "Proyección educativa con la rentabilidad histórica media de un índice global. Rentabilidades pasadas no garantizan resultados futuros.")));
+  const pctInteres = proyeccion.valorFuturo > 0 ? proyeccion.interesGenerado / proyeccion.valorFuturo * 100 : 0;
+  return ce("section", { className: "mp-seccion mp-sans" },
+    ce("div", { className: "mp-ancho mp-hormiga" },
+      ce(Aparece, null,
+        ce("p", { className: "mp-antetitulo" }, "Un pequeño experimento"),
+        ce("h2", { className: "mp-h2" }, "Piensa en un gasto mensual totalmente prescindible"),
+        ce("p", { className: "mp-sub" }, "Por ejemplo, desayunar fuera todos los días, pedir comida a domicilio por falta de organización, o una suscripción que casi no usas. Elige un ejemplo o escribe el tuyo."),
+        ce("div", { className: "mp-chips" }, GASTOS_HORMIGA_EJEMPLOS.map(g => ce("button", {
+          key: g.label, type: "button", "aria-pressed": seleccion === g.label, className: "mp-chip",
+          onClick: () => { setSeleccion(g.label); setGasto(g.valor); }
+        }, g.label))),
+        ce("div", { className: "mp-hormiga-campos" },
+          ce(NumberField, { label: "¿Cuánto gastas al mes en esto?", value: gasto, onChange: v => { setGasto(v); setSeleccion(null); } }),
+          ce("div", null,
+            ce("label", { className: "mp-etiqueta-campo", htmlFor: "mp-hormiga-anios" }, "Durante cuántos años"),
+            ce("input", { id: "mp-hormiga-anios", type: "range", min: "1", max: "30", value: anios, onChange: e => setAnios(Number(e.target.value)), className: "mp-rango" }),
+            ce("div", { className: "mp-rango-valor" }, anios, " años")))),
+      gasto > 0 && ce("div", { className: "mp-hormiga-resultado fade-switch-enter" },
+        ce("div", { className: "mp-hormiga-texto" },
+          ce("p", null, "¿Sabías que si hubieses ahorrado esos ", ce("b", null, euros(gasto), "/mes"), " durante ", ce("b", null, anios, " años"), ", tendrías ", ce("b", null, euros(ahorroSinInvertir)), "?"),
+          ce("p", null, "Y si los hubieses invertido en un índice con las empresas más grandes del mundo (rentabilidad histórica media aproximada del ", TASA_INDICE_GLOBAL, "%/año), el interés compuesto te habría dado ", ce("b", { className: "mp-verde" }, euros(proyeccion.interesGenerado)), " extra — un total de ", ce("b", null, euros(proyeccion.valorFuturo)), "."),
+          ce("div", { className: "mp-reparto" },
+            ce("div", null, ce("span", null, ce("i", { className: "mp-c-aportado" }), "Aportado"), ce("strong", { className: "mp-num" }, euros(proyeccion.totalAportado))),
+            ce("div", null, ce("span", null, ce("i", { className: "mp-c-interes" }), "Intereses generados"), ce("strong", { className: "mp-num" }, euros(proyeccion.interesGenerado)))),
+          ce("div", { className: "mp-reparto-barra", "aria-hidden": "true" },
+            ce("b", { className: "mp-c-aportado", style: { width: 100 - pctInteres + "%" } }), ce("b", { className: "mp-c-interes", style: { width: pctInteres + "%" } })),
+          ce("p", { className: "mp-reparto-nota" }, "El interés genera ", ce("strong", null, Math.round(pctInteres), " %"), " de todo lo que acumularías.")),
+        ce(Barras3D, { datos: columnas }),
+        ce("p", { className: "mp-nota" }, "Proyección educativa con la rentabilidad histórica media de un índice global. Rentabilidades pasadas no garantizan resultados futuros."))));
 }
 
+/* ---------- ¿Qué pasa con 1.000 € si no haces nada? ---------- */
 export function PoderAdquisitivoSection() {
   const [anios, setAnios] = useState(10);
-  const [aporte, setAporte] = useState(1000);
+  const [aporte] = useState(1000);
   const inflacion = 2.5;
   const rentabilidad = 8;
   const valorInflacion = aporte / Math.pow(1 + inflacion / 100, anios);
   const valorCompuesto = aporte * Math.pow(1 + rentabilidad / 100, anios);
-  const max = valorCompuesto;
-  const serie = Array.from({
-    length: anios + 1
-  }, (_, i) => ({
-    y: i,
-    infl: aporte / Math.pow(1 + inflacion / 100, i),
-    comp: aporte * Math.pow(1 + rentabilidad / 100, i)
-  }));
-  const puntosInfl = serie.map((p, i) => `${i * (600 / Math.max(1, anios))},${120 - p.infl / aporte * 100}`).join(" ");
-  const puntosComp = serie.map((p, i) => `${i * (600 / Math.max(1, anios))},${120 - Math.min(100, p.comp / max * 100)}`).join(" ");
-  return /*#__PURE__*/React.createElement(Card, {
-    className: "p-5 sm:p-7 overflow-hidden",
-    style: {
-      borderColor: C.sand + "66",
-      boxShadow: "0 20px 60px -35px rgba(79,70,229,.45)"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "flex items-start justify-between gap-4"
-  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(Eyebrow, null, "Un minuto que puede cambiar tu perspectiva"), /*#__PURE__*/React.createElement("h2", {
-    className: "font-serif text-xl sm:text-2xl font-bold mt-1",
-    style: {
-      color: C.ink
-    }
-  }, "¿Qué pasa con 1.000 € si no haces nada?")), /*#__PURE__*/React.createElement("div", {
-    className: "hidden sm:flex w-10 h-10 rounded-xl items-center justify-center",
-    style: {
-      backgroundColor: "rgba(79,70,229,.14)"
-    }
-  }, /*#__PURE__*/React.createElement(I.chartLine, {
-    size: 19,
-    color: C.sand
-  }))), /*#__PURE__*/React.createElement("p", {
-    className: "text-sm mt-2 leading-relaxed",
-    style: {
-      color: C.muted
-    }
-  }, "La inflación reduce el poder de compra. La capitalización, en cambio, puede hacer crecer un capital con el tiempo. No es una promesa de rentabilidad: es una demostración sencilla del efecto matemático."), /*#__PURE__*/React.createElement("div", {
-    className: "grid sm:grid-cols-2 gap-4 mt-5"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "rounded-xl p-4 border",
-    style: {
-      borderColor: C.border,
-      backgroundColor: C.paper
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "flex justify-between text-xs font-bold"
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      color: C.muted
-    }
-  }, "Si la inflación fuese ", inflacion, "%"), /*#__PURE__*/React.createElement("span", {
-    style: {
-      color: C.mej
-    }
-  }, "Poder de compra")), /*#__PURE__*/React.createElement("div", {
-    className: "font-serif text-2xl font-bold mt-2",
-    style: {
-      color: C.ink
-    }
-  }, euros(valorInflacion)), /*#__PURE__*/React.createElement("div", {
-    className: "h-2 rounded-full mt-3 overflow-hidden",
-    style: {
-      backgroundColor: C.border
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "h-full rounded-full",
-    style: {
-      width: `${Math.max(8, valorInflacion / aporte * 100)}%`,
-      backgroundColor: C.mej
-    }
-  })), /*#__PURE__*/React.createElement("p", {
-    className: "text-[11px] mt-2",
-    style: {
-      color: C.muted
-    }
-  }, "Lo que hoy compras con ", euros(aporte), " requeriría más dinero en el futuro.")), /*#__PURE__*/React.createElement("div", {
-    className: "rounded-xl p-4 border",
-    style: {
-      borderColor: "rgba(79,70,229,.18)",
-      backgroundColor: "rgba(79,70,229,.035)"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "flex justify-between text-xs font-bold"
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      color: C.muted
-    }
-  }, "Si creciera al ", rentabilidad, "%"), /*#__PURE__*/React.createElement("span", {
-    style: {
-      color: C.exc
-    }
-  }, "Capital")), /*#__PURE__*/React.createElement("div", {
-    className: "font-serif text-2xl font-bold mt-2",
-    style: {
-      color: C.ink
-    }
-  }, euros(valorCompuesto)), /*#__PURE__*/React.createElement("div", {
-    className: "h-2 rounded-full mt-3 overflow-hidden",
-    style: {
-      backgroundColor: C.border
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "h-full rounded-full",
-    style: {
-      width: `${Math.min(100, valorCompuesto / max * 100)}%`,
-      backgroundColor: C.exc
-    }
-  })), /*#__PURE__*/React.createElement("p", {
-    className: "text-[11px] mt-2",
-    style: {
-      color: C.muted
-    }
-  }, "Aquí solo mostramos el efecto del interés compuesto; los mercados reales fluctúan."))), /*#__PURE__*/React.createElement("div", {
-    className: "mt-5 rounded-xl p-4",
-    style: {
-      backgroundColor: "rgba(6,10,19,.035)"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "flex items-center justify-between gap-4"
-  }, /*#__PURE__*/React.createElement("label", {
-    className: "text-xs font-bold",
-    style: {
-      color: C.ink
-    }
-  }, "Horizonte: ", /*#__PURE__*/React.createElement("span", {
-    style: {
-      color: C.sand
-    }
-  }, anios, " años")), /*#__PURE__*/React.createElement("span", {
-    className: "text-xs font-bold",
-    style: {
-      color: C.muted
-    }
-  }, "Capital inicial: ", euros(aporte))), /*#__PURE__*/React.createElement("input", {
-    "aria-label": "Horizonte temporal",
-    type: "range",
-    min: "1",
-    max: "30",
-    value: anios,
-    onChange: e => setAnios(+e.target.value),
-    className: "w-full mt-3 accent-current",
-    style: {
-      color: C.sand
-    }
-  }), /*#__PURE__*/React.createElement("div", {
-    className: "mt-4 h-28 relative border-l border-b",
-    "data-draw": "",
-    ref: drawRef,
-    style: {
-      borderColor: C.border
-    }
-  }, /*#__PURE__*/React.createElement("svg", {
-    viewBox: "0 0 600 120",
-    preserveAspectRatio: "none",
-    className: "absolute inset-0 w-full h-full"
-  }, /*#__PURE__*/React.createElement("polyline", {
-    className: "mp-line-len",
-    style: {
-      "--len": longitudPolilinea(puntosInfl),
-      animationDelay: "400ms"
-    },
-    fill: "none",
-    stroke: C.mej,
-    strokeWidth: "3",
-    points: puntosInfl
-  }), /*#__PURE__*/React.createElement("polyline", {
-    className: "mp-line-len",
-    style: {
-      "--len": longitudPolilinea(puntosComp),
-      animationDelay: "520ms"
-    },
-    fill: "none",
-    stroke: C.exc,
-    strokeWidth: "3",
-    points: puntosComp
-  }))), /*#__PURE__*/React.createElement("div", {
-    className: "flex flex-wrap gap-4 mt-3 text-[11px] font-bold"
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "inline-flex items-center gap-1.5"
-  }, /*#__PURE__*/React.createElement("i", {
-    className: "w-2 h-2 rounded-full",
-    style: {
-      backgroundColor: C.mej
-    }
-  }), " Poder de compra"), /*#__PURE__*/React.createElement("span", {
-    className: "inline-flex items-center gap-1.5"
-  }, /*#__PURE__*/React.createElement("i", {
-    className: "w-2 h-2 rounded-full",
-    style: {
-      backgroundColor: C.exc
-    }
-  }), " Interés compuesto"))));
+  const cifraInfl = useRef(null), cifraComp = useRef(null);
+  useEffect(() => { contarHasta(cifraInfl.current, valorInflacion, euros); contarHasta(cifraComp.current, valorCompuesto, euros); }, [valorInflacion, valorCompuesto]);
+  return ce("section", { className: "mp-seccion mp-oscura mp-sans", id: "inflacion" },
+    ce("div", { className: "mp-ancho" },
+      ce(Aparece, null,
+        ce("p", { className: "mp-antetitulo" }, "Un minuto que puede cambiar tu perspectiva"),
+        ce("h2", { className: "mp-h2" }, "¿Qué pasa con 1.000 € si no haces nada?"),
+        ce("p", { className: "mp-sub" }, "La inflación reduce el poder de compra. La capitalización, en cambio, puede hacer crecer un capital con el tiempo. No es una promesa de rentabilidad: es una demostración sencilla del efecto matemático.")),
+      ce("div", { className: "mp-infl-rejilla" },
+        ce(Aparece, { className: "mp-infl-control" },
+          ce("label", { htmlFor: "mp-infl-anios" }, "Horizonte: ", ce("span", null, anios, " años")),
+          ce("input", { id: "mp-infl-anios", "aria-label": "Horizonte temporal", type: "range", min: "1", max: "30", value: anios, onChange: e => setAnios(+e.target.value), className: "mp-rango" }),
+          ce("p", null, "Capital inicial: ", euros(aporte))),
+        ce("div", { className: "mp-infl-valores" },
+          ce(Aparece, { className: "mp-valor" },
+            ce("h3", null, "Si la inflación fuese ", inflacion, "%"),
+            ce("p", { className: "mp-num mp-valor-cifra", ref: cifraInfl }),
+            ce("p", { className: "mp-valor-delta mp-ambar" }, "Pierdes ", euros(aporte - valorInflacion), " de poder de compra"),
+            ce("p", { className: "mp-valor-nota" }, "Lo que hoy compras con ", euros(aporte), " requeriría más dinero en el futuro.")),
+          ce(Aparece, { className: "mp-valor", retraso: 0.12 },
+            ce("h3", null, "Si creciera al ", rentabilidad, "%"),
+            ce("p", { className: "mp-num mp-valor-cifra", ref: cifraComp }),
+            ce("p", { className: "mp-valor-delta mp-lavanda" }, "Ganas ", euros(valorCompuesto - aporte)),
+            ce("p", { className: "mp-valor-nota" }, "Aquí solo mostramos el efecto del interés compuesto; los mercados reales fluctúan.")))),
+      ce(Aparece, null, ce(GraficoInflacion3D, { anios, aporte, inflacion, rentabilidad })),
+      ce("div", { className: "mp-leyenda" },
+        ce("span", null, ce("i", { style: { background: "#FCD34D" } }), "Poder de compra"),
+        ce("span", null, ce("i", { style: { background: "#A5B4FC" } }), "Interés compuesto"))));
 }
 
+/* ---------- Qué vas a conseguir (tus tres herramientas) ---------- */
+function TarjetaHerramienta({ n, k, t, desc, Icon, i }) {
+  const ref = useInclinacion(14);
+  return ce(Aparece, { retraso: i * 0.12, className: "mp-herr-hueco" },
+    ce("div", { ref, className: "mp-herr mp-inclina" },
+      ce("span", { className: "mp-brillo", "aria-hidden": "true" }),
+      ce("span", { className: "mp-herr-num mp-num", "aria-hidden": "true" }, n),
+      ce("span", { className: "mp-herr-icono" }, ce(Icon, { size: 30, color: C.sand })),
+      ce("p", { className: "mp-herr-k" }, k),
+      ce("h3", { className: "mp-herr-t" }, t),
+      ce("p", { className: "mp-herr-d" }, desc)));
+}
 export function HowItWorksSection() {
   const steps = [["01", "Tu radiografía", "Diagnóstico interactivo", "Entenderás ingresos, gastos, ahorro, colchón y deuda sin enfrentarte a un formulario interminable.", I.chartLine], ["02", "Tu perfil", "Test adaptativo", "Tus respuestas se adaptan a ti y conectan el riesgo con tus objetivos y horizonte.", I.target], ["03", "Tu mapa", "Estrategia y simuladores", "Convertirás los datos en decisiones: objetivos, escenarios y acciones que puedas ejecutar.", I.compass]];
-  return /*#__PURE__*/React.createElement("section", {
-    className: "mt-16 sm:mt-20"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "max-w-3xl mb-7"
-  }, /*#__PURE__*/React.createElement(Eyebrow, null, "Qué vas a conseguir"), /*#__PURE__*/React.createElement("h2", {
-    className: "font-serif text-3xl sm:text-4xl font-bold mt-2",
-    style: {
-      color: C.ink
+  return ce("section", { className: "mp-seccion mp-sans" },
+    ce("div", { className: "mp-ancho" },
+      ce(Aparece, { className: "mp-cabecera" },
+        ce("p", { className: "mp-antetitulo" }, "Qué vas a conseguir"),
+        ce("h2", { className: "mp-h2" }, "De entender tu dinero a saber qué hacer con él."),
+        ce("p", { className: "mp-sub" }, "El objetivo no es darte una puntuación y dejarte solo. Es ", ce("b", null, "educarte, darte contexto y convertirlo en un plan accionable."))),
+      ce("div", { className: "mp-herr-rejilla" }, steps.map(([n, k, t, desc, Icon], i) => ce(TarjetaHerramienta, { key: n, n, k, t, desc, Icon, i })))));
+}
+
+/* ---------- Motivos: por qué importa la salud financiera ---------- */
+function Motivo({ t, gancho }) {
+  const Icon = t.icon;
+  const det = useRef(null), mas = useRef(null);
+  // La frase final de cada texto es el mensaje clave; el resto se despliega con el gancho
+  const corte = t.texto.lastIndexOf(". ", t.texto.length - 2);
+  const cuerpo = t.texto.slice(0, corte + 1), clave = t.texto.slice(corte + 2);
+  const alPulsar = e => {
+    const d = det.current, b = mas.current;
+    if (prefiereMenosMovimiento() || !b.animate) return;
+    e.preventDefault();
+    if (d.open) { const h = b.offsetHeight; b.animate([{ height: h + "px", opacity: 1 }, { height: "0px", opacity: 0, transform: "perspective(800px) rotateX(-25deg)" }], { duration: 420, easing: "cubic-bezier(.4,0,.2,1)" }).onfinish = () => { d.open = false; }; }
+    else {
+      d.open = true; const h = b.offsetHeight;
+      b.animate([{ height: "0px", opacity: 0, transform: "perspective(800px) rotateX(-25deg)" }, { height: h + "px", opacity: 1, transform: "none" }], { duration: 650, easing: "cubic-bezier(.2,.8,.2,1)" });
+      Array.from(b.children).forEach((c, i) => c.animate([{ opacity: 0, transform: "translateY(14px)" }, { opacity: 1, transform: "none" }], { duration: 500, delay: 120 + i * 110, easing: "cubic-bezier(.2,.8,.2,1)", fill: "backwards" }));
     }
-  }, "De entender tu dinero a saber qué hacer con él."), /*#__PURE__*/React.createElement("p", {
-    className: "text-sm sm:text-base mt-3",
-    style: {
-      color: C.muted
-    }
-  }, "El objetivo no es darte una puntuación y dejarte solo. Es ", /*#__PURE__*/React.createElement("b", {
-    style: {
-      color: C.ink
-    }
-  }, "educarte, darte contexto y convertirlo en un plan accionable."))), /*#__PURE__*/React.createElement("div", {
-    className: "grid md:grid-cols-3 gap-4"
-  }, steps.map(([n, k, t, desc, Icon], i) => /*#__PURE__*/React.createElement(Card, {
-    key: n,
-    className: "p-6 relative overflow-hidden",
-    style: {
-      borderColor: C.border
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "absolute top-0 right-0 font-serif text-7xl font-bold opacity-[.045]",
-    style: {
-      color: C.navy
-    }
-  }, n), /*#__PURE__*/React.createElement("div", {
-    className: "w-11 h-11 rounded-xl flex items-center justify-center",
-    style: {
-      backgroundColor: "rgba(79,70,229,.12)"
-    }
-  }, /*#__PURE__*/React.createElement(Icon, {
-    size: 20,
-    color: C.sand
-  })), /*#__PURE__*/React.createElement("div", {
-    className: "text-[10px] font-bold uppercase mt-5",
-    style: {
-      color: C.sand,
-      letterSpacing: ".12em"
-    }
-  }, k), /*#__PURE__*/React.createElement("h3", {
-    className: "font-serif text-xl font-bold mt-1",
-    style: {
-      color: C.ink
-    }
-  }, t), /*#__PURE__*/React.createElement("p", {
-    className: "text-sm leading-relaxed mt-2",
-    style: {
-      color: C.muted
-    }
-  }, desc)))));
+  };
+  return ce(Aparece, { as: "li", className: "mp-motivo" },
+    ce("span", { className: "mp-motivo-icono" }, ce(Icon, { size: 26, color: C.sand })),
+    ce("div", null,
+      ce("h3", { className: "mp-motivo-t" }, t.titulo),
+      ce("p", { className: "mp-motivo-clave" }, clave),
+      ce("details", { ref: det, className: "mp-motivo-mas" },
+        ce("summary", { onClick: alPulsar }, gancho),
+        ce("div", { ref: mas, className: "mp-motivo-cuerpo" }, ce("p", null, cuerpo), ce("p", { className: "mp-motivo-fuente" }, t.fuente)))));
+}
+
+/* ---------- Moneda 3D con grosor (llamada final) ---------- */
+function Moneda3D() {
+  return ce("div", { className: "mp-moneda-escena", "aria-hidden": "true" },
+    ce("div", { className: "mp-moneda" },
+      Array.from({ length: 17 }, (_, k) => ce("div", { key: k, className: "mp-moneda-canto", style: { transform: `translateZ(${k - 8}px)` } })),
+      ce("div", { className: "mp-moneda-cara mp-num", style: { transform: "translateZ(9px)" } }, "€"),
+      ce("div", { className: "mp-moneda-cara mp-num", style: { transform: "rotateY(180deg) translateZ(9px)" } }, "€")));
 }
 
 export function HeroSection({
   onStart
 }) {
-  const [expandedIndex, setExpandedIndex] = useState(null);
   const tarjetasCientificas = [{
     icon: I.wallet,
     titulo: "Comprar tranquilidad frente a los imprevistos",
@@ -572,224 +484,82 @@ export function HeroSection({
     texto: "Ahorrar para una casa o para tu nivel de vida futuro no tiene por qué hundir tu calidad de vida actual. Nuestro cerebro sufre de \"sesgo del presente\" y prefiere gastar hoy, pero la ciencia económica encontró la solución: automatizar que una parte de tus futuras subidas de sueldo o dinero extra vaya directamente al ahorro antes de que te acostumbres a gastarlo. Este método demostró multiplicar la tasa de ahorro de un 3,5% a un altísimo 13,6% en menos de 4 años, sin que los participantes sintieran ninguna pérdida en su día a día. Sistematiza tus finanzas: multiplica tu capital sin sentir que te sacrificas.",
     fuente: "FUENTE: Universidad de Chicago (Premio Nobel Richard Thaler y Shlomo Benartzi)."
   }];
-  return /*#__PURE__*/React.createElement("section", {
-    className: "relative pt-16 sm:pt-20 pb-14 sm:pb-20"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "absolute inset-0 pointer-events-none",
-    style: {
-      background: "radial-gradient(70% 55% at 50% 0%, rgba(79,70,229,.09), transparent 72%)"
-    }
-  }), /*#__PURE__*/React.createElement("div", {
-    className: "mp-ambiente",
-    "aria-hidden": "true"
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "mp-orbe mp-orbe-1"
-  }), /*#__PURE__*/React.createElement("span", {
-    className: "mp-orbe mp-orbe-2"
-  }), /*#__PURE__*/React.createElement("span", {
-    className: "mp-orbe mp-orbe-3"
-  })), /*#__PURE__*/React.createElement("div", {
-    className: "relative z-10 max-w-6xl mx-auto w-full px-4 sm:px-6"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "grid lg:grid-cols-[1fr_.9fr] gap-10 lg:gap-14 items-start lg:items-center"
-  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
-    className: "text-sm font-bold uppercase mb-4 stagger-item",
-    style: {
-      color: C.sand,
-      letterSpacing: ".14em"
-    }
-  }, "Pon tu dinero en orden"), /*#__PURE__*/React.createElement("h1", {
-    className: "font-serif text-4xl sm:text-5xl lg:text-6xl font-bold leading-[1.02] stagger-item",
-    style: {
-      color: C.ink,
-      animationDelay: "60ms"
-    }
-  }, "Tu salud financiera puesta a prueba: ", /*#__PURE__*/React.createElement("span", {
-    style: {
-      color: C.sand
-    }
-  }, "¿sientes que el dinero se te escapa y no sabes por qué?")), /*#__PURE__*/React.createElement("p", {
-    className: "text-base sm:text-lg mt-6 max-w-xl leading-relaxed stagger-item",
-    style: {
-      color: C.muted,
-      animationDelay: "140ms"
-    }
-  }, "No llegar a fin de mes, no saber en qué se va el sueldo o sentir que la deuda nunca baja es más común de lo que parece. Aquí puedes ver tu situación con claridad y recibir un plan sencillo para empezar a ordenarla, sin tecnicismos y sin que nadie te juzgue."), /*#__PURE__*/React.createElement("div", {
-    className: "flex flex-wrap items-center gap-4 mt-8 stagger-item",
-    style: {
-      animationDelay: "220ms"
-    }
-  }, /*#__PURE__*/React.createElement("button", {
-    onClick: onStart,
-    className: "inline-flex items-center gap-2 px-6 py-3.5 rounded-xl text-sm font-bold transition-transform hover:scale-[1.03]",
-    style: {
-      backgroundColor: C.sand,
-      color: C.white
-    }
-  }, "Ver mi situación financiera ", /*#__PURE__*/React.createElement(I.arrowRight, {
-    size: 16
-  })), /*#__PURE__*/React.createElement("button", {
-    onClick: () => document.getElementById("evidencia")?.scrollIntoView({
-      behavior: "smooth",
-      block: "start"
-    }),
-    className: "inline-flex items-center gap-2 px-5 py-3.5 rounded-xl text-sm font-bold transition-colors hover:bg-black/5",
-    style: {
-      color: C.ink,
-      border: "1.5px solid rgba(79,70,229,.35)"
-    }
-  }, "Por qué importa la salud financiera")), /*#__PURE__*/React.createElement("div", {
-    className: "flex flex-wrap gap-4 mt-5 text-xs stagger-item",
-    style: {
-      color: C.mutedLight,
-      animationDelay: "300ms"
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "inline-flex items-center gap-1.5"
-  }, /*#__PURE__*/React.createElement(I.checkCircle, {
-    size: 14,
-    color: C.salu
-  }), " Sin registro, gratis y en minutos"), /*#__PURE__*/React.createElement("span", {
-    className: "inline-flex items-center gap-1.5"
-  }, /*#__PURE__*/React.createElement(I.chartLine, {
-    size: 14,
-    color: C.exc
-  }), " Resultados al momento"))), /*#__PURE__*/React.createElement(PoderAdquisitivoSection, null)), /*#__PURE__*/React.createElement(HowItWorksSection, null), /*#__PURE__*/React.createElement("div", {
-    className: "mt-14 sm:mt-18"
-  }, /*#__PURE__*/React.createElement(GastoHormigaSection, null)), /*#__PURE__*/React.createElement("section", {
-    id: "evidencia",
-    className: "mt-16 sm:mt-20 scroll-mt-24"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "max-w-3xl mx-auto text-center mb-8 sm:mb-10"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "text-xs font-bold uppercase",
-    style: {
-      color: C.sand,
-      letterSpacing: ".16em"
-    }
-  }, "¿Por qué cuesta tanto ordenar el dinero? Esto dice la investigación"), /*#__PURE__*/React.createElement("p", {
-    className: "text-sm mt-2",
-    style: {
-      color: C.muted
-    }
-  }, "No hace falta que leas esto para usar la herramienta — está aquí por si te ayuda entender por qué cuesta tanto y por qué merece la pena intentarlo.")), /*#__PURE__*/React.createElement("div", {
-    className: "grid md:grid-cols-2 gap-5"
-  }, tarjetasCientificas.map((t, i) => {
-    const Icon = t.icon;
-    return /*#__PURE__*/React.createElement(Card, {
-      key: t.titulo,
-      className: "p-5 sm:p-6 cursor-pointer transition-shadow" + (t.titulo === "Vencer tu cerebro y ahorrar sin sufrir" ? " md:col-span-2 md:max-w-2xl md:mx-auto w-full" : ""),
-      style: {
-        borderColor: C.border
-      },
-      onClick: () => setExpandedIndex(i)
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "flex items-start justify-between gap-3"
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "flex items-center gap-3.5 min-w-0"
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "w-11 h-11 rounded-xl flex items-center justify-center shrink-0",
-      style: {
-        backgroundColor: "rgba(79,70,229,.12)"
-      }
-    }, /*#__PURE__*/React.createElement(Icon, {
-      size: 20,
-      color: C.sand
-    })), /*#__PURE__*/React.createElement("h3", {
-      className: "font-serif text-lg sm:text-xl font-bold",
-      style: {
-        color: C.ink
-      }
-    }, t.titulo)), /*#__PURE__*/React.createElement("div", {
-      className: "shrink-0 mt-1",
-      style: {
-        color: C.sand
-      }
-    }, /*#__PURE__*/React.createElement(I.chevronDown, {
-      size: 18,
-      style: {
-        transform: "rotate(-90deg)"
-      }
-    }))));
-  }))), expandedIndex !== null && /*#__PURE__*/React.createElement(EvidenciaModal, {
-    tarjeta: tarjetasCientificas[expandedIndex],
-    onClose: () => setExpandedIndex(null)
-  }), /*#__PURE__*/React.createElement("div", {
-    className: "mt-16 sm:mt-20 rounded-3xl p-7 sm:p-10 text-center relative overflow-hidden",
-    style: {
-      background: "linear-gradient(135deg, #111827 0%, #1f2937 55%, #312e81 100%)",
-      boxShadow: "0 24px 70px -35px rgba(49,46,129,.55)"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "absolute -top-24 -right-20 w-64 h-64 rounded-full pointer-events-none",
-    style: {
-      background: "radial-gradient(circle, rgba(79,70,229,.22), transparent 65%)"
-    }
-  }), /*#__PURE__*/React.createElement("div", {
-    className: "relative z-10 max-w-2xl mx-auto"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "text-[10px] uppercase font-bold",
-    style: {
-      color: C.sand,
-      letterSpacing: ".16em"
-    }
-  }, "Ahora te toca a ti"), /*#__PURE__*/React.createElement("h2", {
-    className: "font-serif text-3xl sm:text-4xl font-bold mt-2",
-    style: {
-      color: C.white
-    }
-  }, "Da el primer paso. No hace falta que lo tengas todo claro."), /*#__PURE__*/React.createElement("div", {
-    className: "mt-4 rounded-2xl px-5 py-4 text-left",
-    style: {
-      backgroundColor: "#ffffff",
-      border: "1px solid rgba(255,255,255,.25)",
-      boxShadow: "0 10px 30px -22px rgba(0,0,0,.45)"
-    }
-  }, /*#__PURE__*/React.createElement("p", {
-    className: "cta-final-copy text-sm leading-relaxed",
-    style: {
-      color: "#111827",
-      fontWeight: 600
-    }
-  }, "Es gratis, no necesitas registrarte y puedes dejarlo cuando quieras. Solo tienes que responder con sinceridad; nosotros ordenamos el resto.")), /*#__PURE__*/React.createElement("button", {
-    onClick: onStart,
-    className: "mt-7 inline-flex items-center gap-2 px-7 py-4 rounded-xl text-sm font-bold transition-transform hover:scale-[1.03]",
-    style: {
-      backgroundColor: C.sand,
-      color: C.navy
-    }
-  }, "Comenzar mi diagnóstico ", /*#__PURE__*/React.createElement(I.arrowRight, {
-    size: 17
-  }))))));
+  const ganchos = ["¿Por qué un imprevisto duele el doble sin ahorro?", "Lo que el dinero hace dentro de una pareja", "Cómo procesa tu cuerpo una deuda", "Por qué esperar a cobrar más sale tan caro", "El truco para ahorrar sin notarlo"];
+  const portada = useEscena3D((c, s, fallar) => montarPortada3D(c, s, { alFallar: fallar }));
+  const lista = useRef(null), barra = useRef(null);
+  useEffect(() => {
+    // Barra que se llena mientras lees los motivos
+    const alScroll = () => { const r = lista.current && lista.current.getBoundingClientRect(); if (!r || !barra.current) return; barra.current.style.width = Math.max(0, Math.min(1, (window.innerHeight * 0.6 - r.top) / r.height)) * 100 + "%"; };
+    window.addEventListener("scroll", alScroll, { passive: true }); alScroll();
+    return () => window.removeEventListener("scroll", alScroll);
+  }, []);
+  const cta = useInclinacion(6);
+  return ce(React.Fragment, null,
+    /* 1 · Portada con escena 3D */
+    ce("section", { ref: portada.caja, className: "mp-portada mp-sans" },
+      ce("div", { className: "mp-portada-respaldo" + (portada.fallo ? " mp-respaldo-activo" : ""), "aria-hidden": "true" }),
+      ce("canvas", { ref: portada.lienzo, className: "mp-lienzo", "aria-hidden": "true" }),
+      ce("div", { className: "mp-portada-velo", "aria-hidden": "true" }),
+      ce("div", { className: "mp-ancho mp-portada-cuerpo" },
+        ce("div", { className: "mp-portada-texto" },
+          ce("p", { className: "mp-portada-ante mp-sube", style: { "--mp-retraso": ".1s" } }, "Pon tu dinero en orden"),
+          ce("h1", { className: "mp-portada-h1" },
+            ce("span", { className: "mp-linea" }, ce("span", { style: { "--mp-retraso": ".2s" } }, "Tu salud financiera puesta a prueba:")),
+            ce("span", { className: "mp-linea mp-portada-pregunta" }, ce("span", { style: { "--mp-retraso": ".4s" } }, "¿sientes que el dinero se te escapa y no sabes por qué?"))),
+          ce("p", { className: "mp-portada-lead mp-sube", style: { "--mp-retraso": ".9s" } }, "No llegar a fin de mes, no saber en qué se va el sueldo o sentir que la deuda nunca baja es más común de lo que parece. Aquí puedes ver tu situación con claridad y recibir un plan sencillo para empezar a ordenarla, sin tecnicismos y sin que nadie te juzgue."),
+          ce("div", { className: "mp-portada-acciones mp-sube", style: { "--mp-retraso": "1.05s" } },
+            ce("button", { type: "button", onClick: onStart, className: "mp-boton mp-boton-primario" }, "Ver mi situación financiera ", ce(I.arrowRight, { size: 16 })),
+            ce("button", { type: "button", onClick: () => document.getElementById("evidencia")?.scrollIntoView({ behavior: prefiereMenosMovimiento() ? "auto" : "smooth", block: "start" }), className: "mp-boton mp-boton-fantasma" }, "Por qué importa la salud financiera")),
+          ce("div", { className: "mp-portada-sellos mp-sube", style: { "--mp-retraso": "1.2s" } },
+            ce("span", null, ce(I.checkCircle, { size: 15, color: "#86EFAC" }), " Sin registro, gratis y en minutos"),
+            ce("span", null, ce(I.chartLine, { size: 15, color: "#A5B4FC" }), " Resultados al momento")))),
+      ce("div", { className: "mp-raton", "aria-hidden": "true" })),
+
+    /* 2 · Por qué importa: los cinco motivos con su fuente */
+    ce("section", { id: "evidencia", className: "mp-seccion mp-sans scroll-mt-24" },
+      ce("div", { className: "mp-ancho mp-motivos" },
+        ce("div", { className: "mp-motivos-cabeza" },
+          ce(Aparece, { className: "mp-motivos-fija" },
+            ce("p", { className: "mp-antetitulo" }, "Por qué importa la salud financiera"),
+            ce("h2", { className: "mp-h2" }, "¿Por qué cuesta tanto ordenar el dinero? Esto dice la investigación"),
+            ce("p", { className: "mp-sub" }, "No hace falta que leas esto para usar la herramienta — está aquí por si te ayuda entender por qué cuesta tanto y por qué merece la pena intentarlo."),
+            ce("div", { className: "mp-progreso", "aria-hidden": "true" }, ce("span", { ref: barra })))),
+        ce("ol", { ref: lista, className: "mp-motivos-lista" }, tarjetasCientificas.map((t, i) => ce(Motivo, { key: t.titulo, t, gancho: ganchos[i] }))))),
+
+    /* 3 · Capa de transición hacia la inflación */
+    ce(CapaTransicion, { id: "mp-capa-1", lineas: ["Lo que no se mueve,", "se encoge."], frase: "Así actúa la inflación sobre el dinero que tienes parado.",
+      iconos: [["billete", -0.82, 0.42, 1, 0.3], ["tarjeta", 0.8, 0.5, 0.9, -0.5], ["billete", 0.66, -0.48, 0.8, 1.2], ["billete", -0.62, -0.52, 0.75, 2.1], ["tarjeta", -0.92, -0.02, 0.7, 0.9], ["billete", 0.94, 0.02, 0.7, -1.1]] }),
+    ce(PoderAdquisitivoSection, null),
+
+    /* 4 · Qué vas a conseguir */
+    ce(HowItWorksSection, null),
+
+    /* 5 · Capa de transición hacia el experimento del gasto hormiga */
+    ce(CapaTransicion, { id: "mp-capa-2", lineas: ["El tiempo trabaja", "para quien empieza antes."], frase: "Mira cómo crece un ahorro constante, mes a mes.",
+      iconos: [["flecha", -0.8, 0.4, 1, 0.2], ["barras", 0.8, 0.46, 0.9, -0.4], ["flecha", 0.7, -0.5, 0.8, -0.9], ["barras", -0.66, -0.5, 0.8, 0.6], ["moneda", -0.94, 0, 0.7, 1.4], ["flecha", 0.94, 0, 0.7, 2.2]] }),
+    ce(GastoHormigaSection, null),
+
+    /* 6 · Llamada final */
+    ce("section", { className: "mp-seccion mp-sans" },
+      ce("div", { className: "mp-ancho mp-cta-hueco" },
+        ce(Aparece, null,
+          ce("div", { ref: cta, className: "mp-cta mp-inclina" },
+            ce("div", { className: "mp-cta-luz", "aria-hidden": "true" }),
+            ce("div", { className: "mp-cta-texto" },
+              ce("p", { className: "mp-antetitulo mp-antetitulo-claro" }, "Ahora te toca a ti"),
+              ce("h2", { className: "mp-h2" }, "Da el primer paso. No hace falta que lo tengas todo claro."),
+              ce("p", { className: "cta-final-copy mp-cta-copia" }, "Es gratis, no necesitas registrarte y puedes dejarlo cuando quieras. Solo tienes que responder con sinceridad; nosotros ordenamos el resto."),
+              ce("button", { type: "button", onClick: onStart, className: "mp-boton mp-boton-claro" }, "Comenzar mi diagnóstico ", ce(I.arrowRight, { size: 17 }))),
+            ce(Moneda3D, null))))));
 }
 
 export function ConfianzaPrivacidad() {
-  return /*#__PURE__*/React.createElement("div", {
-    className: "max-w-6xl mx-auto px-4 sm:px-6 mt-8 mb-4"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "rounded-xl px-4 py-3 flex items-start gap-3",
-    style: {
-      backgroundColor: "rgba(16,185,129,0.07)",
-      border: "1px solid rgba(16,185,129,0.18)"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "w-9 h-9 rounded-lg flex items-center justify-center shrink-0",
-    style: {
-      backgroundColor: "rgba(16,185,129,0.10)"
-    }
-  }, /*#__PURE__*/React.createElement(I.shieldCheck, {
-    size: 17,
-    color: C.salu
-  })), /*#__PURE__*/React.createElement("div", {
-    className: "text-xs leading-relaxed",
-    style: {
-      color: C.ink
-    }
-  }, /*#__PURE__*/React.createElement("b", null, "Tus datos se guardan solo en tu dispositivo salvo que crees una cuenta."), /*#__PURE__*/React.createElement("div", {
-    style: {
-      color: C.muted
-    }
-  }, "Puedes completar el diagnóstico con tranquilidad: la información se mantiene local y solo se sincroniza con la nube si eliges crear una cuenta."))));
+  return ce("div", { className: "mp-ancho mp-confianza-hueco mp-sans" },
+    ce(Aparece, { className: "mp-confianza" },
+      ce("span", { className: "mp-confianza-icono" }, ce(I.shieldCheck, { size: 22, color: C.salu })),
+      ce("div", null,
+        ce("b", null, "Tus datos se guardan solo en tu dispositivo salvo que crees una cuenta."),
+        ce("p", null, "Puedes completar el diagnóstico con tranquilidad: la información se mantiene local y solo se sincroniza con la nube si eliges crear una cuenta."))));
 }
 
 export function PrivacyNotice() {
