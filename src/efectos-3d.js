@@ -216,7 +216,7 @@ export async function montarPortada3D(canvas, contenedor, { alFallar } = {}) {
   return () => {
     parar(); ro.disconnect(); window.removeEventListener('pointermove', alMover);
     piezas.liberar(); entorno.liberar(); estrellasGeo.dispose(); estrellas.material.dispose();
-    renderer.dispose();
+    renderer.dispose(); renderer.forceContextLoss(); /* libera la tarjeta gráfica al salir de la pantalla */
   };
 }
 
@@ -279,5 +279,5 @@ export async function montarCapa3D(canvas, banda, iconos, { alFallar } = {}) {
     renderer.render(escena, camara);
   };
   const parar = bucle(banda, canvas, dibujar, (nivel) => { renderer.setPixelRatio(nivel === 1 ? 1 : 0.75); ajustar(); });
-  return () => { parar(); ro.disconnect(); io.disconnect(); banda.removeEventListener('pointermove', alMover); piezas.liberar(); entorno.liberar(); renderer.dispose(); };
+  return () => { parar(); ro.disconnect(); io.disconnect(); banda.removeEventListener('pointermove', alMover); piezas.liberar(); entorno.liberar(); renderer.dispose(); renderer.forceContextLoss(); /* libera la tarjeta gráfica al salir de la pantalla */ };
 }
