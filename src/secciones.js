@@ -142,24 +142,24 @@ export function StatsCarousel() {
    ================================================================== */
 const ce = React.createElement;
 
-// Monta una escena 3D en un <canvas> y la desmonta al salir de la pantalla.
-// Con "perezosa", la escena solo existe mientras la sección está cerca de la pantalla (ahorra memoria y batería).
-function useEscena3D(montar, perezosa = false) {
+// Monta una escena 3D en un <canvas> y la desmonta al salir de la página.
+// Con "diferida", se prepara cuando el navegador está libre tras cargar (así no provoca tirones al hacer scroll).
+function useEscena3D(montar, diferida = false) {
   const lienzo = useRef(null), caja = useRef(null);
   const [fallo, setFallo] = useState(false);
-  const [cerca, setCerca] = useState(!perezosa);
+  const [lista, setLista] = useState(!diferida);
   useEffect(() => {
-    if (!perezosa) return;
-    const io = new IntersectionObserver(es => setCerca(es[0].isIntersecting), { rootMargin: "60% 0px" });
-    io.observe(caja.current);
-    return () => io.disconnect();
+    if (!diferida) return;
+    const listo = () => setLista(true);
+    const id = window.requestIdleCallback ? window.requestIdleCallback(listo, { timeout: 2500 }) : setTimeout(listo, 1200);
+    return () => (window.cancelIdleCallback ? window.cancelIdleCallback(id) : clearTimeout(id));
   }, []);
   useEffect(() => {
-    if (!cerca) return;
+    if (!lista) return;
     let desmontar = () => {}, vivo = true;
     montar(lienzo.current, caja.current, () => setFallo(true)).then(f => { if (vivo) desmontar = f; else f(); });
     return () => { vivo = false; desmontar(); };
-  }, [cerca]);
+  }, [lista]);
   return { lienzo, caja, fallo };
 }
 
@@ -247,15 +247,16 @@ function GraficoInflacion3D({ anios, aporte, inflacion, rentabilidad }) {
 }
 
 /* ---------- Barras 3D (aportado frente a interés generado) ---------- */
-// datos: [{ etiqueta, aportado, interes }]. Se montan columna a columna al aparecer y se animan con suavidad al cambiar.
-function Barras3D({ datos }) {
+// datos: [{ etiqueta, aportado, interes }]. escalaMax: valor que ocupa toda la altura (fijo, para que al subir los años las barras crezcan).
+// Se montan columna a columna al aparecer y se animan con suavidad al cambiar.
+function Barras3D({ datos, escalaMax }) {
   const marco = useRef(null), escena = useRef(null), cols = useRef([]);
   const s = useRef({ p: [], montado: false, t0: 0, raf: 0, vista: datos, actual: null });
   const H = 300, ANCHO = 74 * 7 + 40;
   const maximoBonito = v => { if (v <= 0) return 1; const e = Math.pow(10, Math.floor(Math.log10(v))); return [1, 2, 5, 10].map(m => m * e).find(x => x >= v); };
   const facil = x => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
   const pintar = () => {
-    const st = s.current, d = st.actual || datos, max = maximoBonito(Math.max(...d.map(x => x.aportado + x.interes), 1));
+    const st = s.current, d = st.actual || datos, max = escalaMax > 0 ? escalaMax : maximoBonito(Math.max(...d.map(x => x.aportado + x.interes), 1));
     cols.current.forEach((c, i) => {
       if (!c || !c.a || !c.i || !d[i]) return;
       const ha = Math.max(3, d[i].aportado / max * H), hi = Math.max(0, d[i].interes / max * H);
@@ -326,6 +327,8 @@ export function GastoHormigaSection() {
       return { etiqueta: a + (a === 1 ? " año" : " años"), aportado: Math.round(p.totalAportado), interes: Math.max(0, Math.round(p.valorFuturo - p.totalAportado)) };
     });
   }, [gasto, anios]);
+  // Escala fija: lo que acumularías con este gasto en el máximo del control (30 años)
+  const escala = useMemo(() => proyeccionInteres(0, gasto, TASA_INDICE_GLOBAL, 30).valorFuturo, [gasto]);
   const pctInteres = proyeccion.valorFuturo > 0 ? proyeccion.interesGenerado / proyeccion.valorFuturo * 100 : 0;
   return ce("section", { className: "mp-seccion mp-sans" },
     ce("div", { className: "mp-ancho mp-hormiga" },
@@ -353,7 +356,7 @@ export function GastoHormigaSection() {
           ce("div", { className: "mp-reparto-barra", "aria-hidden": "true" },
             ce("b", { className: "mp-c-aportado", style: { width: 100 - pctInteres + "%" } }), ce("b", { className: "mp-c-interes", style: { width: pctInteres + "%" } })),
           ce("p", { className: "mp-reparto-nota" }, "El interés genera ", ce("strong", null, Math.round(pctInteres), " %"), " de todo lo que acumularías.")),
-        ce(Barras3D, { datos: columnas }),
+        ce(Barras3D, { datos: columnas, escalaMax: escala }),
         ce("p", { className: "mp-nota" }, "Proyección educativa con la rentabilidad histórica media de un índice global. Rentabilidades pasadas no garantizan resultados futuros."))));
 }
 
@@ -512,8 +515,7 @@ export function HeroSection({
             ce("button", { type: "button", onClick: () => document.getElementById("evidencia")?.scrollIntoView({ behavior: prefiereMenosMovimiento() ? "auto" : "smooth", block: "start" }), className: "mp-boton mp-boton-fantasma" }, "Por qué importa la salud financiera")),
           ce("div", { className: "mp-portada-sellos mp-sube", style: { "--mp-retraso": "1.2s" } },
             ce("span", null, ce(I.checkCircle, { size: 15, color: "#86EFAC" }), " Sin registro, gratis y en minutos"),
-            ce("span", null, ce(I.chartLine, { size: 15, color: "#A5B4FC" }), " Resultados al momento")))),
-      ce("div", { className: "mp-raton", "aria-hidden": "true" })),
+            ce("span", null, ce(I.chartLine, { size: 15, color: "#A5B4FC" }), " Resultados al momento"))))),
 
     /* 2 · Por qué importa: los cinco motivos con su fuente */
     ce("section", { id: "evidencia", className: "mp-seccion mp-sans scroll-mt-24" },
