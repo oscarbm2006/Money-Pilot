@@ -72,3 +72,30 @@ describe('Rediseño 3D: ajustes de la portada (Fase 1c)', () => {
     assert.ok(!leer('src/efectos-3d.js').includes('low-power'));
   });
 });
+
+describe('Rediseño 3D: carga de la portada y gráfico del gasto hormiga (Fase 1d)', () => {
+  const e3d = leer('src/efectos-3d.js'), src = leer('src/secciones.js');
+  test('el 3D importa solo las piezas de Three.js que necesita (archivo más pequeño)', () => {
+    assert.ok(existsSync(resolve(raiz, 'src/three-minimo.js')));
+    assert.ok(e3d.includes("import('./three-minimo.js')") && !e3d.includes("import('three')"));
+    const usadas = [...new Set([...e3d.matchAll(/THREE\.([A-Za-z0-9_]+)/g)].map(m => m[1]))];
+    const exportadas = leer('src/three-minimo.js');
+    for (const u of usadas) assert.match(exportadas, new RegExp('\\b' + u + '\\b'), 'falta exportar ' + u + ' en three-minimo.js');
+  });
+  test('la escena se prepara sin bloquear la página y las monedas aparecen con un fundido', () => {
+    assert.ok(e3d.includes('compileAsync'));
+    assert.ok(e3d.includes("mp-lienzo-listo"));
+    assert.match(leer('public/styles.css'), /\.mp-portada>\.mp-lienzo\.mp-lienzo-listo\{opacity:1\}/);
+  });
+  test('la fuente del titular se precarga en index.html', () => {
+    assert.match(leer('index.html'), /<link rel="preload" href="\/fonts\/plus-jakarta-sans-latin\.woff2" as="font" type="font\/woff2" crossorigin/);
+  });
+  test('las barras 3D leen siempre los datos más recientes (no se quedan con los del primer momento)', () => {
+    assert.ok(src.includes('ultimo.current = { datos, escalaMax }'));
+    assert.ok(src.includes('const { datos: d, escalaMax: e } = ultimo.current'));
+  });
+  test('las barras usan una escala común a todos los gastos de ejemplo', () => {
+    assert.ok(src.includes('const ESCALA_HORMIGA = proyeccionInteres(0, Math.max(...GASTOS_HORMIGA_EJEMPLOS.map(g => g.valor)), TASA_INDICE_GLOBAL, 30).valorFuturo;'));
+    assert.ok(src.includes('Math.max(ESCALA_HORMIGA, proyeccionInteres(0, gasto, TASA_INDICE_GLOBAL, 30).valorFuturo)'));
+  });
+});
