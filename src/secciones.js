@@ -142,17 +142,18 @@ export function StatsCarousel() {
    ================================================================== */
 const ce = React.createElement;
 
-// Monta una escena 3D en un <canvas> y la desmonta al salir de la página.
-// Con "diferida", se prepara cuando el navegador está libre tras cargar (así no provoca tirones al hacer scroll).
-function useEscena3D(montar, diferida = false) {
+// Monta una escena 3D en un <canvas> y la desmonta al salir de la pantalla.
+// Con "retrasoMs", la escena se prepara pasado ese tiempo y cuando el navegador está desocupado, para que no compita
+// con la portada mientras esta termina de cargar.
+function useEscena3D(montar, retrasoMs = 0) {
   const lienzo = useRef(null), caja = useRef(null);
   const [fallo, setFallo] = useState(false);
-  const [lista, setLista] = useState(!diferida);
+  const [lista, setLista] = useState(!retrasoMs);
   useEffect(() => {
-    if (!diferida) return;
-    const listo = () => setLista(true);
-    const id = window.requestIdleCallback ? window.requestIdleCallback(listo, { timeout: 2500 }) : setTimeout(listo, 1200);
-    return () => (window.cancelIdleCallback ? window.cancelIdleCallback(id) : clearTimeout(id));
+    if (!retrasoMs) return;
+    let ocioso = 0;
+    const t = setTimeout(() => { ocioso = window.requestIdleCallback ? window.requestIdleCallback(() => setLista(true), { timeout: 2000 }) : setTimeout(() => setLista(true), 0); }, retrasoMs);
+    return () => { clearTimeout(t); if (ocioso && window.cancelIdleCallback) window.cancelIdleCallback(ocioso); };
   }, []);
   useEffect(() => {
     if (!lista) return;
@@ -170,8 +171,8 @@ function Aparece({ as = "div", retraso = 0, className = "", style = {}, children
 }
 
 // Capa de transición: titular + iconos 3D que llegan girando
-function CapaTransicion({ id, lineas, frase, iconos }) {
-  const { lienzo, caja } = useEscena3D((c, b, fallar) => montarCapa3D(c, b, iconos, { alFallar: fallar }), true);
+function CapaTransicion({ id, lineas, frase, iconos, retraso }) {
+  const { lienzo, caja } = useEscena3D((c, b, fallar) => montarCapa3D(c, b, iconos, { alFallar: fallar }), retraso);
   const visible = useAparicion();
   return ce("section", { ref: el => { caja.current = el; visible.current = el; }, className: "mp-capa", "aria-labelledby": id },
     ce("canvas", { ref: lienzo, className: "mp-lienzo", "aria-hidden": "true" }),
@@ -247,57 +248,81 @@ function GraficoInflacion3D({ anios, aporte, inflacion, rentabilidad }) {
 }
 
 /* ---------- Barras 3D (aportado frente a interés generado) ---------- */
-// datos: [{ etiqueta, aportado, interes }]. escalaMax: valor que ocupa toda la altura (fijo, para que al subir los años las barras crezcan).
+// datos: [{ etiqueta, aportado, interes }]. escalaMax: valor que ocupa toda la altura. Es común a todos los gastos,
+// así que las barras crecen tanto al subir los años como al subir la cuantía.
 // Se montan columna a columna al aparecer y se animan con suavidad al cambiar.
 function Barras3D({ datos, escalaMax }) {
   const marco = useRef(null), escena = useRef(null), cols = useRef([]);
-  const s = useRef({ p: [], montado: false, t0: 0, raf: 0, vista: datos, actual: null });
+  // Lo último que llegó por props. El bucle de animación lo lee siempre de aquí, así que nunca trabaja con datos
+  // viejos (antes, si cambiabas la cuantía mientras las barras se estaban montando, seguía con los del principio).
+  const ultimo = useRef(null); ultimo.current = { datos, escalaMax };
+  const motor = useRef(null);
   const H = 300, ANCHO = 74 * 7 + 40;
-  const maximoBonito = v => { if (v <= 0) return 1; const e = Math.pow(10, Math.floor(Math.log10(v))); return [1, 2, 5, 10].map(m => m * e).find(x => x >= v); };
-  const facil = x => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
-  const pintar = () => {
-    const st = s.current, d = st.actual || datos, max = escalaMax > 0 ? escalaMax : maximoBonito(Math.max(...d.map(x => x.aportado + x.interes), 1));
-    cols.current.forEach((c, i) => {
-      if (!c || !c.a || !c.i || !d[i]) return;
-      const ha = Math.max(3, d[i].aportado / max * H), hi = Math.max(0, d[i].interes / max * H);
-      const h = (ha + hi) * facil(st.p[i] || 0), hL = Math.min(h, ha), hU = Math.max(0, h - ha);
-      c.a.style.height = H + "px"; c.i.style.height = H + "px";
-      c.a.style.transform = `scaleY(${Math.max(0.0001, hL / H)})`;
-      c.i.style.transform = `translateY(${-hL}px) scaleY(${Math.max(0.0001, hU / H)})`;
-    });
-  };
-  const bucle = ahora => {
-    const st = s.current; let ocupado = false;
-    if (!st.actual) st.actual = datos.map(x => ({ ...x }));
-    datos.forEach((x, i) => {
-      const a = st.actual[i] || (st.actual[i] = { ...x, aportado: 0, interes: 0 });
-      a.aportado += (x.aportado - a.aportado) * 0.12; a.interes += (x.interes - a.interes) * 0.12;
-      if (Math.abs(x.aportado - a.aportado) + Math.abs(x.interes - a.interes) > 1) ocupado = true; else { a.aportado = x.aportado; a.interes = x.interes; }
-    });
-    st.actual.length = datos.length;
-    if (st.montado) datos.forEach((_, i) => { const u = Math.min(1, Math.max(0, (ahora - st.t0 - i * 200) / 1300)); if (u > (st.p[i] || 0)) st.p[i] = u; if (st.p[i] < 1) ocupado = true; });
-    pintar();
-    st.raf = ocupado ? requestAnimationFrame(bucle) : 0;
-  };
-  const arrancar = () => { if (!s.current.raf) s.current.raf = requestAnimationFrame(bucle); };
-  useEffect(() => { if (s.current.montado) datos.forEach((_, i) => { if (s.current.p[i] === undefined) s.current.p[i] = 1; }); arrancar(); }, [datos]);
+  if (!motor.current) {
+    const st = { p: [], montado: false, t0: 0, raf: 0, ult: 0, actual: [], escala: 0 };
+    const maximoBonito = v => { if (v <= 0) return 1; const e = Math.pow(10, Math.floor(Math.log10(v))); return [1, 2, 5, 10].map(m => m * e).find(x => x >= v); };
+    const facil = x => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+    const meta = () => { const { datos: d, escalaMax: e } = ultimo.current; return e > 0 ? e : maximoBonito(Math.max(...d.map(x => x.aportado + x.interes), 1)); };
+    const pintar = () => {
+      const max = st.escala || meta();
+      cols.current.forEach((c, i) => {
+        const a = st.actual[i];
+        if (!c || !c.a || !c.i || !a) return;
+        const ha = Math.max(3, a.aportado / max * H), hi = Math.max(0, a.interes / max * H);
+        const h = (ha + hi) * facil(st.p[i] || 0), hL = Math.min(h, ha), hU = Math.max(0, h - ha);
+        c.a.style.transform = `scaleY(${Math.max(0.0001, hL / H)})`;
+        c.i.style.transform = `translateY(${-hL}px) scaleY(${Math.max(0.0001, hU / H)})`;
+      });
+    };
+    const bucle = ahora => {
+      const d = ultimo.current.datos;
+      const dt = st.ult ? Math.min(64, ahora - st.ult) : 16; st.ult = ahora;
+      const k = prefiereMenosMovimiento() ? 1 : 1 - Math.exp(-dt / 150); // suavizado que no depende de los fotogramas por segundo
+      let ocupado = false;
+      const m = meta();
+      if (!st.escala) st.escala = m;
+      st.escala += (m - st.escala) * k;
+      if (Math.abs(m - st.escala) > m * 0.002) ocupado = true; else st.escala = m;
+      st.actual.length = d.length;
+      d.forEach((x, i) => {
+        const a = st.actual[i] || (st.actual[i] = { aportado: 0, interes: 0 });
+        a.aportado += (x.aportado - a.aportado) * k; a.interes += (x.interes - a.interes) * k;
+        if (Math.abs(x.aportado - a.aportado) + Math.abs(x.interes - a.interes) > 0.5) ocupado = true; else { a.aportado = x.aportado; a.interes = x.interes; }
+      });
+      if (st.montado) d.forEach((_, i) => {
+        const u = Math.min(1, Math.max(0, (ahora - st.t0 - i * 200) / 1300));
+        if (u > (st.p[i] || 0)) st.p[i] = u;
+        if ((st.p[i] || 0) < 1) ocupado = true;
+      });
+      pintar();
+      st.raf = ocupado ? requestAnimationFrame(bucle) : 0;
+    };
+    const arrancar = () => { if (!st.raf) { st.ult = 0; st.raf = requestAnimationFrame(bucle); } };
+    motor.current = { st, pintar, arrancar };
+  }
+  // Cada vez que cambian los datos o la escala se avisa al bucle (que siempre es el mismo y lee lo último)
   useEffect(() => {
-    const st = s.current;
+    const { st, arrancar } = motor.current;
+    if (st.montado) datos.forEach((_, i) => { if (st.p[i] === undefined) st.p[i] = 1; }); // una columna nueva aparece ya montada
+    arrancar();
+  }, [datos, escalaMax]);
+  useEffect(() => {
+    const { st, pintar, arrancar } = motor.current;
     const encajar = () => { const m = marco.current, k = Math.min(1, m.clientWidth / (ANCHO + 40)); escena.current.style.transform = `translateX(${(m.clientWidth - ANCHO * k) / 2}px) scale(${k})`; m.style.height = (H + 110) * k + "px"; };
     const ro = new ResizeObserver(encajar); ro.observe(marco.current); encajar();
     const io = new IntersectionObserver(es => {
       const e = es[0];
       if (e.intersectionRatio >= 0.5 && !st.montado) {
         st.montado = true;
-        if (prefiereMenosMovimiento()) { st.p = datos.map(() => 1); st.actual = datos.map(x => ({ ...x })); pintar(); return; }
+        if (prefiereMenosMovimiento()) { st.p = ultimo.current.datos.map(() => 1); arrancar(); return; }
         st.t0 = performance.now(); arrancar();
       } else if (!e.isIntersecting && e.boundingClientRect.top > 0 && st.montado) { st.montado = false; st.p = []; pintar(); }
     }, { threshold: [0, 0.5] });
     io.observe(escena.current);
-    pintar();
-    return () => { ro.disconnect(); io.disconnect(); cancelAnimationFrame(st.raf); };
+    arrancar();
+    return () => { ro.disconnect(); io.disconnect(); cancelAnimationFrame(st.raf); st.raf = 0; };
   }, []);
-  const prisma = (clase, ref) => ce("div", { className: "mp-prisma " + clase, ref }, ce("div", { className: "mp-cara-f" }), ce("div", { className: "mp-cara-r" }), ce("div", { className: "mp-cara-t" }));
+  const prisma = (clase, ref) => ce("div", { className: "mp-prisma " + clase, ref, style: { height: H } }, ce("div", { className: "mp-cara-f" }), ce("div", { className: "mp-cara-r" }), ce("div", { className: "mp-cara-t" }));
   return ce("div", { ref: marco, className: "mp-barras-marco" },
     ce("div", { ref: escena, className: "mp-barras-escena", role: "img", "aria-label": "Gráfico de lo aportado frente a lo generado por el interés, año a año" },
       ce("div", { className: "mp-barras-iso" },
@@ -310,6 +335,9 @@ function Barras3D({ datos, escalaMax }) {
             ce("div", { className: "mp-col-etiqueta" }, d.etiqueta));
         }))));
 }
+
+// Escala común de las barras: lo que acumularías a 30 años con el más alto de los gastos de ejemplo.
+const ESCALA_HORMIGA = proyeccionInteres(0, Math.max(...GASTOS_HORMIGA_EJEMPLOS.map(g => g.valor)), TASA_INDICE_GLOBAL, 30).valorFuturo;
 
 /* ---------- Un pequeño experimento: gasto hormiga ---------- */
 // Misma utilidad de siempre (eliges un gasto y los años y ves lo que habrías acumulado), con el aspecto del
@@ -329,8 +357,8 @@ export function GastoHormigaSection() {
       return { etiqueta: a + (a === 1 ? " año" : " años"), aportado: Math.round(p.totalAportado), interes: Math.max(0, Math.round(p.valorFuturo - p.totalAportado)) };
     });
   }, [gasto, anios]);
-  // Escala fija: lo que acumularías con este gasto en el máximo del control (30 años)
-  const escala = useMemo(() => proyeccionInteres(0, gasto, TASA_INDICE_GLOBAL, 30).valorFuturo, [gasto]);
+  // Escala común: la de los gastos de ejemplo a 30 años (si escribes un gasto mayor, se amplía para que quepa)
+  const escala = useMemo(() => Math.max(ESCALA_HORMIGA, proyeccionInteres(0, gasto, TASA_INDICE_GLOBAL, 30).valorFuturo), [gasto]);
   const pctInteres = proyeccion.valorFuturo > 0 ? proyeccion.interesGenerado / proyeccion.valorFuturo * 100 : 0;
   const cifra = useRef(null), cifraA = useRef(null), cifraI = useRef(null);
   useEffect(() => {
@@ -519,15 +547,15 @@ export function HeroSection({
       ce("div", { className: "mp-portada-velo", "aria-hidden": "true" }),
       ce("div", { className: "mp-ancho mp-portada-cuerpo" },
         ce("div", { className: "mp-portada-texto" },
-          ce("p", { className: "mp-portada-ante mp-sube", style: { "--mp-retraso": ".1s" } }, "Pon tu dinero en orden"),
+          ce("p", { className: "mp-portada-ante mp-sube", style: { "--mp-retraso": ".05s" } }, "Pon tu dinero en orden"),
           ce("h1", { className: "mp-portada-h1" },
-            ce("span", { className: "mp-linea" }, ce("span", { style: { "--mp-retraso": ".2s" } }, "Tu salud financiera puesta a prueba:")),
-            ce("span", { className: "mp-linea mp-portada-pregunta" }, ce("span", { style: { "--mp-retraso": ".4s" } }, "¿sientes que el dinero se te escapa y no sabes por qué?"))),
-          ce("p", { className: "mp-portada-lead mp-sube", style: { "--mp-retraso": ".9s" } }, "No llegar a fin de mes, no saber en qué se va el sueldo o sentir que la deuda nunca baja es más común de lo que parece. Aquí puedes ver tu situación con claridad y recibir un plan sencillo para empezar a ordenarla, sin tecnicismos y sin que nadie te juzgue."),
-          ce("div", { className: "mp-portada-acciones mp-sube", style: { "--mp-retraso": "1.05s" } },
+            ce("span", { className: "mp-linea" }, ce("span", { style: { "--mp-retraso": ".1s" } }, "Tu salud financiera puesta a prueba:")),
+            ce("span", { className: "mp-linea mp-portada-pregunta" }, ce("span", { style: { "--mp-retraso": ".2s" } }, "¿sientes que el dinero se te escapa y no sabes por qué?"))),
+          ce("p", { className: "mp-portada-lead mp-sube", style: { "--mp-retraso": ".35s" } }, "No llegar a fin de mes, no saber en qué se va el sueldo o sentir que la deuda nunca baja es más común de lo que parece. Aquí puedes ver tu situación con claridad y recibir un plan sencillo para empezar a ordenarla, sin tecnicismos y sin que nadie te juzgue."),
+          ce("div", { className: "mp-portada-acciones mp-sube", style: { "--mp-retraso": ".45s" } },
             ce("button", { type: "button", onClick: onStart, className: "mp-boton mp-boton-primario" }, "Ver mi situación financiera ", ce(I.arrowRight, { size: 16 })),
             ce("button", { type: "button", onClick: () => document.getElementById("evidencia")?.scrollIntoView({ behavior: prefiereMenosMovimiento() ? "auto" : "smooth", block: "start" }), className: "mp-boton mp-boton-fantasma" }, "Por qué importa la salud financiera")),
-          ce("div", { className: "mp-portada-sellos mp-sube", style: { "--mp-retraso": "1.2s" } },
+          ce("div", { className: "mp-portada-sellos mp-sube", style: { "--mp-retraso": ".55s" } },
             ce("span", null, ce(I.checkCircle, { size: 15, color: "#86EFAC" }), " Sin registro, gratis y en minutos"),
             ce("span", null, ce(I.chartLine, { size: 15, color: "#A5B4FC" }), " Resultados al momento"))))),
 
@@ -543,7 +571,7 @@ export function HeroSection({
         ce("ol", { ref: lista, className: "mp-motivos-lista" }, tarjetasCientificas.map((t, i) => ce(Motivo, { key: t.titulo, t, gancho: ganchos[i] }))))),
 
     /* 3 · Capa de transición hacia la inflación */
-    ce(CapaTransicion, { id: "mp-capa-1", lineas: ["Lo que no se mueve,", "se encoge."], frase: "Así actúa la inflación sobre el dinero que tienes parado.",
+    ce(CapaTransicion, { id: "mp-capa-1", retraso: 3000, lineas: ["Lo que no se mueve,", "se encoge."], frase: "Así actúa la inflación sobre el dinero que tienes parado.",
       iconos: [["billete", -0.82, 0.42, 1, 0.3], ["tarjeta", 0.8, 0.5, 0.9, -0.5], ["billete", 0.66, -0.48, 0.8, 1.2], ["billete", -0.62, -0.52, 0.75, 2.1], ["tarjeta", -0.92, -0.02, 0.7, 0.9], ["billete", 0.94, 0.02, 0.7, -1.1]] }),
     ce(PoderAdquisitivoSection, null),
 
@@ -551,7 +579,7 @@ export function HeroSection({
     ce(HowItWorksSection, null),
 
     /* 5 · Capa de transición hacia el experimento del gasto hormiga */
-    ce(CapaTransicion, { id: "mp-capa-2", lineas: ["El tiempo trabaja", "para quien empieza antes."], frase: "Mira cómo crece un ahorro constante, mes a mes.",
+    ce(CapaTransicion, { id: "mp-capa-2", retraso: 4500, lineas: ["El tiempo trabaja", "para quien empieza antes."], frase: "Mira cómo crece un ahorro constante, mes a mes.",
       iconos: [["flecha", -0.8, 0.4, 1, 0.2], ["barras", 0.8, 0.46, 0.9, -0.4], ["flecha", 0.7, -0.5, 0.8, -0.9], ["barras", -0.66, -0.5, 0.8, 0.6], ["moneda", -0.94, 0, 0.7, 1.4], ["flecha", 0.94, 0, 0.7, 2.2]] }),
     ce(GastoHormigaSection, null),
 
