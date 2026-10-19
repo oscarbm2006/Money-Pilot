@@ -12,7 +12,7 @@ const cargarThree = () => (promesaThree = promesaThree || import('three'));
 
 function crearRenderizador(THREE, canvas) {
   const r = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: !esPantallaPequena(), powerPreference: 'low-power' });
-  r.setPixelRatio(Math.min(window.devicePixelRatio || 1, esPantallaPequena() ? 1.5 : 2));
+  r.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
   r.outputColorSpace = THREE.SRGBColorSpace;
   return r;
 }
@@ -123,36 +123,18 @@ function crearEntorno(THREE, renderer) {
 }
 
 // Bucle de animación que se detiene (y oculta el lienzo) cuando no está a la vista.
-// Vigila el rendimiento: si el dispositivo va lento, pide una calidad menor y, si aun así no puede,
-// deja la escena quieta (se redibuja solo al hacer scroll) en vez de ir a tirones.
-function bucle(contenedor, canvas, dibujar, alIrLento) {
-  let visible = true, raf = 0, vivo = true, ultimo = 0, nivel = 0, quieto = false;
-  const tiempos = [];
-  const io = new IntersectionObserver((es) => { visible = es[0].isIntersecting; canvas.style.visibility = visible ? '' : 'hidden'; ultimo = 0; tiempos.length = 0; });
+function bucle(contenedor, canvas, dibujar) {
+  let visible = true, raf = 0, vivo = true;
+  const io = new IntersectionObserver((es) => { visible = es[0].isIntersecting; canvas.style.visibility = visible ? '' : 'hidden'; });
   io.observe(contenedor);
-  const alScroll = () => { if (quieto && visible) dibujar(); };
-  const paso = (t) => {
-    if (!vivo) return;
-    if (!quieto) raf = requestAnimationFrame(paso);
-    if (!visible) return;
-    if (ultimo) {
-      tiempos.push(t - ultimo);
-      if (tiempos.length === 24) {
-        const mediana = tiempos.slice().sort((a, b) => a - b)[12];
-        tiempos.length = 0;
-        if (mediana > 45 && nivel === 0) { nivel = 1; alIrLento && alIrLento(1); }
-        else if (mediana > 45 && nivel === 1) { nivel = 2; quieto = true; window.addEventListener('scroll', alScroll, { passive: true }); }
-      }
-    }
-    ultimo = t;
-    dibujar();
-  };
+  const paso = () => { if (!vivo) return; raf = requestAnimationFrame(paso); if (visible) dibujar(); };
   raf = requestAnimationFrame(paso);
-  return () => { vivo = false; cancelAnimationFrame(raf); io.disconnect(); window.removeEventListener('scroll', alScroll); };
+  return () => { vivo = false; cancelAnimationFrame(raf); io.disconnect(); };
 }
 
-/* ---------- Portada: orbe de cristal con monedas en órbita ---------- */
-// "contenedor" es la sección de la portada: su altura marca cuánto se separan las monedas al hacer scroll.
+/* ---------- Portada: monedas flotando sueltas ---------- */
+// Cada moneda flota alrededor de su propio punto, con su ritmo y su giro. Los puntos están separados lo
+// suficiente para que dos monedas nunca se toquen. Al bajar con el scroll se separan y la cámara se aleja.
 export async function montarPortada3D(canvas, contenedor, { alFallar } = {}) {
   let THREE, renderer;
   try { THREE = await cargarThree(); renderer = crearRenderizador(THREE, canvas); }
@@ -160,43 +142,33 @@ export async function montarPortada3D(canvas, contenedor, { alFallar } = {}) {
   const pequena = esPantallaPequena(), quieto = prefiereMenosMovimiento();
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.1;
-  renderer.transmissionResolutionScale = 0.5; // el cristal se calcula a media resolución: casi igual de bonito, mucho más ligero
 
   const escena = new THREE.Scene();
   const camara = new THREE.PerspectiveCamera(40, 1, 0.1, 100);
   camara.position.set(0, 0, 11);
-
-  escena.background = new THREE.Color('#1E1B4B'); // mismo fondo que la portada: el cristal refleja el cielo
   const entorno = crearEntorno(THREE, renderer);
   escena.environment = entorno.textura;
-
-  escena.add(new THREE.AmbientLight('#A5B4FC', 0.45));
-  const luz = new THREE.DirectionalLight('#FFFFFF', 1.2); luz.position.set(4, 6, 6); escena.add(luz);
-  const brillo = new THREE.PointLight('#818CF8', 30, 20); brillo.position.set(-4, -2, 3); escena.add(brillo);
+  escena.add(new THREE.AmbientLight('#A5B4FC', 0.5));
+  const luz = new THREE.DirectionalLight('#FFFFFF', 1.4); luz.position.set(4, 6, 6); escena.add(luz);
 
   const raiz = new THREE.Group(); escena.add(raiz);
-  const orbe = new THREE.Mesh(new THREE.IcosahedronGeometry(1.7, pequena ? 3 : 5),
-    new THREE.MeshPhysicalMaterial({ color: '#C7D2FE', metalness: 0, roughness: 0.04, transmission: 1, thickness: 1.6, ior: 1.45, attenuationColor: new THREE.Color('#818CF8'), attenuationDistance: 2.2, clearcoat: 1, clearcoatRoughness: 0.05, iridescence: 0.35, envMapIntensity: 1.4 }));
-  raiz.add(orbe);
-  const nucleo = new THREE.Mesh(new THREE.IcosahedronGeometry(0.95, 1), new THREE.MeshBasicMaterial({ color: '#A5B4FC', wireframe: true }));
-  raiz.add(nucleo);
-
-  // Monedas en una órbita INCLINADA, repartidas por igual y a la misma velocidad: cuando una pasa por delante
-  // de otra, la de delante va más baja y la de detrás más alta, así que en pantalla nunca se tapan.
   const piezas = fabrica(THREE);
-  const cuantas = pequena ? 6 : 9;
-  const monedas = Array.from({ length: cuantas }, (_, i) => {
+  // [x, y, z, tamaño]: una moneda grande en el centro y el resto alrededor, sin solaparse
+  const puntos = pequena
+    ? [[0, 0.1, 0.8, 1.6], [-2.1, 1.5, 0, 0.9], [2.1, 1.3, -0.4, 0.95], [-2, -1.6, 0.3, 0.85], [2.1, -1.5, -0.2, 1]]
+    : [[0.2, 0.2, 1, 1.7], [-2.2, 1.6, 0, 1.05], [0.6, 2.7, -1, 0.9], [2.4, 1.2, 0.5, 1.1], [2.4, -1.3, -0.6, 0.95], [-2.4, -1.9, -0.4, 1.1], [0.6, -2.3, 0.8, 0.95]];
+  const monedas = puntos.map(([x, y, z, t], i) => {
     const m = piezas.crear('moneda');
-    m.scale.setScalar(0.85 + (i % 3) * 0.15);
-    m.userData = { a: (i / cuantas) * Math.PI * 2, fase: i * 0.7, giro: 0.5 + (i % 4) * 0.15 };
+    m.scale.setScalar(t);
+    m.userData = { x, y, z, f1: 0.35 + i * 0.07, f2: 0.28 + (i % 3) * 0.09, fase: i * 1.7, giro: (0.35 + (i % 4) * 0.12) * (i % 2 ? -1 : 1), base: i * 0.9 };
     raiz.add(m);
     return m;
   });
 
-  const N = pequena ? 300 : 900, pos = new Float32Array(N * 3);
-  for (let k = 0; k < N; k++) { pos[k * 3] = (Math.random() - 0.5) * 26; pos[k * 3 + 1] = (Math.random() - 0.5) * 16; pos[k * 3 + 2] = (Math.random() - 0.5) * 14 - 3; }
+  const N = pequena ? 160 : 380, pos = new Float32Array(N * 3);
+  for (let k = 0; k < N; k++) { pos[k * 3] = (Math.random() - 0.5) * 22; pos[k * 3 + 1] = (Math.random() - 0.5) * 14; pos[k * 3 + 2] = (Math.random() - 0.5) * 10 - 3; }
   const estrellasGeo = new THREE.BufferGeometry(); estrellasGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-  const estrellas = new THREE.Points(estrellasGeo, new THREE.PointsMaterial({ color: '#C7D2FE', size: 0.035, transparent: true, opacity: 0.7 }));
+  const estrellas = new THREE.Points(estrellasGeo, new THREE.PointsMaterial({ color: '#C7D2FE', size: 0.04, transparent: true, opacity: 0.7 }));
   escena.add(estrellas);
 
   let mx = 0, my = 0, tx = 0, ty = 0;
@@ -207,43 +179,36 @@ export async function montarPortada3D(canvas, contenedor, { alFallar } = {}) {
     const w = canvas.clientWidth, h = canvas.clientHeight;
     if (!w || !h) return;
     renderer.setSize(w, h, false); camara.aspect = w / h; camara.updateProjectionMatrix();
-    raiz.position.set(w > 900 ? 3.2 : 0, w > 900 ? 0 : 1.6, 0);
-    raiz.scale.setScalar(w > 900 ? 1 : 0.75);
+    raiz.scale.setScalar(Math.min(1, camara.aspect / 1.1));
+    raiz.position.x = pequena ? 0 : 0.6; // en escritorio, algo desplazadas a la derecha para dejar aire al titular
   };
   const ro = new ResizeObserver(ajustar); ro.observe(canvas); ajustar();
+  renderer.compile(escena, camara);
 
   const reloj = new THREE.Clock();
   const dibujar = () => {
     const t = quieto ? 0 : reloj.getElapsedTime();
     const prog = limitar(-contenedor.getBoundingClientRect().top / (contenedor.offsetHeight || 1), 0, 1);
     mx += (tx - mx) * 0.05; my += (ty - my) * 0.05;
-    orbe.rotation.y = t * 0.15 + prog * 2; orbe.rotation.x = t * 0.08;
-    nucleo.rotation.y = -t * 0.4; nucleo.rotation.z = t * 0.2;
-    const R = 3.6 * (1 + prog * 1.4), inclinacion = 2.6 * (1 + prog * 0.6), base = t * 0.16;
+    const abre = 1 + prog * 0.9;
     monedas.forEach((m) => {
-      const u = m.userData, a = u.a + base;
-      m.position.set(Math.cos(a) * R, -Math.sin(a) * inclinacion + Math.sin(t * 0.6 + u.fase) * 0.08, Math.sin(a) * R * 0.75);
-      m.rotation.set(0.25 * Math.sin(t * 0.5 + u.fase), t * u.giro, 0.15 * Math.cos(t * 0.4 + u.fase));
+      const u = m.userData;
+      m.position.set(u.x * abre + Math.sin(t * u.f1 + u.fase) * 0.22, u.y * abre + Math.cos(t * u.f2 + u.fase) * 0.25, u.z + Math.sin(t * 0.3 + u.fase) * 0.4);
+      m.rotation.set(0.35 * Math.sin(t * 0.5 + u.fase), u.base + t * u.giro, 0.2 * Math.cos(t * 0.4 + u.fase));
     });
-    estrellas.rotation.y = t * 0.01 + mx * 0.2;
-    raiz.rotation.y = mx * 0.5; raiz.rotation.x = my * 0.3;
+    estrellas.rotation.y = t * 0.01 + mx * 0.15;
+    raiz.rotation.y = mx * 0.35; raiz.rotation.x = my * 0.2;
     camara.position.z = 11 + prog * 4;
     renderer.render(escena, camara);
   };
 
   let parar;
   if (quieto) { dibujar(); const alScroll = () => dibujar(); window.addEventListener('scroll', alScroll, { passive: true }); parar = () => window.removeEventListener('scroll', alScroll); }
-  else parar = bucle(contenedor, canvas, dibujar, () => {
-    // Dispositivo lento: cristal sin refracción (mucho más barato) y menos píxeles
-    const ligero = new THREE.MeshPhysicalMaterial({ color: '#A5B4FC', metalness: 0.1, roughness: 0.08, transparent: true, opacity: 0.42, clearcoat: 1, envMapIntensity: 1.6 });
-    orbe.material.dispose(); orbe.material = ligero;
-    renderer.setPixelRatio(1); ajustar();
-  });
+  else parar = bucle(contenedor, canvas, dibujar);
 
   return () => {
     parar(); ro.disconnect(); window.removeEventListener('pointermove', alMover);
-    piezas.liberar(); entorno.liberar(); estrellasGeo.dispose();
-    orbe.geometry.dispose(); orbe.material.dispose(); nucleo.geometry.dispose(); nucleo.material.dispose();
+    piezas.liberar(); entorno.liberar(); estrellasGeo.dispose(); estrellas.material.dispose();
     renderer.dispose();
   };
 }
@@ -288,6 +253,7 @@ export async function montarCapa3D(canvas, banda, iconos, { alFallar } = {}) {
   }, { threshold: [0, 0.35, 0.6] });
   io.observe(banda);
 
+  renderer.compile(escena, camara);
   const reloj = new THREE.Clock();
   const dibujar = () => {
     const t = reloj.getElapsedTime(), ahora = performance.now();
@@ -305,6 +271,6 @@ export async function montarCapa3D(canvas, banda, iconos, { alFallar } = {}) {
     });
     renderer.render(escena, camara);
   };
-  const parar = bucle(banda, canvas, dibujar, () => { renderer.setPixelRatio(1); ajustar(); });
+  const parar = bucle(banda, canvas, dibujar, (nivel) => { renderer.setPixelRatio(nivel === 1 ? 1 : 0.75); ajustar(); });
   return () => { parar(); ro.disconnect(); io.disconnect(); banda.removeEventListener('pointermove', alMover); piezas.liberar(); entorno.liberar(); renderer.dispose(); };
 }
