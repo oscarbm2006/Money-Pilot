@@ -25,9 +25,9 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}input[type=num
 
 /* Titulares que suben línea a línea */
 .mp-linea{display:block;overflow:hidden;padding-bottom:.06em}
-.mp-linea>span{display:inline-block;transform:translateY(110%) rotateX(-60deg);transform-origin:bottom;opacity:0;animation:mpLineaSube 1.1s cubic-bezier(.2,.8,.2,1) forwards;animation-delay:var(--mp-retraso,0s)}
+.mp-linea>span{display:inline-block;transform:translateY(110%) rotateX(-60deg);transform-origin:bottom;opacity:0;animation:mpLineaSube .85s cubic-bezier(.2,.8,.2,1) forwards;animation-delay:var(--mp-retraso,0s)}
 @keyframes mpLineaSube{to{transform:none;opacity:1}}
-.mp-sube{opacity:0;animation:mpSube 1s cubic-bezier(.2,.8,.2,1) forwards;animation-delay:var(--mp-retraso,0s)}
+.mp-sube{opacity:0;animation:mpSube .7s cubic-bezier(.2,.8,.2,1) forwards;animation-delay:var(--mp-retraso,0s)}
 @keyframes mpSube{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
 
 /* Tarjetas que se inclinan siguiendo el cursor (el giro lo calcula src/movimiento.js) */
@@ -278,3 +278,8 @@ section.mp-seccion.mp-seccion.mp-superficie:not(.mp-oscura){background:var(--mp-
 .mp-hormiga-izq .mp-hormiga-campos{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
 .mp-infl-control label+input+label{margin-top:22px}
 @media (max-width:720px){.mp-hormiga-rejilla{gap:32px}}
+
+/* Las monedas aparecen con un fundido cuando la escena ya está lista (sin tirones ni saltos) */
+.mp-portada>.mp-lienzo{opacity:0;transition:opacity .9s ease}
+.mp-portada>.mp-lienzo.mp-lienzo-listo{opacity:1}
+@media (prefers-reduced-motion: reduce){.mp-portada>.mp-lienzo{transition:none}}
