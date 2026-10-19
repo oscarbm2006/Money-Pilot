@@ -241,3 +241,18 @@ section.mp-seccion.mp-seccion:not(.mp-oscura){background:transparent}
 .mp-seccion .mp-h2,.mp-seccion .mp-motivo-t,.mp-seccion .mp-herr-t{color:var(--mp-noche)}
 .mp-oscura .mp-valor h3{color:var(--mp-lavanda-clara)}
 .mp-seccion.mp-oscura .mp-h2,.mp-seccion .mp-cta .mp-h2{color:#fff}
+
+/* Portada: en escritorio el 3D ocupa solo la mitad derecha (no pasa por detrás del texto y pesa la mitad),
+   con un fundido en el borde para que las monedas no se corten de golpe */
+@media (min-width:901px){
+  .mp-portada>.mp-lienzo{left:auto;right:0;width:58%;-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 22%);mask-image:linear-gradient(90deg,transparent 0,#000 22%)}
+  .mp-portada-velo{background:linear-gradient(90deg,rgba(30,27,75,.75) 0%,rgba(30,27,75,0) 50%)}
+}
+
+/* Móvil: las monedas ocupan solo la franja de arriba y el texto empieza debajo (nunca lo tapan) */
+@media (max-width:720px){
+  .mp-portada>.mp-lienzo{height:300px;bottom:auto;-webkit-mask-image:linear-gradient(180deg,#000 70%,transparent);mask-image:linear-gradient(180deg,#000 70%,transparent)}
+  .mp-portada .mp-portada-velo{background:none}
+  .mp-portada-cuerpo{padding-top:290px}
+}
+.mp-aparece{backface-visibility:hidden}
