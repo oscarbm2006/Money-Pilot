@@ -663,8 +663,14 @@ export function App() {
     }
   })), vistaActual === 'cuentas' && /*#__PURE__*/React.createElement("div", {
     key: "cuentas",
-    className: "fade-switch-enter"
-  }, /*#__PURE__*/React.createElement(Cuentas, {
+    className: "fade-switch-enter mp-piel"
+  }, /*#__PURE__*/React.createElement(CabeceraHerramienta, {
+    id: "mp-cab-cuentas",
+    antetitulo: "Tu liquidez",
+    titulo: "Tus cuentas, en un solo sitio",
+    frase: "Añade tus cuentas bancarias manualmente para ver tu liquidez total consolidada. No conectamos con tu banco: tú decides qué saldo introducir y cuándo actualizarlo.",
+    iconos: [["tarjeta", 0.34, 0.2, 0.9, -0.4], ["moneda", 0.6, -0.25, 0.75, 0.8], ["billete", 0.86, 0.3, 0.8, 0.4]]
+  }), /*#__PURE__*/React.createElement(Cuentas, {
     cuentas: cuentas,
     onAgregar: agregarCuenta,
     onActualizar: actualizarCuenta,
@@ -676,8 +682,14 @@ export function App() {
     onBack: () => setVistaActual('diagnostico')
   })), vistaActual === 'inversiones' && /*#__PURE__*/React.createElement("div", {
     key: "inversiones",
-    className: "fade-switch-enter"
-  }, /*#__PURE__*/React.createElement(Inversiones, {
+    className: "fade-switch-enter mp-piel"
+  }, /*#__PURE__*/React.createElement(CabeceraHerramienta, {
+    id: "mp-cab-inv",
+    antetitulo: "Tu cartera",
+    titulo: "Tus inversiones, en un solo sitio",
+    frase: "Añade tus acciones, fondos, ETFs u otros productos con lo que has aportado y la ganancia o pérdida acumulada; nosotros calculamos el valor actual. Los datos no se actualizan solos: revísalos cuando quieras.",
+    iconos: [["barras", 0.34, 0.2, 0.9, -0.3], ["flecha", 0.6, -0.2, 0.8, 0.3], ["moneda", 0.84, 0.3, 0.7, 1.2], ["moneda", 0.97, -0.3, 0.5, 2]]
+  }), /*#__PURE__*/React.createElement(Inversiones, {
     inversiones: inversiones,
     onAgregar: agregarInversion,
     onActualizar: actualizarInversion,
@@ -689,8 +701,14 @@ export function App() {
     onBack: () => setVistaActual('cuentas')
   })), vistaActual === 'patrimonio' && /*#__PURE__*/React.createElement("div", {
     key: "patrimonio",
-    className: "fade-switch-enter"
-  }, /*#__PURE__*/React.createElement(Patrimonio, {
+    className: "fade-switch-enter mp-piel"
+  }, /*#__PURE__*/React.createElement(CabeceraHerramienta, {
+    id: "mp-cab-pat",
+    antetitulo: "Tu foto completa",
+    titulo: "Tu patrimonio neto",
+    frase: "Todo lo que tienes (cuentas, inversiones y otros bienes) menos todo lo que debes. Se actualiza automáticamente según lo que registres en Cuentas, Inversiones, Deudas y aquí abajo.",
+    iconos: [["moneda", 0.32, 0.3, 0.85, 0.3], ["barras", 0.54, -0.2, 0.8, -0.3], ["tarjeta", 0.78, 0.3, 0.8, -0.5], ["flecha", 0.96, -0.25, 0.6, 0.8]]
+  }), /*#__PURE__*/React.createElement(Patrimonio, {
     cuentas: cuentas,
     inversiones: inversiones,
     activos: activos,
