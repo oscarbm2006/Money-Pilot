@@ -486,7 +486,7 @@ export function HowItWorksSection() {
 export const VISTAS_MIS_FINANZAS = ["mis-finanzas", "cuentas", "inversiones", "patrimonio"];
 // Páginas que ya tienen el diseño nuevo: usan el fondo blanco del prototipo, sin el tono gris azulado ni el dibujo
 // de líneas. Cada vez que se rediseñe otra página, basta con añadirla aquí.
-export const VISTAS_REDISENADAS = ["inicio", "diagnostico", ...VISTAS_MIS_FINANZAS, "simulador", "simulador-deudas"];
+export const VISTAS_REDISENADAS = ["inicio", "diagnostico", ...VISTAS_MIS_FINANZAS, "estrategia", "simulador", "simulador-deudas"];
 const BLOQUES_MF = [
   ["cuentas", "1", "Tu liquidez", "Tus cuentas", "Añade tus cuentas bancarias manualmente para ver tu liquidez total consolidada. No conectamos con tu banco: tú decides qué saldo introducir y cuándo actualizarlo.", "Si una de tus cuentas es tu colchón para imprevistos, márcala como fondo de emergencia al añadirla."],
   ["inversiones", "2", "Tu cartera", "Tus inversiones", "Añade tus acciones, fondos, ETFs u otros productos con lo que has aportado y la ganancia o pérdida acumulada; nosotros calculamos el valor actual. Los datos no se actualizan solos: revísalos cuando quieras.", null],
