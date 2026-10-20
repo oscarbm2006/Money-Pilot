@@ -172,4 +172,10 @@ describe('Rediseño 3D: fondo blanco en las páginas rediseñadas', () => {
   test('las secciones de esas páginas no llevan el tinte de index.html', () => {
     assert.ok(css.includes('.mp-fondo-limpio section.section-tinted{background:transparent!important}'));
   });
+  test('el fondo blanco no toca ninguna otra sección: las zonas oscuras siguen oscuras', () => {
+    // Una regla general sobre "section" empataba en prioridad con las zonas oscuras y las volvía claras
+    assert.ok(!/\.mp-fondo-limpio section:nth-of-type/.test(css));
+    const bloque = css.slice(css.indexOf('Fondo limpio (como el prototipo)'));
+    assert.equal((bloque.match(/\.mp-fondo-limpio [^{]*\{/g) || []).length, 1, 'el fondo limpio solo debe quitar el tinte de las secciones de herramientas');
+  });
 });
