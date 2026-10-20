@@ -107,7 +107,7 @@ describe('Rediseño 3D: herramientas (Fase 2)', () => {
     for (const t of ['Construye tu foto financiera, paso a paso', 'Empezamos por lo esencial y añadimos detalle solo cuando lo necesitas. Tus cálculos se actualizan en cada paso.',
       '¿Qué puede hacer tu ahorro con el tiempo?', 'Ajusta los números y mira qué puede hacer tu ahorro con el tiempo. Si ya hiciste tu diagnóstico, partirá de tus propios datos.',
       '¿Cuánto tardarás en salir de tus deudas?', 'Escribe tus deudas y compara dos formas de pagarlas. Es una proyección educativa.']) assert.ok(app.includes(t), 'falta el texto: ' + t);
-    assert.equal((app.match(/fade-switch-enter mp-piel/g) || []).length, 4);
+    assert.equal((app.match(/fade-switch-enter mp-piel/g) || []).length, 5);
   });
   test('Cuentas, Inversiones y Patrimonio forman una sola página que conserva sus textos', () => {
     const sec = leer('src/secciones.js');
@@ -160,8 +160,8 @@ describe('Rediseño 3D: Mis finanzas en una sola página (Fase 2c)', () => {
 
 describe('Rediseño 3D: fondo blanco en las páginas rediseñadas', () => {
   const app = leer('src/App.js'), sec = leer('src/secciones.js'), css = leer('public/styles.css');
-  test('la lista de páginas rediseñadas incluye la portada, el diagnóstico, Mis finanzas y los simuladores', () => {
-    assert.match(sec, /export const VISTAS_REDISENADAS = \["inicio", "diagnostico", \.\.\.VISTAS_MIS_FINANZAS, "simulador", "simulador-deudas"\];/);
+  test('la lista de páginas rediseñadas incluye la portada, el diagnóstico, Mis finanzas, Estrategia y los simuladores', () => {
+    assert.match(sec, /export const VISTAS_REDISENADAS = \["inicio", "diagnostico", \.\.\.VISTAS_MIS_FINANZAS, "estrategia", "simulador", "simulador-deudas"\];/);
   });
   test('en esas páginas no se pintan el tono gris azulado ni el dibujo de líneas', () => {
     assert.ok(app.includes('const fondoLimpio = VISTAS_REDISENADAS.includes(vistaActual);'));
@@ -177,5 +177,33 @@ describe('Rediseño 3D: fondo blanco en las páginas rediseñadas', () => {
     assert.ok(!/\.mp-fondo-limpio section:nth-of-type/.test(css));
     const bloque = css.slice(css.indexOf('Fondo limpio (como el prototipo)'));
     assert.equal((bloque.match(/\.mp-fondo-limpio [^{]*\{/g) || []).length, 1, 'el fondo limpio solo debe quitar el tinte de las secciones de herramientas');
+  });
+});
+
+describe('Rediseño 3D: Estrategia y fin del diagnóstico (Fase 3)', () => {
+  const app = leer('src/App.js'), pag = leer('src/paginas.js'), css = leer('public/styles.css');
+  test('al terminar el diagnóstico se va a añadir las cuentas', () => {
+    assert.match(app, /onFinalizar: \(\) => \{\n[^\n]*\n      setVistaActual\('cuentas'\);/);
+    assert.ok(pag.includes('"Añadir mis cuentas ", /*#__PURE__*/React.createElement(I.arrowRight'));
+    assert.ok(!pag.includes('"Ver mi salud financiera "'));
+  });
+  test('desde la página de cuentas se sigue a los resultados', () => {
+    const mf = app.slice(app.indexOf('key: "mis-finanzas"'), app.indexOf("vistaActual === 'estrategia' &&"));
+    assert.ok(mf.includes('label: "Ver mis resultados"') && mf.includes("onClick: () => setVistaActual('estrategia')"));
+  });
+  test('Estrategia usa la cabecera nueva, la piel y conserva sus textos y paneles', () => {
+    assert.ok(app.includes('id: "mp-cab-est"'));
+    for (const t of ['Tu salud financiera, en una sola vista', 'Aquí se concentran las métricas clave, el perfil de riesgo y las decisiones que puedes tomar a continuación.']) assert.ok(app.includes(t));
+    assert.ok(!app.includes('Eyebrow, null, "Resultados y estrategia"'), 'queda la introducción antigua');
+    const est = app.slice(app.indexOf("vistaActual === 'estrategia' &&"), app.indexOf("vistaActual === 'plan' &&"));
+    assert.ok(est.includes('className: "fade-switch-enter mp-piel"'));
+    for (const c of ['PanelDiagnostico', 'PanelPrioridad', 'Dashboard', 'AmortizacionDeuda', 'PerfilRiesgo', 'Estrategia', 'ContinuarBar']) assert.ok(est.includes('React.createElement(' + c + ','), 'falta ' + c);
+    assert.ok(est.includes('Afina tus resultados (opcional)'));
+  });
+  test('los subtítulos con la caja antigua se integran sin caja en las páginas rediseñadas', () => {
+    assert.ok(css.includes('.mp-piel .section-intro{background:none;border:0;box-shadow:none;padding:0}'));
+    assert.ok(css.includes('.mp-piel .readable-title{display:block;background:none!important'));
+    assert.ok(css.includes('.mp-piel .readable-subtitle{display:block;background:none!important'));
+    assert.ok(!/\.mp-piel \.readable-note/.test(css), 'las notas informativas no se tocan');
   });
 });
