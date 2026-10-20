@@ -330,3 +330,22 @@ section.mp-seccion.mp-seccion.mp-superficie:not(.mp-oscura){background:var(--mp-
 .mp-paso-entra{transform-origin:0 50%;animation:mpPasoEntra .7s cubic-bezier(.2,.8,.2,1)}
 @keyframes mpPasoEntra{from{opacity:0;transform:perspective(1400px) rotateY(-22deg) translateX(50px)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion: reduce){.mp-paso-entra{animation:none}.mp-piel button.rounded-xl.inline-flex{transition:none}}
+
+/* ===== Mis finanzas: cuentas, inversiones y patrimonio en una sola página (Fase 2c) ===== */
+/* Índice fijo bajo el menú: marca la parte que estás leyendo y lleva a cada una */
+.mp-mf-indice{position:sticky;top:55px;z-index:30;background:rgba(250,250,250,.9);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border-bottom:1px solid var(--mp-linea)}
+.mp-mf-indice-fila{display:flex;gap:8px;overflow-x:auto;padding-top:10px;padding-bottom:10px;scrollbar-width:none}
+.mp-mf-indice-fila::-webkit-scrollbar{display:none}
+.mp-mf-chip{display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0 14px;border-radius:999px;border:1.5px solid var(--mp-linea);background:var(--mp-superficie);color:var(--mp-tinta);font:600 14px/1 var(--mp-fuente);white-space:nowrap;cursor:pointer;transition:border-color .25s,background .25s}
+.mp-mf-chip:hover{border-color:var(--mp-indigo)}
+.mp-mf-chip b{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:var(--mp-linea);font-size:12px;transition:background .25s,color .25s}
+.mp-mf-chip-activo{border-color:var(--mp-indigo);background:var(--mp-tinte)}
+.mp-mf-chip-activo b{background:var(--mp-indigo);color:#fff}
+/* Introducción y bloques */
+.mp-piel>section.mp-mf-intro{padding-top:72px;padding-bottom:24px}
+.mp-mf-bloque{padding-top:80px;scroll-margin-top:110px}
+.mp-mf-bloque>section{padding-top:24px!important;padding-bottom:48px!important;background:transparent!important}
+.mp-mf-cabeza{max-width:44rem}
+.mp-mf-consejo{margin:16px 0 0;padding:12px 16px;border-radius:14px;background:var(--mp-tinte);color:var(--mp-tinta);font-size:15px;line-height:1.55}
+.mp-mf-bloque+.mp-capa{margin-top:24px}
+@media (max-width:720px){.mp-mf-indice{position:static}.mp-mf-bloque{padding-top:56px}}
