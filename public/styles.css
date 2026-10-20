@@ -349,3 +349,9 @@ section.mp-seccion.mp-seccion.mp-superficie:not(.mp-oscura){background:var(--mp-
 .mp-mf-consejo{margin:16px 0 0;padding:12px 16px;border-radius:14px;background:var(--mp-tinte);color:var(--mp-tinta);font-size:15px;line-height:1.55}
 .mp-mf-bloque+.mp-capa{margin-top:24px}
 @media (max-width:720px){.mp-mf-indice{position:static}.mp-mf-bloque{padding-top:56px}}
+
+/* ===== Fondo limpio (como el prototipo) en las páginas rediseñadas =====
+   App.js pone la clase mp-fondo-limpio y quita el degradado y el dibujo de líneas; aquí se quitan los tintes
+   que index.html da a las secciones. Las secciones oscuras y blancas del diseño nuevo conservan su fondo. */
+.mp-fondo-limpio section.section-tinted{background:transparent!important}
+.mp-fondo-limpio section:nth-of-type(odd),.mp-fondo-limpio section:nth-of-type(even){background:transparent}
