@@ -351,68 +351,88 @@ function Barras3D({ datos, escalaMax }) {
         }))));
 }
 
+// Rentabilidad del simulador de gastos innecesarios (la misma que la sección de inflación). No cambia TASA_INDICE_GLOBAL.
+const TASA_HORMIGA = 8;
 // Escala común de las barras: lo que acumularías a 30 años con el más alto de los gastos de ejemplo.
-const ESCALA_HORMIGA = proyeccionInteres(0, Math.max(...GASTOS_HORMIGA_EJEMPLOS.map(g => g.valor)), TASA_INDICE_GLOBAL, 30).valorFuturo;
+const ESCALA_HORMIGA = proyeccionInteres(0, Math.max(...GASTOS_HORMIGA_EJEMPLOS.map(g => g.valor)), TASA_HORMIGA, 30).valorFuturo;
 
-/* ---------- Un pequeño experimento: gasto hormiga ---------- */
-// Misma utilidad de siempre (eliges un gasto y los años y ves lo que habrías acumulado), con el aspecto del
-// prototipo: textos y controles a la izquierda, cifra grande y reparto debajo, y las barras 3D a la derecha.
+/* ---------- Un pequeño experimento: gastos innecesarios ---------- */
+// Recorrido sencillo: primero se pide pensar en un gasto innecesario; después se elige en un desplegable (o se escribe
+// uno propio), se indica cuánto se gasta al mes y desde hace cuánto tiempo, y se calcula automáticamente lo que ha
+// supuesto ese gasto y lo que habría dado invertido al 8 % con interés compuesto (lo aportado y lo generado).
+// No se guarda nada de lo que se escribe aquí.
 export function GastoHormigaSection() {
+  const [tipo, setTipo] = useState("");
+  const [otro, setOtro] = useState("");
   const [gasto, setGasto] = useState(0);
-  const [anios, setAnios] = useState(10);
-  const [seleccion, setSeleccion] = useState(null);
-  const proyeccion = useMemo(() => proyeccionInteres(0, gasto, TASA_INDICE_GLOBAL, anios), [gasto, anios]);
-  const ahorroSinInvertir = gasto * 12 * anios;
-  // Hasta 7 columnas repartidas entre el primer y el último año elegido (mismos cálculos que antes)
+  const [orientativo, setOrientativo] = useState(false);
+  const [anios, setAnios] = useState(5);
+  const ejemplo = GASTOS_HORMIGA_EJEMPLOS.find(g => g.label === tipo);
+  const nombreGasto = tipo === "otro" ? (otro.trim() ? "«" + otro.trim() + "»" : "ese gasto") : ejemplo ? "«" + ejemplo.label.toLowerCase() + "»" : "ese gasto";
+  const elegir = valor => {
+    setTipo(valor);
+    const ej = GASTOS_HORMIGA_EJEMPLOS.find(g => g.label === valor);
+    if (ej) { setGasto(ej.valor); setOrientativo(true); } else { setOrientativo(false); }
+  };
+  const proyeccion = useMemo(() => proyeccionInteres(0, gasto, TASA_HORMIGA, anios), [gasto, anios]);
+  // Hasta 7 columnas repartidas entre el primer y el último año (mismos cálculos que el resumen)
   const columnas = useMemo(() => {
     const total = Math.max(1, Math.round(anios)), n = Math.min(7, total);
     const años = Array.from(new Set(Array.from({ length: n }, (_, k) => Math.max(1, Math.round(total * (k + 1) / n)))));
     return años.map(a => {
-      const p = proyeccionInteres(0, gasto, TASA_INDICE_GLOBAL, a);
+      const p = proyeccionInteres(0, gasto, TASA_HORMIGA, a);
       return { etiqueta: a + (a === 1 ? " año" : " años"), aportado: Math.round(p.totalAportado), interes: Math.max(0, Math.round(p.valorFuturo - p.totalAportado)) };
     });
   }, [gasto, anios]);
   // Escala común: la de los gastos de ejemplo a 30 años (si escribes un gasto mayor, se amplía para que quepa)
-  const escala = useMemo(() => Math.max(ESCALA_HORMIGA, proyeccionInteres(0, gasto, TASA_INDICE_GLOBAL, 30).valorFuturo), [gasto]);
+  const escala = useMemo(() => Math.max(ESCALA_HORMIGA, proyeccionInteres(0, gasto, TASA_HORMIGA, 30).valorFuturo), [gasto]);
+  const listo = tipo !== "" && gasto > 0;
   const pctInteres = proyeccion.valorFuturo > 0 ? proyeccion.interesGenerado / proyeccion.valorFuturo * 100 : 0;
   const cifra = useRef(null), cifraA = useRef(null), cifraI = useRef(null);
   useEffect(() => {
-    contarHasta(cifra.current, proyeccion.valorFuturo, euros);
-    contarHasta(cifraA.current, proyeccion.totalAportado, euros);
-    contarHasta(cifraI.current, proyeccion.interesGenerado, euros);
-  }, [proyeccion.valorFuturo, proyeccion.totalAportado, proyeccion.interesGenerado]);
+    contarHasta(cifra.current, listo ? proyeccion.valorFuturo : 0, euros);
+    contarHasta(cifraA.current, listo ? proyeccion.totalAportado : 0, euros);
+    contarHasta(cifraI.current, listo ? proyeccion.interesGenerado : 0, euros);
+  }, [listo, proyeccion.valorFuturo, proyeccion.totalAportado, proyeccion.interesGenerado]);
   return ce("section", { className: "mp-seccion mp-superficie mp-sans" },
     ce("div", { className: "mp-ancho" },
       ce("div", { className: "mp-hormiga-rejilla" },
         ce(Aparece, { className: "mp-hormiga-izq" },
           ce("p", { className: "mp-antetitulo" }, "Un pequeño experimento"),
-          ce("h2", { className: "mp-h2" }, "Piensa en un gasto mensual totalmente prescindible"),
-          ce("p", { className: "mp-sub" }, "Por ejemplo, desayunar fuera todos los días, pedir comida a domicilio por falta de organización, o una suscripción que casi no usas. Elige un ejemplo o escribe el tuyo."),
-          ce("div", { className: "mp-chips" }, GASTOS_HORMIGA_EJEMPLOS.map(g => ce("button", {
-            key: g.label, type: "button", "aria-pressed": seleccion === g.label, className: "mp-chip",
-            onClick: () => { setSeleccion(g.label); setGasto(g.valor); }
-          }, g.label))),
-          ce("div", { className: "mp-hormiga-campos" },
-            ce(NumberField, { label: "¿Cuánto gastas al mes en esto?", value: gasto, onChange: v => { setGasto(v); setSeleccion(null); } }),
+          ce("h2", { className: "mp-h2" }, "Piensa en un gasto que no te aporta nada"),
+          ce("p", { className: "mp-sub" }, "Algo innecesario, que te perjudica o que pagas casi sin darte cuenta. Tómate un momento: ¿cuál es el tuyo?"),
+          ce("div", { className: "mp-hormiga-form" },
             ce("div", null,
-              ce("label", { className: "mp-etiqueta-campo", htmlFor: "mp-hormiga-anios" }, "Durante cuántos años"),
+              ce("label", { className: "mp-etiqueta-campo", htmlFor: "mp-hormiga-tipo" }, "¿Cuál es ese gasto?"),
+              ce("select", { id: "mp-hormiga-tipo", className: "mp-select", value: tipo, onChange: e => elegir(e.target.value) },
+                ce("option", { value: "", disabled: true }, "Elige un gasto…"),
+                GASTOS_HORMIGA_EJEMPLOS.map(g => ce("option", { key: g.label, value: g.label }, g.label)),
+                ce("option", { value: "otro" }, "Otro gasto (escríbelo tú)"))),
+            tipo === "otro" && ce("div", { className: "fade-switch-enter" },
+              ce("label", { className: "mp-etiqueta-campo", htmlFor: "mp-hormiga-otro" }, "Escribe tu gasto"),
+              ce("input", { id: "mp-hormiga-otro", type: "text", className: "mp-campo-texto", value: otro, maxLength: 60, placeholder: "Por ejemplo: lotería", onChange: e => setOtro(e.target.value) })),
+            tipo !== "" && ce("div", { className: "fade-switch-enter" },
+              ce(NumberField, { label: "¿Cuánto crees que gastas al mes en esto?", value: gasto, onChange: v => { setGasto(v); setOrientativo(false); } }),
+              orientativo && ce("p", { className: "mp-hormiga-pista-campo" }, "Es un valor orientativo: cámbialo por lo que gastas tú.")),
+            tipo !== "" && ce("div", { className: "fade-switch-enter" },
+              ce("label", { className: "mp-etiqueta-campo", htmlFor: "mp-hormiga-anios" }, "¿Cuánto tiempo llevas con este gasto?"),
               ce("input", { id: "mp-hormiga-anios", type: "range", min: "1", max: "30", value: anios, onChange: e => setAnios(Number(e.target.value)), className: "mp-rango" }),
-              ce("div", { className: "mp-rango-valor" }, anios, " años"))),
-          ce("div", { className: "mp-hormiga-total" },
-            ce("p", { className: "mp-hormiga-total-et" }, gasto > 0 ? "Habrías acumulado en " + anios + " años" : "Aquí verás cuánto habrías acumulado"),
+              ce("div", { className: "mp-rango-valor" }, anios, anios === 1 ? " año" : " años"))),
+          listo && ce("div", { className: "mp-hormiga-total fade-switch-enter" },
+            ce("p", { className: "mp-hormiga-total-et" }, "Invertido al " + TASA_HORMIGA + " % durante " + anios + (anios === 1 ? " año" : " años") + ", hoy tendrías"),
             ce("p", { className: "mp-num mp-hormiga-cifra", ref: cifra }),
             ce("div", { className: "mp-reparto" },
-              ce("div", null, ce("span", null, ce("i", { className: "mp-c-aportado" }), "Aportado"), ce("strong", { className: "mp-num", ref: cifraA })),
-              ce("div", null, ce("span", null, ce("i", { className: "mp-c-interes" }), "Intereses generados"), ce("strong", { className: "mp-num", ref: cifraI }))),
+              ce("div", null, ce("span", null, ce("i", { className: "mp-c-aportado" }), "Lo que te ha costado"), ce("strong", { className: "mp-num", ref: cifraA })),
+              ce("div", null, ce("span", null, ce("i", { className: "mp-c-interes" }), "Lo que habría generado"), ce("strong", { className: "mp-num", ref: cifraI }))),
             ce("div", { className: "mp-reparto-barra", "aria-hidden": "true" },
-              ce("b", { className: "mp-c-aportado", style: { width: (gasto > 0 ? 100 - pctInteres : 100) + "%" } }), ce("b", { className: "mp-c-interes", style: { width: (gasto > 0 ? pctInteres : 0) + "%" } })),
-            gasto > 0 && ce("p", { className: "mp-reparto-nota" }, "El interés genera ", ce("strong", null, Math.round(pctInteres), " %"), " de todo lo que acumularías.")),
-          gasto > 0 && ce("div", { className: "mp-hormiga-texto fade-switch-enter" },
-            ce("p", null, "¿Sabías que si hubieses ahorrado esos ", ce("b", null, euros(gasto), "/mes"), " durante ", ce("b", null, anios, " años"), ", tendrías ", ce("b", null, euros(ahorroSinInvertir)), "?"),
-            ce("p", null, "Y si los hubieses invertido en un índice con las empresas más grandes del mundo (rentabilidad histórica media aproximada del ", TASA_INDICE_GLOBAL, "%/año), el interés compuesto te habría dado ", ce("b", { className: "mp-verde" }, euros(proyeccion.interesGenerado)), " extra — un total de ", ce("b", null, euros(proyeccion.valorFuturo)), "."))),
+              ce("b", { className: "mp-c-aportado", style: { width: 100 - pctInteres + "%" } }), ce("b", { className: "mp-c-interes", style: { width: pctInteres + "%" } })),
+            ce("p", { className: "mp-reparto-nota" }, "El interés compuesto habría generado ", ce("strong", null, Math.round(pctInteres), " %"), " de todo ese dinero."),
+            ce("div", { className: "mp-hormiga-texto" },
+              ce("p", null, "En ", ce("b", null, anios, anios === 1 ? " año" : " años"), ", ", nombreGasto, " te ha costado ", ce("b", null, euros(proyeccion.totalAportado)), " (", euros(gasto), " al mes)."),
+              ce("p", null, "Si ese dinero lo hubieras invertido en un índice con las empresas más grandes del mundo, con una rentabilidad media aproximada del ", TASA_HORMIGA, " % anual, hoy tendrías ", ce("b", null, euros(proyeccion.valorFuturo)), ": ", euros(proyeccion.totalAportado), " que pusiste tú y ", ce("b", { className: "mp-verde" }, euros(proyeccion.interesGenerado)), " que habría generado el interés compuesto.")))),
         ce(Aparece, { className: "mp-hormiga-der", retraso: 0.12 },
           ce(Barras3D, { datos: columnas, escalaMax: escala }),
-          gasto === 0 && ce("p", { className: "mp-hormiga-pista" }, "Elige un ejemplo o escribe tu gasto y verás crecer tu dinero año a año."))),
+          !listo && ce("p", { className: "mp-hormiga-pista" }, "Elige tu gasto y verás cuánto habría crecido ese dinero año a año."))),
       ce("p", { className: "mp-nota" }, "Proyección educativa con la rentabilidad histórica media de un índice global. Rentabilidades pasadas no garantizan resultados futuros.")));
 }
 
