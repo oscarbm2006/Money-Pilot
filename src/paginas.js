@@ -3006,7 +3006,7 @@ export function Diagnostico({
       backgroundColor: C.sand,
       color: C.navy
     }
-  }, "Ver mi salud financiera ", /*#__PURE__*/React.createElement(I.arrowRight, {
+  }, "Añadir mis cuentas ", /*#__PURE__*/React.createElement(I.arrowRight, {
     size: 16
   })))), /*#__PURE__*/React.createElement("div", {
     className: "mt-6"
