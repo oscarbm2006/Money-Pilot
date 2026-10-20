@@ -478,6 +478,68 @@ export function HowItWorksSection() {
       ce("div", { className: "mp-herr-rejilla" }, steps.map(([n, k, t, desc, Icon], i) => ce(TarjetaHerramienta, { key: n, n, k, t, desc, Icon, i })))));
 }
 
+/* ---------- Mis finanzas: cuentas, inversiones y patrimonio en una sola página ---------- */
+// Las tres pantallas de antes, unidas en una página larga que explica cada parte, como la introducción.
+// Los bloques llegan ya construidos desde App.js: son los componentes de siempre, con su lógica intacta.
+// "seccion" indica a qué parte bajar al entrar: "cuentas", "inversiones", "patrimonio" o "mis-finanzas" (arriba del todo).
+// Así, todos los botones que antes llevaban a Cuentas, Inversiones o Patrimonio siguen funcionando.
+export const VISTAS_MIS_FINANZAS = ["mis-finanzas", "cuentas", "inversiones", "patrimonio"];
+const BLOQUES_MF = [
+  ["cuentas", "1", "Tu liquidez", "Tus cuentas", "Añade tus cuentas bancarias manualmente para ver tu liquidez total consolidada. No conectamos con tu banco: tú decides qué saldo introducir y cuándo actualizarlo.", "Si una de tus cuentas es tu colchón para imprevistos, márcala como fondo de emergencia al añadirla."],
+  ["inversiones", "2", "Tu cartera", "Tus inversiones", "Añade tus acciones, fondos, ETFs u otros productos con lo que has aportado y la ganancia o pérdida acumulada; nosotros calculamos el valor actual. Los datos no se actualizan solos: revísalos cuando quieras.", null],
+  ["patrimonio", "3", "Tu foto completa", "Tu patrimonio neto", "Todo lo que tienes (cuentas, inversiones y otros bienes) menos todo lo que debes. Se actualiza automáticamente según lo que registres en Cuentas, Inversiones, Deudas y aquí abajo.", "Aquí también puedes añadir otros bienes, como tu vivienda o tu coche."]
+];
+const PIEZAS_MF = [
+  ["1", "Tu liquidez", "Cuentas", "El dinero que puedes usar hoy: tu cuenta nómina, tu cuenta de ahorro o tu efectivo. Es la base de tu colchón para imprevistos.", I.wallet],
+  ["2", "Tu cartera", "Inversiones", "Lo que has puesto a trabajar: acciones, fondos o ETFs. Apuntas lo aportado y la ganancia o pérdida, y calculamos su valor actual.", I.chartLine],
+  ["3", "Tu foto completa", "Patrimonio neto", "Todo lo que tienes, incluidos otros bienes como tu vivienda, menos todo lo que debes. Es la cifra que resume tu situación.", I.shieldCheck]
+];
+export function MisFinanzas({ seccion, cuentas, inversiones, patrimonio }) {
+  const bloques = { cuentas, inversiones, patrimonio };
+  const rCuentas = useRef(null), rInversiones = useRef(null), rPatrimonio = useRef(null);
+  const refs = { cuentas: rCuentas, inversiones: rInversiones, patrimonio: rPatrimonio };
+  const [activa, setActiva] = useState("cuentas");
+  const comportamiento = () => prefiereMenosMovimiento() ? "auto" : "smooth";
+  const ir = id => { const el = refs[id] && refs[id].current; if (el) el.scrollIntoView({ behavior: comportamiento(), block: "start" }); };
+  // Al entrar (o al pulsar un enlace a Cuentas, Inversiones o Patrimonio) baja hasta esa parte.
+  // Se espera un instante para no chocar con la subida al principio que hace la app al cambiar de pantalla.
+  useEffect(() => {
+    const t = setTimeout(() => { if (seccion === "mis-finanzas") window.scrollTo({ top: 0, behavior: comportamiento() }); else ir(seccion); }, 80);
+    return () => clearTimeout(t);
+  }, [seccion]);
+  // El índice de arriba marca la parte que estás leyendo
+  useEffect(() => {
+    const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) setActiva(e.target.getAttribute("data-bloque")); }), { rootMargin: "-40% 0px -55% 0px" });
+    Object.values(refs).forEach(r => r.current && io.observe(r.current));
+    return () => io.disconnect();
+  }, []);
+  return ce(React.Fragment, null,
+    ce("nav", { className: "mp-mf-indice mp-sans", "aria-label": "Partes de la página" },
+      ce("div", { className: "max-w-6xl mx-auto px-4 sm:px-6 mp-mf-indice-fila" },
+        BLOQUES_MF.map(([id, n, , titulo]) => ce("button", {
+          key: id, type: "button", onClick: () => ir(id), "aria-current": activa === id ? "true" : undefined,
+          className: "mp-mf-chip" + (activa === id ? " mp-mf-chip-activo" : "")
+        }, ce("b", null, n), titulo)))),
+    ce("section", { className: "mp-seccion mp-sans mp-mf-intro" },
+      ce("div", { className: "max-w-6xl mx-auto px-4 sm:px-6" },
+        ce(Aparece, { className: "mp-cabecera" },
+          ce("p", { className: "mp-antetitulo" }, "Por qué tenerlo todo junto"),
+          ce("h2", { className: "mp-h2" }, "Tres piezas para ver tu foto completa"),
+          ce("p", { className: "mp-sub" }, "El diagnóstico muestra cómo entra y sale tu dinero cada mes. Aquí ves cuánto tienes ya y dónde está. No hace falta rellenarlo todo: cada pieza que añadas afina tus resultados.")),
+        ce("div", { className: "mp-herr-rejilla" }, PIEZAS_MF.map(([n, k, t, desc, Icon], i) => ce(TarjetaHerramienta, { key: n, n, k, t, desc, Icon, i }))))),
+    BLOQUES_MF.map(([id, n, ante, titulo, texto, consejo], i) => ce(React.Fragment, { key: id },
+      i === 1 && ce(CapaTransicion, { id: "mp-capa-mf", retraso: 3000, lineas: ["Del dinero que guardas", "al dinero que trabaja."], frase: "Lo que tienes en tus cuentas y lo que has puesto a crecer forman, juntos, tu patrimonio.",
+        iconos: [["moneda", -0.82, 0.42, 0.9, 0.3], ["flecha", 0.8, 0.46, 0.9, -0.4], ["barras", 0.68, -0.5, 0.8, 0.6], ["moneda", -0.64, -0.5, 0.75, 1.4], ["billete", -0.94, 0, 0.7, 0.9], ["flecha", 0.94, 0, 0.65, 2.2]] }),
+      ce("div", { ref: refs[id], "data-bloque": id, id: "mf-" + id, className: "mp-mf-bloque mp-sans" },
+        ce("div", { className: "max-w-4xl mx-auto px-4 sm:px-6" },
+          ce(Aparece, { className: "mp-mf-cabeza" },
+            ce("p", { className: "mp-antetitulo" }, n + " · " + ante),
+            ce("h2", { className: "mp-h2" }, titulo),
+            ce("p", { className: "mp-sub" }, texto),
+            consejo && ce("p", { className: "mp-mf-consejo" }, consejo))),
+        bloques[id]))));
+}
+
 /* ---------- Motivos: por qué importa la salud financiera ---------- */
 function Motivo({ t, gancho }) {
   const Icon = t.icon;
