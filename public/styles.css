@@ -356,3 +356,12 @@ section.mp-seccion.mp-seccion.mp-superficie:not(.mp-oscura){background:var(--mp-
 .mp-fondo-limpio section.section-tinted{background:transparent!important}
 /* Las capas de transición usan siempre la tipografía del diseño (en la portada heredaban la del sistema) */
 .mp-capa{font-family:var(--mp-fuente)}
+
+/* Los subtítulos con el estilo de tarjeta antiguo (.section-intro) se integran en el diseño nuevo: sin caja */
+.mp-piel .section-intro{background:none;border:0;box-shadow:none;padding:0}
+.mp-piel .section-intro:after{display:none}
+.mp-piel .section-intro :is(h1,h2,h3){text-shadow:none}
+/* Títulos de sección con cápsula (readable-title / readable-subtitle de index.html): en las páginas rediseñadas,
+   título y subtítulo limpios. Las notas informativas (readable-note) se quedan como están. */
+.mp-piel .readable-title{display:block;background:none!important;border:0!important;box-shadow:none!important;padding:0!important;border-radius:0!important;color:var(--mp-noche)!important;font-size:clamp(24px,2.6vw,30px);letter-spacing:-.025em}
+.mp-piel .readable-subtitle{display:block;background:none!important;border:0!important;box-shadow:none!important;padding:0!important;border-radius:0!important;margin-top:6px;color:var(--mp-texto-suave)!important}
