@@ -3,7 +3,7 @@ const { useState, useEffect, useRef, useCallback, useMemo, useId } = React;
 import { ACTIVOS_DEF, ASIGNACION, BLOG_ADMIN_EMAIL, C, CUENTA_TIPOS_DEF, I, NOMBRES_FASE_BLOG, OBJETIVOS_DEF, PERFILES_INFO, PRIORIDADES_OBJETIVO, PRIORIDAD_LABEL, QUIZ_DEF, SECCIONES_BLOG, TIPOS_ACTIVO_DEF, TIPOS_INVERSION_DEF, supa, MAX_IMPORTE } from './constantes.js';
 import { aportacionNecesariaParaObjetivo, calcularCapacidadFinanciera, calcularFondoEmergencia, calcularPerfilMultidimensional, calcularPlanObjetivos, calcularSaludFinanciera, crearIdObjetivo, estadoAhorro, euros, fmtFecha, formatMeses, getNextQuestionId, mdToHtml, normalizarObjetivo, normalizarObjetivos, pct, proyeccionInteres, quizNumero, recomendacionObjetivoPorHorizonte, reconstruirEstadoQuiz, rentabilidadNecesariaParaObjetivo, simularAmortizacion, sincronizarObjetivos, slugify, tiempoNecesarioParaObjetivo, totalMensual, numEs } from './calculos.js';
 import { AnimatedNumber, quitarConSalida, Badge, BlogLinkCard, Card, DesgloseBarra, Eyebrow, FadeSwitch, NumberField, ProgressBar, SimpleAreaChart, SimpleDonut, SimpleStackedBarChart, StatCard, Termometro } from './ui-basicos.js';
-import { AcordeonFase, GastosTabs } from './secciones.js';
+import { AcordeonFase, GastosTabs, VISTAS_MIS_FINANZAS } from './secciones.js';
 import { LIBROS } from './libros-guia.js';
 
 // ISIN: 2 letras de país + 9 caracteres alfanuméricos + 1 dígito de control.
@@ -4567,12 +4567,14 @@ export function NavDesktop({
   blogHref
 }) {
   const el = React.createElement;
+  // Cuentas, Inversiones y Patrimonio son ahora partes de una sola página: el menú la marca como activa en los tres casos
+  const vistaMenu = VISTAS_MIS_FINANZAS.includes(vistaActual) ? "mis-finanzas" : vistaActual;
   const sueltoInicio = ["inicio", "Introducción"];
   const sueltoBlog = ["blog", "Blog"];
   const dropdowns = [{
     id: "finanzas",
     titulo: "Mis Finanzas",
-    items: [["diagnostico", "Diagnóstico"], ["cuentas", "Cuentas"], ["inversiones", "Inversiones"], ["patrimonio", "Patrimonio"]]
+    items: [["diagnostico", "Diagnóstico"], ["mis-finanzas", "Cuentas, inversiones y patrimonio"]]
   }, {
     id: "plan",
     titulo: "Plan",
@@ -4595,13 +4597,13 @@ export function NavDesktop({
   const boton = ([id, label]) => el("button", {
     key: id,
     onClick: () => setVistaActual(id),
-    className: "px-2.5 py-2 rounded-lg transition-colors hover:bg-white/10 " + (vistaActual === id ? "nav-link-active" : "nav-link-muted"),
-    style: vistaActual === id ? {
+    className: "px-2.5 py-2 rounded-lg transition-colors hover:bg-white/10 " + (vistaMenu === id ? "nav-link-active" : "nav-link-muted"),
+    style: vistaMenu === id ? {
       color: C.sand,
       borderBottom: "2px solid " + C.sand
     } : {}
   }, label);
-  const grupoActivo = grupo => grupo.items.some(([id]) => id === vistaActual);
+  const grupoActivo = grupo => grupo.items.some(([id]) => id === vistaMenu);
   const dropdown = grupo => {
     const abierto = menuAbierto === grupo.id;
     const activo = grupoActivo(grupo);
@@ -4637,7 +4639,7 @@ export function NavDesktop({
         setMenuAbierto(null);
       },
       className: "block w-full text-left px-3.5 py-2.5 text-xs font-bold transition-colors hover:bg-white/10",
-      style: vistaActual === id ? {
+      style: vistaMenu === id ? {
         color: C.sand,
         backgroundColor: "rgba(255,255,255,.08)"
       } : {
