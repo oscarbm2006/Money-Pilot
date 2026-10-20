@@ -675,7 +675,8 @@ export function App() {
       });
     },
     onFinalizar: () => {
-      setVistaActual('estrategia');
+      // Al terminar el diagnóstico se pasa a añadir las cuentas (página Mis finanzas); desde ahí, "Ver mis resultados"
+      setVistaActual('cuentas');
     }
   })), VISTAS_MIS_FINANZAS.includes(vistaActual) && /*#__PURE__*/React.createElement("div", {
     key: "mis-finanzas",
@@ -723,24 +724,18 @@ export function App() {
     onBack: () => setVistaActual('diagnostico')
   })), vistaActual === 'estrategia' && /*#__PURE__*/React.createElement("div", {
     key: "estrategia",
-    className: "fade-switch-enter"
-  }, /*#__PURE__*/React.createElement("section", {
+    className: "fade-switch-enter mp-piel"
+  }, /*#__PURE__*/React.createElement(CabeceraHerramienta, {
+    id: "mp-cab-est",
+    antetitulo: "Resultados y estrategia",
+    titulo: "Tu salud financiera, en una sola vista",
+    frase: "Aquí se concentran las métricas clave, el perfil de riesgo y las decisiones que puedes tomar a continuación.",
+    iconos: [["barras", 0.34, 0.2, 0.9, -0.3], ["moneda", 0.58, -0.25, 0.75, 0.8], ["flecha", 0.8, 0.3, 0.8, 0.3], ["moneda", 0.97, -0.2, 0.55, 1.6]]
+  }), /*#__PURE__*/React.createElement("section", {
     className: "py-16 sm:py-24 section-tinted"
   }, /*#__PURE__*/React.createElement("div", {
     className: "max-w-6xl mx-auto px-4 sm:px-6 space-y-12"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "max-w-3xl section-intro"
-  }, /*#__PURE__*/React.createElement(Eyebrow, null, "Resultados y estrategia"), /*#__PURE__*/React.createElement("h2", {
-    className: "font-serif text-3xl sm:text-4xl font-bold mt-2",
-    style: {
-      color: C.ink
-    }
-  }, "Tu salud financiera, en una sola vista"), /*#__PURE__*/React.createElement("p", {
-    className: "text-sm sm:text-base mt-3",
-    style: {
-      color: C.muted
-    }
-  }, "Aquí se concentran las métricas clave, el perfil de riesgo y las decisiones que puedes tomar a continuación.")), (() => {
+  }, (() => {
     const faltan = [];
     if (cuentas.length === 0) faltan.push(["cuentas", "Añadir mis cuentas"]);
     if (inversiones.length === 0) faltan.push(["inversiones", "Añadir mis inversiones"]);
