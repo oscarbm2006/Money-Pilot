@@ -843,24 +843,18 @@ export function App() {
     onBack: () => setVistaActual('diagnostico')
   }))))), vistaActual === 'plan' && /*#__PURE__*/React.createElement("div", {
     key: "plan",
-    className: "fade-switch-enter"
-  }, /*#__PURE__*/React.createElement("section", {
+    className: "fade-switch-enter mp-piel"
+  }, /*#__PURE__*/React.createElement(CabeceraHerramienta, {
+    id: "mp-cab-plan",
+    antetitulo: "Tu plan",
+    titulo: "Tu plan financiero, paso a paso",
+    frase: "Prioridad actual, siguiente acción y las fases que vendrán después, calculado con todos tus datos.",
+    iconos: [["flecha", 0.34, 0.25, 0.85, 0.2], ["barras", 0.58, -0.22, 0.8, -0.3], ["moneda", 0.8, 0.3, 0.75, 0.9], ["moneda", 0.97, -0.25, 0.55, 1.8]]
+  }), /*#__PURE__*/React.createElement("section", {
     className: "py-16 sm:py-24 section-tinted"
   }, /*#__PURE__*/React.createElement("div", {
     className: "max-w-4xl mx-auto px-4 sm:px-6 space-y-6"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "max-w-3xl section-intro"
-  }, /*#__PURE__*/React.createElement(Eyebrow, null, "Tu plan"), /*#__PURE__*/React.createElement("h2", {
-    className: "font-serif text-3xl sm:text-4xl font-bold mt-2",
-    style: {
-      color: C.ink
-    }
-  }, "Tu plan financiero, paso a paso"), /*#__PURE__*/React.createElement("p", {
-    className: "text-sm sm:text-base mt-3",
-    style: {
-      color: C.muted
-    }
-  }, "Prioridad actual, siguiente acción y las fases que vendrán después, calculado con todos tus datos.")), /*#__PURE__*/React.createElement(PlanFinanciero, {
+  }, /*#__PURE__*/React.createElement(PlanFinanciero, {
     plan: planFinanciero,
     datos: datos,
     setDatos: setDatos,
@@ -876,24 +870,18 @@ export function App() {
     onBack: () => setVistaActual('estrategia')
   })))), vistaActual === 'seguimiento' && /*#__PURE__*/React.createElement("div", {
     key: "seguimiento",
-    className: "fade-switch-enter"
-  }, /*#__PURE__*/React.createElement("section", {
+    className: "fade-switch-enter mp-piel"
+  }, /*#__PURE__*/React.createElement(CabeceraHerramienta, {
+    id: "mp-cab-seg",
+    antetitulo: "Tu evolución",
+    titulo: "¿Estás avanzando?",
+    frase: "Guarda una foto de tu situación cada vez que quieras, y compárala con las anteriores.",
+    iconos: [["barras", 0.34, 0.2, 0.9, -0.3], ["flecha", 0.58, -0.22, 0.8, 0.3], ["moneda", 0.8, 0.3, 0.75, 1.1], ["tarjeta", 0.97, -0.2, 0.6, -0.5]]
+  }), /*#__PURE__*/React.createElement("section", {
     className: "py-16 sm:py-24 section-tinted"
   }, /*#__PURE__*/React.createElement("div", {
     className: "max-w-4xl mx-auto px-4 sm:px-6 space-y-6"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "max-w-3xl section-intro"
-  }, /*#__PURE__*/React.createElement(Eyebrow, null, "Tu evolución"), /*#__PURE__*/React.createElement("h2", {
-    className: "font-serif text-3xl sm:text-4xl font-bold mt-2",
-    style: {
-      color: C.ink
-    }
-  }, "¿Estás avanzando?"), /*#__PURE__*/React.createElement("p", {
-    className: "text-sm sm:text-base mt-3",
-    style: {
-      color: C.muted
-    }
-  }, "Guarda una foto de tu situación cada vez que quieras, y compárala con las anteriores.")), /*#__PURE__*/React.createElement(Seguimiento, {
+  }, /*#__PURE__*/React.createElement(Seguimiento, {
     user: user,
     historial: historialSeguimiento,
     cargando: cargandoSeguimiento,
