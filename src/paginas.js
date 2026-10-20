@@ -4577,7 +4577,7 @@ export function NavDesktop({
     items: [["diagnostico", "Diagnóstico"], ["mis-finanzas", "Cuentas, inversiones y patrimonio"]]
   }, {
     id: "plan",
-    titulo: "Plan",
+    titulo: "Hoja de ruta", // antes "Plan": no puede haber un apartado "Plan" dentro de otro llamado "Plan" (y un nombre más largo no cabe en una línea)
     items: [["estrategia", "Estrategia"], ["plan", "Plan"], ["seguimiento", "Seguimiento"]]
   }, {
     id: "simuladores",
