@@ -6,7 +6,7 @@ import { useActivosPersistidos, useActivosSync, useAuth, useCloudSync, useCuenta
 import { AuthModal, ConflictoDatosModal, ContinuarBar, ErrorBoundary, Eyebrow, FeedbackModal, Toast } from './ui-basicos.js';
 import { AmortizacionDeuda, SimuladorDeudas, Contacto, Cuentas, Dashboard, Diagnostico, Estrategia, Inversiones, NavDesktop, PaginaLegal, PanelDiagnostico, PanelPrioridad, Patrimonio, PerfilRiesgo, PlanFinanciero, PrintSummary, Seguimiento, Simulador } from './paginas.js';
 const Blog = React.lazy(() => import('./blog.js'));
-import { CabeceraHerramienta, ConfianzaPrivacidad, HeroSection } from './secciones.js';
+import { CabeceraHerramienta, ConfianzaPrivacidad, HeroSection, MisFinanzas, VISTAS_MIS_FINANZAS } from './secciones.js';
 import { MiCuentaModal } from './cuenta.js';
 import { ReiniciarTodoModal } from './cuenta.js';
 
@@ -161,7 +161,21 @@ export function App() {
       behavior: "auto"
     });
   }, []);
+  // Dentro de la página "Mis finanzas", los enlaces a Cuentas o Inversiones bajan siempre hasta esa parte
+  // (aunque ya estés en ella y la dirección no cambie).
+  const irAParteMisFinanzas = parte => {
+    setVistaActual(parte);
+    const el = document.getElementById("mf-" + parte);
+    const suave = !(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+    if (el) el.scrollIntoView({ behavior: suave ? "smooth" : "auto", block: "start" });
+  };
+  const vistaPreviaScroll = useRef(vistaActual);
   useEffect(() => {
+    // Dentro de "Mis finanzas" (cuentas, inversiones y patrimonio en una sola página) no se sube al principio:
+    // la propia página baja hasta la parte pedida.
+    const mismaPagina = VISTAS_MIS_FINANZAS.includes(vistaPreviaScroll.current) && VISTAS_MIS_FINANZAS.includes(vistaActual);
+    vistaPreviaScroll.current = vistaActual;
+    if (mismaPagina) return;
     window.scrollTo({
       top: 0,
       left: 0,
@@ -611,7 +625,7 @@ export function App() {
     size: 13
   })))), /*#__PURE__*/React.createElement("div", {
     className: "hidden"
-  }, [["inicio", "Introducción"], ["diagnostico", "Diagnóstico"], ["cuentas", "Cuentas"], ["inversiones", "Inversiones"], ["patrimonio", "Patrimonio"], ["estrategia", "Estrategia"], ["plan", "Plan"], ["seguimiento", "Seguimiento"], ["simulador", "Simulador"], ["blog", "Blog"]].map(([id, label]) => /*#__PURE__*/React.createElement("button", {
+  }, [["inicio", "Introducción"], ["diagnostico", "Diagnóstico"], ["mis-finanzas", "Cuentas, inversiones y patrimonio"], ["estrategia", "Estrategia"], ["plan", "Plan"], ["seguimiento", "Seguimiento"], ["simulador", "Simulador"], ["blog", "Blog"]].map(([id, label]) => /*#__PURE__*/React.createElement("button", {
     key: id,
     onClick: () => setVistaActual(id),
     className: "whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-bold " + (vistaActual === id ? "nav-link-active" : "nav-link-muted"),
@@ -661,73 +675,50 @@ export function App() {
     onFinalizar: () => {
       setVistaActual('estrategia');
     }
-  })), vistaActual === 'cuentas' && /*#__PURE__*/React.createElement("div", {
-    key: "cuentas",
+  })), VISTAS_MIS_FINANZAS.includes(vistaActual) && /*#__PURE__*/React.createElement("div", {
+    key: "mis-finanzas",
     className: "fade-switch-enter mp-piel"
   }, /*#__PURE__*/React.createElement(CabeceraHerramienta, {
-    id: "mp-cab-cuentas",
-    antetitulo: "Tu liquidez",
-    titulo: "Tus cuentas, en un solo sitio",
-    frase: "Añade tus cuentas bancarias manualmente para ver tu liquidez total consolidada. No conectamos con tu banco: tú decides qué saldo introducir y cuándo actualizarlo.",
-    iconos: [["tarjeta", 0.34, 0.2, 0.9, -0.4], ["moneda", 0.6, -0.25, 0.75, 0.8], ["billete", 0.86, 0.3, 0.8, 0.4]]
-  }), /*#__PURE__*/React.createElement(Cuentas, {
-    cuentas: cuentas,
-    onAgregar: agregarCuenta,
-    onActualizar: actualizarCuenta,
-    onEliminar: eliminarCuenta
+    id: "mp-cab-mf",
+    antetitulo: "Mis finanzas",
+    titulo: "Tu patrimonio, en un solo sitio",
+    frase: "Tus cuentas, tus inversiones y tus otros bienes, juntos. Con ellos calculamos tu patrimonio neto: todo lo que tienes menos todo lo que debes.",
+    iconos: [["tarjeta", 0.34, 0.2, 0.9, -0.4], ["barras", 0.58, -0.22, 0.8, -0.3], ["moneda", 0.8, 0.3, 0.75, 0.8], ["flecha", 0.97, -0.25, 0.6, 0.6]]
+  }), /*#__PURE__*/React.createElement(MisFinanzas, {
+    seccion: vistaActual,
+    cuentas: /*#__PURE__*/React.createElement(Cuentas, {
+      cuentas: cuentas,
+      onAgregar: agregarCuenta,
+      onActualizar: actualizarCuenta,
+      onEliminar: eliminarCuenta
+    }),
+    inversiones: /*#__PURE__*/React.createElement(Inversiones, {
+      inversiones: inversiones,
+      onAgregar: agregarInversion,
+      onActualizar: actualizarInversion,
+      onEliminar: eliminarInversion
+    }),
+    patrimonio: /*#__PURE__*/React.createElement(Patrimonio, {
+      cuentas: cuentas,
+      inversiones: inversiones,
+      activos: activos,
+      deudas: datos.deudas,
+      onAgregarActivo: agregarActivo,
+      onActualizarActivo: actualizarActivo,
+      onEliminarActivo: eliminarActivo,
+      onIrACuentas: () => irAParteMisFinanzas('cuentas'),
+      onIrAInversiones: () => irAParteMisFinanzas('inversiones'),
+      onIrASimuladorDeudas: () => setVistaActual('simulador-deudas'),
+      onIrADiagnostico: () => {
+        setIrADeudas(true);
+        setVistaActual('diagnostico');
+      }
+    })
   }), /*#__PURE__*/React.createElement(ContinuarBar, {
     label: "Ver mis resultados",
     onClick: () => setVistaActual('estrategia'),
     backLabel: "Volver a Diagnóstico",
     onBack: () => setVistaActual('diagnostico')
-  })), vistaActual === 'inversiones' && /*#__PURE__*/React.createElement("div", {
-    key: "inversiones",
-    className: "fade-switch-enter mp-piel"
-  }, /*#__PURE__*/React.createElement(CabeceraHerramienta, {
-    id: "mp-cab-inv",
-    antetitulo: "Tu cartera",
-    titulo: "Tus inversiones, en un solo sitio",
-    frase: "Añade tus acciones, fondos, ETFs u otros productos con lo que has aportado y la ganancia o pérdida acumulada; nosotros calculamos el valor actual. Los datos no se actualizan solos: revísalos cuando quieras.",
-    iconos: [["barras", 0.34, 0.2, 0.9, -0.3], ["flecha", 0.6, -0.2, 0.8, 0.3], ["moneda", 0.84, 0.3, 0.7, 1.2], ["moneda", 0.97, -0.3, 0.5, 2]]
-  }), /*#__PURE__*/React.createElement(Inversiones, {
-    inversiones: inversiones,
-    onAgregar: agregarInversion,
-    onActualizar: actualizarInversion,
-    onEliminar: eliminarInversion
-  }), /*#__PURE__*/React.createElement(ContinuarBar, {
-    label: "Ver mis resultados",
-    onClick: () => setVistaActual('estrategia'),
-    backLabel: "Volver a Cuentas",
-    onBack: () => setVistaActual('cuentas')
-  })), vistaActual === 'patrimonio' && /*#__PURE__*/React.createElement("div", {
-    key: "patrimonio",
-    className: "fade-switch-enter mp-piel"
-  }, /*#__PURE__*/React.createElement(CabeceraHerramienta, {
-    id: "mp-cab-pat",
-    antetitulo: "Tu foto completa",
-    titulo: "Tu patrimonio neto",
-    frase: "Todo lo que tienes (cuentas, inversiones y otros bienes) menos todo lo que debes. Se actualiza automáticamente según lo que registres en Cuentas, Inversiones, Deudas y aquí abajo.",
-    iconos: [["moneda", 0.32, 0.3, 0.85, 0.3], ["barras", 0.54, -0.2, 0.8, -0.3], ["tarjeta", 0.78, 0.3, 0.8, -0.5], ["flecha", 0.96, -0.25, 0.6, 0.8]]
-  }), /*#__PURE__*/React.createElement(Patrimonio, {
-    cuentas: cuentas,
-    inversiones: inversiones,
-    activos: activos,
-    deudas: datos.deudas,
-    onAgregarActivo: agregarActivo,
-    onActualizarActivo: actualizarActivo,
-    onEliminarActivo: eliminarActivo,
-    onIrACuentas: () => setVistaActual('cuentas'),
-    onIrAInversiones: () => setVistaActual('inversiones'),
-    onIrASimuladorDeudas: () => setVistaActual('simulador-deudas'),
-    onIrADiagnostico: () => {
-      setIrADeudas(true);
-      setVistaActual('diagnostico');
-    }
-  }), /*#__PURE__*/React.createElement(ContinuarBar, {
-    label: "Ver mis resultados",
-    onClick: () => setVistaActual('estrategia'),
-    backLabel: "Volver a Inversiones",
-    onBack: () => setVistaActual('inversiones')
   })), vistaActual === 'estrategia' && /*#__PURE__*/React.createElement("div", {
     key: "estrategia",
     className: "fade-switch-enter"
