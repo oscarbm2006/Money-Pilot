@@ -107,7 +107,7 @@ describe('Rediseño 3D: herramientas (Fase 2)', () => {
     for (const t of ['Construye tu foto financiera, paso a paso', 'Empezamos por lo esencial y añadimos detalle solo cuando lo necesitas. Tus cálculos se actualizan en cada paso.',
       '¿Qué puede hacer tu ahorro con el tiempo?', 'Ajusta los números y mira qué puede hacer tu ahorro con el tiempo. Si ya hiciste tu diagnóstico, partirá de tus propios datos.',
       '¿Cuánto tardarás en salir de tus deudas?', 'Escribe tus deudas y compara dos formas de pagarlas. Es una proyección educativa.']) assert.ok(app.includes(t), 'falta el texto: ' + t);
-    assert.equal((app.match(/fade-switch-enter mp-piel/g) || []).length, 5);
+    assert.equal((app.match(/fade-switch-enter mp-piel/g) || []).length, 7);
   });
   test('Cuentas, Inversiones y Patrimonio forman una sola página que conserva sus textos', () => {
     const sec = leer('src/secciones.js');
@@ -161,7 +161,7 @@ describe('Rediseño 3D: Mis finanzas en una sola página (Fase 2c)', () => {
 describe('Rediseño 3D: fondo blanco en las páginas rediseñadas', () => {
   const app = leer('src/App.js'), sec = leer('src/secciones.js'), css = leer('public/styles.css');
   test('la lista de páginas rediseñadas incluye la portada, el diagnóstico, Mis finanzas, Estrategia y los simuladores', () => {
-    assert.match(sec, /export const VISTAS_REDISENADAS = \["inicio", "diagnostico", \.\.\.VISTAS_MIS_FINANZAS, "estrategia", "simulador", "simulador-deudas"\];/);
+    assert.match(sec, /export const VISTAS_REDISENADAS = \["inicio", "diagnostico", \.\.\.VISTAS_MIS_FINANZAS, "estrategia", "plan", "seguimiento", "simulador", "simulador-deudas"\];/);
   });
   test('en esas páginas no se pintan el tono gris azulado ni el dibujo de líneas', () => {
     assert.ok(app.includes('const fondoLimpio = VISTAS_REDISENADAS.includes(vistaActual);'));
@@ -214,5 +214,19 @@ describe('Menú: nombres sin repetir', () => {
     assert.ok(pag.includes('titulo: "Hoja de ruta"'));
     assert.ok(!/titulo: "Plan"/.test(pag));
     assert.ok(pag.includes('items: [["estrategia", "Estrategia"], ["plan", "Plan"], ["seguimiento", "Seguimiento"]]'));
+  });
+});
+
+describe('Rediseño 3D: Plan y Seguimiento (Fase 4)', () => {
+  const app = leer('src/App.js');
+  test('Plan y Seguimiento usan la cabecera nueva, la piel y conservan sus textos y componentes', () => {
+    for (const id of ['mp-cab-plan', 'mp-cab-seg']) assert.ok(app.includes('id: "' + id + '"'));
+    for (const t of ['Tu plan financiero, paso a paso', 'Prioridad actual, siguiente acción y las fases que vendrán después, calculado con todos tus datos.',
+      '¿Estás avanzando?', 'Guarda una foto de tu situación cada vez que quieras, y compárala con las anteriores.']) assert.ok(app.includes(t), 'falta ' + t);
+    assert.ok(!app.includes('Eyebrow, null, "Tu plan"') && !app.includes('Eyebrow, null, "Tu evolución"'), 'quedan introducciones antiguas');
+    const plan = app.slice(app.indexOf("vistaActual === 'plan' &&"), app.indexOf("vistaActual === 'seguimiento' &&"));
+    const seg = app.slice(app.indexOf("vistaActual === 'seguimiento' &&"), app.indexOf("vistaActual === 'simulador' &&"));
+    assert.ok(plan.includes('React.createElement(PlanFinanciero, {') && plan.includes('label: "Continuar a Seguimiento"'));
+    for (const p of ['onRegistrar', 'onEliminar', 'onBorrarTodo', 'onOpenAuth', 'label: "Probar el simulador"']) assert.ok(seg.includes(p), 'falta ' + p);
   });
 });
