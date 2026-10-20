@@ -157,3 +157,19 @@ describe('Rediseño 3D: Mis finanzas en una sola página (Fase 2c)', () => {
     assert.ok(app.includes('const mismaPagina = VISTAS_MIS_FINANZAS.includes(vistaPreviaScroll.current) && VISTAS_MIS_FINANZAS.includes(vistaActual);'));
   });
 });
+
+describe('Rediseño 3D: fondo blanco en las páginas rediseñadas', () => {
+  const app = leer('src/App.js'), sec = leer('src/secciones.js'), css = leer('public/styles.css');
+  test('la lista de páginas rediseñadas incluye la portada, el diagnóstico, Mis finanzas y los simuladores', () => {
+    assert.match(sec, /export const VISTAS_REDISENADAS = \["inicio", "diagnostico", \.\.\.VISTAS_MIS_FINANZAS, "simulador", "simulador-deudas"\];/);
+  });
+  test('en esas páginas no se pintan el tono gris azulado ni el dibujo de líneas', () => {
+    assert.ok(app.includes('const fondoLimpio = VISTAS_REDISENADAS.includes(vistaActual);'));
+    assert.ok(app.includes('backgroundColor: fondoLimpio ? "#FAFAFA" : C.bgDeep'));
+    assert.equal((app.match(/!fondoLimpio && \/\*#__PURE__\*\/React\.createElement\("div", \{\n    className: "fixed inset-0 pointer-events-none"/g) || []).length, 2);
+    assert.ok(app.includes('backgroundImage: `url(${PATTERN_URI_STATIC})`'), 'el dibujo de líneas sigue existiendo para las demás páginas');
+  });
+  test('las secciones de esas páginas no llevan el tinte de index.html', () => {
+    assert.ok(css.includes('.mp-fondo-limpio section.section-tinted{background:transparent!important}'));
+  });
+});
