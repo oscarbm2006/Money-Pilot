@@ -207,3 +207,12 @@ describe('Rediseño 3D: Estrategia y fin del diagnóstico (Fase 3)', () => {
     assert.ok(!/\.mp-piel \.readable-note/.test(css), 'las notas informativas no se tocan');
   });
 });
+
+describe('Menú: nombres sin repetir', () => {
+  test('el grupo que contiene Estrategia, Plan y Seguimiento no se llama también "Plan"', () => {
+    const pag = leer('src/paginas.js');
+    assert.ok(pag.includes('titulo: "Hoja de ruta"'));
+    assert.ok(!/titulo: "Plan"/.test(pag));
+    assert.ok(pag.includes('items: [["estrategia", "Estrategia"], ["plan", "Plan"], ["seguimiento", "Seguimiento"]]'));
+  });
+});
