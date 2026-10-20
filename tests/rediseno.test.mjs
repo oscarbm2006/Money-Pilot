@@ -46,8 +46,9 @@ describe('Rediseño 3D: la portada conserva su contenido', () => {
     assert.match(src, /const inflacion = 2\.5;/);
     assert.match(src, /const rentabilidad = 8;/);
   });
-  test('el gasto hormiga sigue calculando con la rentabilidad del índice global y su aviso legal', () => {
-    assert.match(src, /proyeccionInteres\(0, gasto, TASA_INDICE_GLOBAL, anios\)/);
+  test('el simulador de gastos innecesarios calcula al 8 % y mantiene su aviso legal', () => {
+    assert.match(src, /const TASA_HORMIGA = 8;/);
+    assert.match(src, /proyeccionInteres\(0, gasto, TASA_HORMIGA, anios\)/);
     assert.ok(src.includes('Rentabilidades pasadas no garantizan resultados futuros.'));
   });
 });
@@ -62,7 +63,7 @@ describe('Rediseño 3D: ajustes de la portada (Fase 1c)', () => {
     assert.match(src, /const \[aporte, setAporte\] = useState\(1000\)/);
   });
   test('el gasto hormiga mantiene su cálculo y su aviso, con las barras 3D a escala fija', () => {
-    assert.match(src, /proyeccionInteres\(0, gasto, TASA_INDICE_GLOBAL, 30\)/);
+    assert.match(src, /proyeccionInteres\(0, gasto, TASA_HORMIGA, 30\)/);
     assert.ok(src.includes('ce(Barras3D, { datos: columnas, escalaMax: escala })'));
   });
   test('en móvil el texto va antes que las monedas (el lienzo se coloca abajo)', () => {
@@ -95,8 +96,8 @@ describe('Rediseño 3D: carga de la portada y gráfico del gasto hormiga (Fase 1
     assert.ok(src.includes('const { datos: d, escalaMax: e } = ultimo.current'));
   });
   test('las barras usan una escala común a todos los gastos de ejemplo', () => {
-    assert.ok(src.includes('const ESCALA_HORMIGA = proyeccionInteres(0, Math.max(...GASTOS_HORMIGA_EJEMPLOS.map(g => g.valor)), TASA_INDICE_GLOBAL, 30).valorFuturo;'));
-    assert.ok(src.includes('Math.max(ESCALA_HORMIGA, proyeccionInteres(0, gasto, TASA_INDICE_GLOBAL, 30).valorFuturo)'));
+    assert.ok(src.includes('const ESCALA_HORMIGA = proyeccionInteres(0, Math.max(...GASTOS_HORMIGA_EJEMPLOS.map(g => g.valor)), TASA_HORMIGA, 30).valorFuturo;'));
+    assert.ok(src.includes('Math.max(ESCALA_HORMIGA, proyeccionInteres(0, gasto, TASA_HORMIGA, 30).valorFuturo)'));
   });
 });
 
@@ -228,5 +229,27 @@ describe('Rediseño 3D: Plan y Seguimiento (Fase 4)', () => {
     const seg = app.slice(app.indexOf("vistaActual === 'seguimiento' &&"), app.indexOf("vistaActual === 'simulador' &&"));
     assert.ok(plan.includes('React.createElement(PlanFinanciero, {') && plan.includes('label: "Continuar a Seguimiento"'));
     for (const p of ['onRegistrar', 'onEliminar', 'onBorrarTodo', 'onOpenAuth', 'label: "Probar el simulador"']) assert.ok(seg.includes(p), 'falta ' + p);
+  });
+});
+
+describe('Simulador de gastos innecesarios: recorrido sencillo', () => {
+  const src = leer('src/secciones.js');
+  const seccion = src.slice(src.indexOf('export function GastoHormigaSection()'), src.indexOf('/* ---------- ¿Qué pasa con'));
+  test('primero invita a pensar en un gasto que no aporta nada', () => {
+    assert.ok(seccion.includes('Piensa en un gasto que no te aporta nada'));
+  });
+  test('el gasto se elige en un desplegable con los ejemplos y la opción de escribir uno propio', () => {
+    assert.ok(seccion.includes('ce("select", { id: "mp-hormiga-tipo"'));
+    assert.ok(seccion.includes('GASTOS_HORMIGA_EJEMPLOS.map(g => ce("option", { key: g.label, value: g.label }, g.label))'));
+    assert.ok(seccion.includes('ce("option", { value: "otro" }, "Otro gasto (escríbelo tú)")'));
+    assert.ok(seccion.includes('tipo === "otro" && ce("div"') && seccion.includes('id: "mp-hormiga-otro"'));
+  });
+  test('pregunta cuánto se gasta al mes y desde hace cuánto tiempo', () => {
+    assert.ok(seccion.includes('¿Cuánto crees que gastas al mes en esto?'));
+    assert.ok(seccion.includes('¿Cuánto tiempo llevas con este gasto?'));
+  });
+  test('muestra lo que ha costado, lo que habría generado y el total al 8 %', () => {
+    for (const t of ['Lo que te ha costado', 'Lo que habría generado', 'proyeccion.totalAportado', 'proyeccion.interesGenerado', 'proyeccion.valorFuturo']) assert.ok(seccion.includes(t), 'falta ' + t);
+    assert.ok(!seccion.includes('TASA_INDICE_GLOBAL'));
   });
 });
