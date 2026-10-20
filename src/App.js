@@ -6,7 +6,7 @@ import { useActivosPersistidos, useActivosSync, useAuth, useCloudSync, useCuenta
 import { AuthModal, ConflictoDatosModal, ContinuarBar, ErrorBoundary, Eyebrow, FeedbackModal, Toast } from './ui-basicos.js';
 import { AmortizacionDeuda, SimuladorDeudas, Contacto, Cuentas, Dashboard, Diagnostico, Estrategia, Inversiones, NavDesktop, PaginaLegal, PanelDiagnostico, PanelPrioridad, Patrimonio, PerfilRiesgo, PlanFinanciero, PrintSummary, Seguimiento, Simulador } from './paginas.js';
 const Blog = React.lazy(() => import('./blog.js'));
-import { CabeceraHerramienta, ConfianzaPrivacidad, HeroSection, MisFinanzas, VISTAS_MIS_FINANZAS } from './secciones.js';
+import { CabeceraHerramienta, ConfianzaPrivacidad, HeroSection, MisFinanzas, VISTAS_MIS_FINANZAS, VISTAS_REDISENADAS } from './secciones.js';
 import { MiCuentaModal } from './cuenta.js';
 import { ReiniciarTodoModal } from './cuenta.js';
 
@@ -533,17 +533,19 @@ export function App() {
       }
     }, "Cargando…"));
   }
+  // Las páginas rediseñadas llevan el fondo blanco del prototipo (sin el tono gris azulado ni el dibujo de líneas)
+  const fondoLimpio = VISTAS_REDISENADAS.includes(vistaActual);
   return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
-    className: "min-h-screen w-full relative no-print",
+    className: "min-h-screen w-full relative no-print" + (fondoLimpio ? " mp-fondo-limpio" : ""),
     style: {
-      backgroundColor: C.bgDeep
+      backgroundColor: fondoLimpio ? "#FAFAFA" : C.bgDeep
     }
-  }, /*#__PURE__*/React.createElement("div", {
+  }, !fondoLimpio && /*#__PURE__*/React.createElement("div", {
     className: "fixed inset-0 pointer-events-none",
     style: {
       background: "radial-gradient(120% 100% at 50% -10%, rgba(49,46,129,0.06) 0%, rgba(49,46,129,0.10) 60%)"
     }
-  }), /*#__PURE__*/React.createElement("div", {
+  }), !fondoLimpio && /*#__PURE__*/React.createElement("div", {
     className: "fixed inset-0 pointer-events-none",
     style: {
       backgroundImage: `url(${PATTERN_URI_STATIC})`,
