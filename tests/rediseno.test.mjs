@@ -107,14 +107,14 @@ describe('Rediseño 3D: herramientas (Fase 2)', () => {
     for (const t of ['Construye tu foto financiera, paso a paso', 'Empezamos por lo esencial y añadimos detalle solo cuando lo necesitas. Tus cálculos se actualizan en cada paso.',
       '¿Qué puede hacer tu ahorro con el tiempo?', 'Ajusta los números y mira qué puede hacer tu ahorro con el tiempo. Si ya hiciste tu diagnóstico, partirá de tus propios datos.',
       '¿Cuánto tardarás en salir de tus deudas?', 'Escribe tus deudas y compara dos formas de pagarlas. Es una proyección educativa.']) assert.ok(app.includes(t), 'falta el texto: ' + t);
-    assert.equal((app.match(/fade-switch-enter mp-piel/g) || []).length, 6);
+    assert.equal((app.match(/fade-switch-enter mp-piel/g) || []).length, 4);
   });
-  test('Cuentas, Inversiones y Patrimonio (Mis finanzas) usan la cabecera nueva y conservan sus textos', () => {
-    for (const id of ['mp-cab-cuentas', 'mp-cab-inv', 'mp-cab-pat']) assert.ok(app.includes('id: "' + id + '"'), 'falta la cabecera ' + id);
-    for (const t of ['Tus cuentas, en un solo sitio', 'No conectamos con tu banco: tú decides qué saldo introducir y cuándo actualizarlo.',
-      'Tus inversiones, en un solo sitio', 'Los datos no se actualizan solos: revísalos cuando quieras.',
-      'Tu patrimonio neto', 'Se actualiza automáticamente según lo que registres en Cuentas, Inversiones, Deudas y aquí abajo.']) assert.ok(app.includes(t), 'falta el texto: ' + t);
-    for (const t of ['Tu liquidez', 'Tu cartera', 'Tu foto completa']) assert.ok(app.includes('antetitulo: "' + t + '"'));
+  test('Cuentas, Inversiones y Patrimonio forman una sola página que conserva sus textos', () => {
+    const sec = leer('src/secciones.js');
+    assert.ok(app.includes('id: "mp-cab-mf"'));
+    for (const t of ['Tus cuentas', 'No conectamos con tu banco: tú decides qué saldo introducir y cuándo actualizarlo.',
+      'Tus inversiones', 'Los datos no se actualizan solos: revísalos cuando quieras.',
+      'Tu patrimonio neto', 'Se actualiza automáticamente según lo que registres en Cuentas, Inversiones, Deudas y aquí abajo.']) assert.ok(sec.includes(t), 'falta el texto: ' + t);
     assert.ok(!pag.includes('section-intro'), 'quedan introducciones antiguas en paginas.js');
   });
   test('las cifras de las herramientas usan una tipografía legible (no la serif fina de la portada)', () => {
@@ -134,5 +134,26 @@ describe('Rediseño 3D: herramientas (Fase 2)', () => {
   });
   test('al salir de una escena 3D se libera la tarjeta gráfica', () => {
     assert.ok((leer('src/efectos-3d.js').match(/forceContextLoss/g) || []).length >= 2);
+  });
+});
+
+describe('Rediseño 3D: Mis finanzas en una sola página (Fase 2c)', () => {
+  const app = leer('src/App.js'), sec = leer('src/secciones.js'), pag = leer('src/paginas.js');
+  test('la página única se muestra para las cuatro direcciones (los enlaces antiguos siguen funcionando)', () => {
+    assert.match(sec, /export const VISTAS_MIS_FINANZAS = \["mis-finanzas", "cuentas", "inversiones", "patrimonio"\];/);
+    assert.ok(app.includes('VISTAS_MIS_FINANZAS.includes(vistaActual) && /*#__PURE__*/React.createElement("div", {\n    key: "mis-finanzas"'));
+    for (const v of ["'cuentas'", "'inversiones'", "'patrimonio'"]) assert.ok(!app.includes('vistaActual === ' + v + ' &&'), 'queda la vista antigua ' + v);
+    for (const enlace of ["irAParteMisFinanzas('cuentas')", "irAParteMisFinanzas('inversiones')", '["cuentas", "Añadir mis cuentas"]', '["inversiones", "Añadir mis inversiones"]', '["patrimonio", "Añadir otros bienes"]']) assert.ok(app.includes(enlace), 'se perdió el enlace ' + enlace);
+  });
+  test('reúne los tres componentes de siempre, con todas sus propiedades', () => {
+    for (const c of ['Cuentas', 'Inversiones', 'Patrimonio']) assert.equal((app.match(new RegExp('React\\.createElement\\(' + c + ', \\{', 'g')) || []).length, 1, c);
+    for (const p of ['onAgregarActivo', 'onIrACuentas', 'onIrAInversiones', 'onIrASimuladorDeudas', 'onIrADiagnostico', 'deudas: datos.deudas']) assert.ok(app.includes(p), 'falta ' + p);
+  });
+  test('sigue en "Mis finanzas", justo después de Diagnóstico, y el menú la marca activa desde cualquier enlace', () => {
+    assert.ok(pag.includes('items: [["diagnostico", "Diagnóstico"], ["mis-finanzas", "Cuentas, inversiones y patrimonio"]]'));
+    assert.ok(pag.includes('const vistaMenu = VISTAS_MIS_FINANZAS.includes(vistaActual) ? "mis-finanzas" : vistaActual;'));
+  });
+  test('al moverse entre partes de la misma página no se sube al principio', () => {
+    assert.ok(app.includes('const mismaPagina = VISTAS_MIS_FINANZAS.includes(vistaPreviaScroll.current) && VISTAS_MIS_FINANZAS.includes(vistaActual);'));
   });
 });
