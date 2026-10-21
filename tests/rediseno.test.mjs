@@ -66,8 +66,8 @@ describe('Rediseño 3D: ajustes de la portada (Fase 1c)', () => {
     assert.match(src, /proyeccionInteres\(0, gasto, TASA_HORMIGA, 30\)/);
     assert.ok(src.includes('ce(Barras3D, { datos: columnas, escalaMax: escala })'));
   });
-  test('en móvil el texto va antes que las monedas (el lienzo se coloca abajo)', () => {
-    assert.match(css, /@media \(max-width:720px\)\{\s*\.mp-portada\{align-items:flex-start\}[\s\S]*?\.mp-portada>\.mp-lienzo\{[^}]*bottom:0/);
+  test('en móvil la portada no muestra las monedas (solo texto y botones)', () => {
+    assert.match(css, /@media \(max-width:720px\)\{\s*\.mp-portada\{align-items:flex-start;min-height:0\}[\s\S]*?\.mp-portada>\.mp-lienzo\{display:none\}/);
   });
   test('el 3D no fuerza la tarjeta gráfica de bajo consumo', () => {
     assert.ok(!leer('src/efectos-3d.js').includes('low-power'));
