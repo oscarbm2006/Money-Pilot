@@ -360,3 +360,14 @@ describe('Páginas legales y contacto con el diseño nuevo', () => {
     assert.ok(leer('public/privacidad.html').includes('<h1>Política de Privacidad</h1>') && leer('public/aviso-legal.html').includes('<h1>Aviso Legal y Términos de Uso</h1>'));
   });
 });
+
+describe('Tablets e iPad: sin zoom automático', () => {
+  const css = leer('public/styles.css');
+  test('en pantallas táctiles los campos usan 16 px (Safari no amplía la página al tocarlos)', () => {
+    assert.ok(css.includes('@media (pointer:coarse){input:not([type=checkbox]):not([type=radio]):not([type=range]),select,textarea{font-size:16px!important}}'));
+  });
+  test('cada sección recorta lo que sobresale por los lados, sin impedir el titular fijo', () => {
+    assert.ok(css.includes('main section,main header.mp-cab{overflow-x:clip}'));
+    assert.ok(css.includes('@supports not (overflow:clip){main section,main header.mp-cab{overflow-x:hidden}}'));
+  });
+});
