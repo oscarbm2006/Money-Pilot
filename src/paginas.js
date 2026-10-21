@@ -545,7 +545,7 @@ export function AmortizacionDeuda({
   }].map(e => /*#__PURE__*/React.createElement("button", {
     key: e.key,
     onClick: () => setVista(e.key),
-    className: "text-left rounded-xl p-4 border transition-all hover:-translate-y-0.5 hover:shadow-sm active:scale-[0.99]",
+    className: "text-left rounded-xl p-4 border transition hover:-translate-y-0.5 hover:shadow-sm active:scale-[0.99]",
     style: {
       borderColor: vista === e.key ? C.sand : C.border,
       backgroundColor: vista === e.key ? C.sandLight : C.paper
@@ -2644,7 +2644,7 @@ export function Diagnostico({
       ...datos,
       habito: h
     }),
-    className: "text-left px-3.5 py-3 rounded-lg border text-sm font-medium transition-all hover:-translate-y-0.5",
+    className: "text-left px-3.5 py-3 rounded-lg border text-sm font-medium transition hover:-translate-y-0.5",
     style: {
       borderColor: datos.habito === h ? C.sand : C.border,
       backgroundColor: datos.habito === h ? C.sandLight : C.paper,

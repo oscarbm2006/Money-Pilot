@@ -48,7 +48,10 @@ export function inclinarConCursor(el, maximo = 14) {
 // Anima un número desde el valor que se ve ahora hasta "hasta". "formato" convierte el número en texto.
 export function contarHasta(el, hasta, formato = v => String(Math.round(v)), duracion = 700) {
   if (!el) return;
-  const desde = typeof el.__mpValor === 'number' ? el.__mpValor : 0;
+  const primera = typeof el.__mpValor !== 'number';
+  const desde = primera ? 0 : el.__mpValor;
+  // Primera aparición: duración completa. Cambios posteriores (deslizadores, escribir): más cortos para no ir por detrás.
+  if (!primera) duracion = Math.min(duracion, 350);
   el.__mpValor = hasta;
   if (el.__mpRaf) cancelAnimationFrame(el.__mpRaf);
   if (prefiereMenosMovimiento()) { el.textContent = formato(hasta); return; }
