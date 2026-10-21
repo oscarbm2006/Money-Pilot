@@ -775,6 +775,11 @@ export function GastosTabs({
   datos,
   setDatos
 }) {
+  // En móvil se muestran solo los primeros gastos de cada grupo (y los que ya tienen importe); el resto, con un botón
+  const [verTodo, setVerTodo] = useState(() => !esPantallaPequena());
+  const MAX_MOVIL = 4;
+  const visibles = (defs, valores) => defs.filter((f, k) => verTodo || k < MAX_MOVIL || Number(valores[f.key]?.valor) > 0);
+  const ocultos = GASTOS_FIJOS_DEF.length + GASTOS_DISC_DEF.length - visibles(GASTOS_FIJOS_DEF, datos.gastosFijos).length - visibles(GASTOS_DISC_DEF, datos.gastosDiscrecionales).length;
   const gastosFijos = totalMensual(datos.gastosFijos);
   const gastosDisc = totalMensual(datos.gastosDiscrecionales);
   return /*#__PURE__*/React.createElement("div", {
@@ -800,7 +805,7 @@ export function GastosTabs({
     }
   }, euros(gastosFijos), "/mes")), /*#__PURE__*/React.createElement("div", {
     className: "grid gap-2.5"
-  }, GASTOS_FIJOS_DEF.map(f => /*#__PURE__*/React.createElement(FreqField, {
+  }, visibles(GASTOS_FIJOS_DEF, datos.gastosFijos).map(f => /*#__PURE__*/React.createElement(FreqField, {
     key: f.key,
     label: f.label,
     data: datos.gastosFijos[f.key],
@@ -831,7 +836,7 @@ export function GastosTabs({
     }
   }, euros(gastosDisc), "/mes")), /*#__PURE__*/React.createElement("div", {
     className: "grid gap-2.5"
-  }, GASTOS_DISC_DEF.map(f => /*#__PURE__*/React.createElement(FreqField, {
+  }, visibles(GASTOS_DISC_DEF, datos.gastosDiscrecionales).map(f => /*#__PURE__*/React.createElement(FreqField, {
     key: f.key,
     label: f.label,
     data: datos.gastosDiscrecionales[f.key],
@@ -842,7 +847,17 @@ export function GastosTabs({
         [f.key]: v
       }
     })
-  })))));
+  })))), (ocultos > 0 || (verTodo && esPantallaPequena())) && /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: () => setVerTodo(v => !v),
+    className: "text-sm font-bold py-3 rounded-xl border mp-tap",
+    style: {
+      gridColumn: "1 / -1",
+      color: C.sand,
+      borderColor: C.border,
+      backgroundColor: C.paper
+    }
+  }, verTodo ? "Mostrar menos gastos" : "Ver " + ocultos + " gastos más"));
 }
 
 export function AcordeonFase({

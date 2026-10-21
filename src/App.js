@@ -656,7 +656,7 @@ export function App() {
     }
   }, "Guardar")), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowFeedbackModal(true),
-    className: "inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1.5 rounded-lg hover:bg-white/10 whitespace-nowrap",
+    className: "inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1.5 rounded-lg hover:bg-white/10 whitespace-nowrap mp-tap",
     style: {
       color: "#C7D2FE"
     },
@@ -1060,7 +1060,7 @@ export function App() {
     className: "flex items-center gap-2 shrink-0"
   }, /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowFeedbackModal(true),
-    className: "inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg shrink-0",
+    className: "inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg shrink-0 mp-tap",
     style: {
       backgroundColor: C.sand,
       color: C.white
@@ -1068,7 +1068,7 @@ export function App() {
   }, "Evaluar página"), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowFooterNotice(false),
     "aria-label": "Cerrar aviso",
-    className: "w-7 h-7 rounded-lg flex items-center justify-center hover:bg-black/5 shrink-0",
+    className: "w-7 h-7 rounded-lg flex items-center justify-center hover:bg-black/5 shrink-0 mp-tap",
     style: {
       color: C.muted
     }
@@ -1089,43 +1089,43 @@ export function App() {
     className: "flex flex-wrap items-center justify-center gap-4"
   }, /*#__PURE__*/React.createElement("a", {
     href: blogHref,
-    className: "hover:underline",
+    className: "hover:underline mp-tap",
     style: {
       color: C.mutedLight
     }
   }, "Blog"), esAdminBlog ? /*#__PURE__*/React.createElement("button", {
     onClick: () => setVistaActual('blog'),
-    className: "hover:underline",
+    className: "hover:underline mp-tap",
     style: {
       color: C.mutedLight
     }
   }, "Gestionar blog") : null, user ? /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowCuentaModal(true),
-    className: "hover:underline",
+    className: "hover:underline mp-tap",
     style: {
       color: C.mutedLight
     }
   }, "Mi cuenta") : null, /*#__PURE__*/React.createElement("a", {
     href: "/privacidad.html",
-    className: "hover:underline",
+    className: "hover:underline mp-tap",
     style: {
       color: C.mutedLight
     }
   }, "Política de Privacidad"), /*#__PURE__*/React.createElement("button", {
     onClick: () => setVistaActual('aviso-legal'),
-    className: "hover:underline",
+    className: "hover:underline mp-tap",
     style: {
       color: C.mutedLight
     }
   }, "Aviso Legal"), /*#__PURE__*/React.createElement("button", {
     onClick: () => setVistaActual('quienes-somos'),
-    className: "hover:underline",
+    className: "hover:underline mp-tap",
     style: {
       color: C.mutedLight
     }
   }, "Quiénes somos"), /*#__PURE__*/React.createElement("button", {
     onClick: () => setVistaActual('contacto'),
-    className: "hover:underline",
+    className: "hover:underline mp-tap",
     style: {
       color: C.mutedLight
     }

@@ -397,25 +397,25 @@ export function emptyCampo(defs) {
 
 export function estadoAhorro(ratio) {
   if (ratio < 0) return {
-    nombre: "Construyendo tu base",
+    nombre: "Ahorro por construir",
     color: C.mej,
     light: C.mejLight,
     Ico: I.alert
   };
   if (ratio < 0.1) return {
-    nombre: "Margen de mejora",
+    nombre: "Ahorro mejorable",
     color: C.mej,
     light: C.mejLight,
     Ico: I.alert
   };
   if (ratio < 0.2) return {
-    nombre: "Base saludable",
+    nombre: "Ahorro saludable",
     color: C.salu,
     light: C.saluLight,
     Ico: I.check
   };
   return {
-    nombre: "Muy buena base",
+    nombre: "Ahorro muy bueno",
     color: C.exc,
     light: C.excLight,
     Ico: I.check
@@ -1157,13 +1157,15 @@ export function calcularPrioridades({
   }, {
     id: "colchon",
     titulo: "Consigue un colchón mínimo de seguridad",
-    texto: `Tu liquidez actual cubre ${coberturaMeses == null ? "una parte todavía por calcular de" : dec(coberturaMeses, 1)} tus gastos esenciales de un mes. Antes de atacar deudas o invertir, conviene tener al menos 1 mes cubierto para no depender de más deuda ante cualquier imprevisto.`,
-    satisfecho: coberturaMeses == null || coberturaMeses >= 1
+    texto: `Tu liquidez actual cubre ${coberturaMeses == null ? "una parte todavía por calcular de tus gastos esenciales" : dec(coberturaMeses, 1) + " " + (Math.abs(coberturaMeses - 1) < 0.05 ? "mes" : "meses") + " de tus gastos esenciales"}. Antes de atacar deudas o invertir, conviene tener al menos 1 mes cubierto para no depender de más deuda ante cualquier imprevisto.`,
+    satisfecho: coberturaMeses == null || coberturaMeses >= 1,
+    noAplica: coberturaMeses == null
   }, {
     id: "deuda_cara",
     titulo: "Prioriza tu deuda más cara",
     texto: deudaCara.length > 0 ? `${nombresDeudaCara} tiene(n) un interés del 10% o más. Ese coste suele superar lo que ganarías invirtiendo, así que amortizarla es más prioritario que invertir.` : "No tienes deuda con un interés elevado pendiente.",
-    satisfecho: deudaCara.length === 0
+    satisfecho: deudaCara.length === 0,
+    noAplica: deudasActivas.length === 0
   }, {
     id: "fondo_emergencia",
     titulo: "Completa tu fondo de emergencia",
@@ -1178,12 +1180,13 @@ export function calcularPrioridades({
     id: "objetivos",
     titulo: "Revisa tus objetivos",
     texto: objetivosProblema ? "Alguno de tus objetivos necesita más aportación de la que tu capacidad actual permite. Revísalo para ajustar plazo o importe." : "Con tu base financiera cubierta, revisa tus objetivos y ajusta su ritmo si tu situación cambia.",
-    satisfecho: planObjetivos.objetivos.length === 0 || !objetivosProblema
+    satisfecho: planObjetivos.objetivos.length === 0 || !objetivosProblema,
+    noAplica: planObjetivos.objetivos.length === 0
   }];
   let actualAsignado = false;
   const pasosConEstado = pasos.map(p => {
     let estado;
-    if (p.satisfecho) estado = "hecho";else if (!actualAsignado) {
+    if (p.satisfecho) estado = p.noAplica ? "no_aplica" : "hecho";else if (!actualAsignado) {
       estado = "actual";
       actualAsignado = true;
     } else estado = "pendiente";
@@ -1220,7 +1223,7 @@ export function calcularPlanFinanciero({
   const estadoPorId = id => {
     const paso = prioridad.pasos.find(p => p.id === id);
     if (!paso) return "completado";
-    return paso.estado === "hecho" ? "completado" : paso.estado === "actual" ? "en_curso" : "pendiente";
+    return paso.estado === "no_aplica" ? "no_aplica" : paso.estado === "hecho" ? "completado" : paso.estado === "actual" ? "en_curso" : "pendiente";
   };
   const bloqueadoPorPresupuesto = prioridad.pasos.find(p => p.id === "seguridad")?.estado === "actual";
   const restanteColchon = metaColchonInicial != null ? Math.max(0, metaColchonInicial - liquidezReal) : null;
@@ -1281,7 +1284,7 @@ export function calcularPlanFinanciero({
   if (fases[2].estado !== "completado") partesSituacion.push("un fondo de emergencia insuficiente");
   if (inversiones.length > 0) partesSituacion.push("ya tienes inversiones en marcha");
   const resumenSituacion = bloqueadoPorPresupuesto ? "Tu situación: ahora mismo gastas más de lo que ingresas." : partesSituacion.length > 0 ? `Tu situación: ${partesSituacion.join(", ")}.` : "Tu situación: tu base financiera está en orden.";
-  const recomendaciones = bloqueadoPorPresupuesto ? ["Ajustar tu presupuesto antes de nada, revisando ingresos y gastos."] : fases.filter(f => f.estado !== "completado").map(f => f.accion);
+  const recomendaciones = bloqueadoPorPresupuesto ? ["Ajustar tu presupuesto antes de nada, revisando ingresos y gastos."] : fases.filter(f => f.estado !== "completado" && f.estado !== "no_aplica").map(f => f.accion);
   if (recomendaciones.length === 0) recomendaciones.push("Sigue así: revisa tu plan periódicamente y ajusta tus objetivos si tu situación cambia.");
   return {
     fases,

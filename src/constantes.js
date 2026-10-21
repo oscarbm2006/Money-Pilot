@@ -28,7 +28,7 @@ export const C = {
   surface: "#FFFFFF",
   ink: "#1E1E2E",
   muted: "#6B7280",
-  mutedLight: "#9CA3AF",
+  mutedLight: "#6B7280",
   border: "#E5E7EB",
   white: "#FFFFFF",
   crit: "#EF4444",

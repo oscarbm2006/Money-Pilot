@@ -301,7 +301,7 @@ export function Dashboard({
       color: C.muted
     }
   }, salud.score < 35 ? "No necesitas arreglarlo todo hoy. Empecemos por crear margen y una red de seguridad." : salud.score < 60 ? "Ya tenemos una foto clara. Unos pocos ajustes pueden darte más margen y protección." : salud.score < 80 ? "Tu base está tomando forma. Ahora podemos convertir ese margen en objetivos." : "Tienes una base sólida para seguir construyendo objetivos con calma."))), /*#__PURE__*/React.createElement("div", {
-    className: "flex-1 w-full grid grid-cols-2 gap-x-6 gap-y-3"
+    className: "flex-1 w-full grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3"
   }, /*#__PURE__*/React.createElement(DesgloseBarra, {
     label: "Ahorro",
     pts: salud.desglose.ptsAhorro,
@@ -1620,19 +1620,19 @@ export function Estrategia({
     style: {
       color: C.ink
     }
-  }, "Todavía no has completado tu test de perfil de riesgo"), /*#__PURE__*/React.createElement("p", {
+  }, "Responde el test de perfil de riesgo de arriba"), /*#__PURE__*/React.createElement("p", {
     className: "text-sm mt-1",
     style: {
       color: C.muted
     }
-  }, "Complétalo para integrar tu horizonte, tolerancia y capacidad financiera en la estrategia."), /*#__PURE__*/React.createElement("button", {
+  }, "Con tus respuestas integraremos tu horizonte, tolerancia y capacidad financiera en la estrategia."), /*#__PURE__*/React.createElement("button", {
     onClick: () => onGoToPerfil(),
     className: "inline-flex items-center gap-2 mt-5 px-4 py-2 rounded-lg text-sm font-bold",
     style: {
-      backgroundColor: C.navy,
+      backgroundColor: C.sand,
       color: C.white
     }
-  }, "Hacer el test ", /*#__PURE__*/React.createElement(I.arrowRight, {
+  }, "Ir al test ", /*#__PURE__*/React.createElement(I.arrowRight, {
     size: 14
   }))));
   const info = PERFILES_INFO[perfil] || PERFILES_INFO["Moderado"];
@@ -2582,7 +2582,7 @@ export function Diagnostico({
     onClick: () => {
       if (i === 0 || puedePaso2 || i < paso) setPaso(i + 1);
     },
-    className: "text-left font-bold",
+    className: "text-left font-bold mp-tap",
     style: {
       color: paso === i + 1 ? C.ink : C.muted
     }
@@ -2689,7 +2689,7 @@ export function Diagnostico({
   }, "Introduce primero los gastos que conozcas. Puedes volver y afinarlos después.")), /*#__PURE__*/React.createElement(GastosTabs, {
     datos: datos,
     setDatos: setDatos
-  }), /*#__PURE__*/React.createElement("div", {
+  }), (necesidades + deseos) > 0 && /*#__PURE__*/React.createElement("div", {
     className: "mt-6 rounded-2xl p-4 sm:p-5",
     style: {
       backgroundColor: C.sandLight,
@@ -4176,6 +4176,7 @@ export function PanelPrioridad({
   const filaPaso = (paso, index) => {
     const esActual = paso.estado === "actual";
     const esHecho = paso.estado === "hecho";
+    const noAplica = paso.estado === "no_aplica";
     const numeroOIcono = esHecho ? el(I.check, { size: 14, color: C.white }) : (index + 1);
     return el("div", {
       key: paso.id,
@@ -4194,8 +4195,11 @@ export function PanelPrioridad({
       className: "min-w-0"
     }, el("div", {
       className: "text-sm font-bold",
-      style: { color: esHecho ? C.muted : C.ink, textDecoration: esHecho ? "line-through" : "none" }
-    }, paso.titulo), !esHecho && el("p", {
+      style: { color: esHecho || noAplica ? C.muted : C.ink, textDecoration: esHecho ? "line-through" : "none" }
+    }, paso.titulo, noAplica && el("span", {
+      className: "text-[10px] font-bold uppercase px-2 py-0.5 rounded-full",
+      style: { marginLeft: 8, backgroundColor: C.bgDeepMid, color: C.muted }
+    }, "No aplica")), !esHecho && !noAplica && el("p", {
       className: "text-xs mt-1",
       style: { color: C.muted }
     }, paso.texto)));
@@ -4295,7 +4299,7 @@ export function PlanFinanciero({
   const iconoPorFase = id => id === "colchon_inicial" ? I.shieldCheck : id === "deuda" ? I.trash : id === "fondo_emergencia" ? I.piggy : id === "inversion" ? I.chartLine : I.target;
 
   const badgeEstado = estado => {
-    const cfg = estado === "completado" ? { texto: "Completado", bg: C.saluLight, color: C.salu } : estado === "en_curso" ? { texto: "En curso ahora", bg: C.sandLight, color: C.navy } : { texto: "Pendiente", bg: C.bgDeepMid, color: C.muted };
+    const cfg = estado === "no_aplica" ? { texto: "No aplica", bg: C.bgDeepMid, color: C.muted } : estado === "completado" ? { texto: "Completado", bg: C.saluLight, color: C.salu } : estado === "en_curso" ? { texto: "En curso ahora", bg: C.sandLight, color: C.navy } : { texto: "Pendiente", bg: C.bgDeepMid, color: C.muted };
     return el("span", {
       className: "text-[10px] font-bold uppercase px-2 py-1 rounded-full shrink-0",
       style: { backgroundColor: cfg.bg, color: cfg.color }
@@ -4377,7 +4381,7 @@ export function PlanFinanciero({
     className: "space-y-4"
   }, fases.map((f, i) => tarjetaFase(f, i))), libroFase && el(TarjetaLibroPlan, { libro: libroFase }), el("p", {
     className: "text-[11px] readable-note"
-  }, "El plan se recalcula cada vez que entras, con tus datos actuales. Para ver tu evolución en el tiempo (si avanzas mes a mes) llegará próximamente un apartado de Seguimiento."), onIrABlog && el(BlogLinkCard, {
+  }, "El plan se recalcula cada vez que entras, con tus datos actuales. Para ver tu evolución en el tiempo, guarda una foto cada mes en Seguimiento."), onIrABlog && el(BlogLinkCard, {
     texto: "Lee más guías y análisis en nuestro blog",
     onClick: onIrABlog
   }));

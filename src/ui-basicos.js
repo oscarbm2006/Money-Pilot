@@ -1350,7 +1350,7 @@ export function ContinuarBar({ label, onClick, backLabel, onBack }) {
       padding: "0.5rem 1rem calc(0.75rem + env(safe-area-inset-bottom, 0px))"
     }
   }, /*#__PURE__*/React.createElement("div", {
-    className: "max-w-3xl mx-auto flex items-center justify-between gap-3"
+    className: "max-w-3xl mx-auto flex items-center justify-between gap-3 mp-continuar"
   }, onBack ? /*#__PURE__*/React.createElement("button", {
     onClick: onBack,
     type: "button",
