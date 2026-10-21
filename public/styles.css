@@ -510,8 +510,8 @@ body{padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inse
   header[data-compacto] .mp-nav-resto{display:flex;flex-wrap:wrap;width:100%;gap:8px 12px;padding-bottom:8px}
   /* Bandas oscuras de transición: iconos arriba, texto debajo (no se solapan) y mismo aire arriba y abajo */
   .mp-capa{flex-direction:column;justify-content:flex-start;min-height:0}
-  .mp-capa>.mp-lienzo{position:relative;inset:auto;flex:none;height:180px}
-  .mp-capa-texto{padding:8px 24px 56px}
-  .mp-capa-luz{top:40px}
+  .mp-capa>.mp-lienzo{display:none}
+  .mp-capa-texto{padding:64px 24px}
 }
 @media(max-width:640px){.mp-escena:not(.mp-escena-p) .mp-iso-in{transform:rotateX(58deg) rotateZ(-38deg) scale(.62);top:78px}}
+@media(max-width:640px){.mp-escena-p{min-height:280px}.mp-escena-p .mp-iso-in{transform:rotateX(58deg) rotateZ(-38deg) scale(.56);top:76px}}
