@@ -410,3 +410,16 @@ html[data-menu-claro] .mp-fondo-limpio header.glass-nav .hover\:bg-white\/10:hov
 .mp-cab-luz{width:700px;height:700px;right:-210px;top:-330px;filter:none;opacity:1;background:radial-gradient(closest-side,rgba(79,70,229,.36),rgba(79,70,229,.13) 50%,rgba(79,70,229,0))}
 .mp-mf-indice{background:rgba(250,250,250,.97);-webkit-backdrop-filter:none;backdrop-filter:none}
 html[data-menu-claro] .mp-fondo-limpio header.glass-nav{background-color:rgba(250,250,250,.97)!important;-webkit-backdrop-filter:none;backdrop-filter:none}
+
+/* ============================================================
+   Tablets e iPad
+   1) Safari (iPad e iPhone) amplía la página al tocar un campo con letra de menos de 16 px y no vuelve a su
+      tamaño. En pantallas táctiles, los campos usan 16 px.
+   2) Las animaciones 3D al aparecer y las tarjetas que se inclinan sobresalen unos píxeles por los lados
+      mientras se mueven. Chrome lo recorta, pero Safari puede reajustar el zoom de la página. Cada sección
+      recorta lo que sobresale por los lados ("clip" no impide que el titular fijo de "Por qué importa" siga fijo;
+      en navegadores antiguos sin "clip" se usa "hidden": ese titular deja de quedarse fijo, pero no hay zoom).
+   ============================================================ */
+@media (pointer:coarse){input:not([type=checkbox]):not([type=radio]):not([type=range]),select,textarea{font-size:16px!important}}
+main section,main header.mp-cab{overflow-x:clip}
+@supports not (overflow:clip){main section,main header.mp-cab{overflow-x:hidden}}
