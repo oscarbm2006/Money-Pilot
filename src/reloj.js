@@ -41,12 +41,14 @@ export function SeccionReloj() {
       ce("div", { className: "mp-centro" }, ce(Reloj, { score: 72, etiqueta: "de 100 · Base saludable" }), ce("p", { className: "mp-nota" }, "Ejemplo ilustrativo. Tu reloj real aparece al completar el diagnóstico."))));
 }
 
+const PASOS = [["Colchón", "Un mes de gastos esenciales a mano."], ["Deudas", "Liquida primero lo que cuesta más del 10 %."], ["Ahorro", "Fondo de emergencia hasta cubrir 6 meses."], ["Inversión", "Solo con la base firme debajo."]];
 export function SeccionCapas() {
   return ce("section", { className: "mp-seccion mp-sans" },
-    ce("div", { className: "mp-ancho mp-dos" },
-      ce("div", { className: "mp-centro" }, ce(CapasOrden, null)),
+    ce("div", { className: "mp-ancho mp-dos mp-dos-igual" },
+      ce("div", { className: "mp-escena" }, ce(CapasOrden, null)),
       ce("div", null,
         ce("p", { className: "mp-antetitulo" }, "Los pasos a seguir"),
         ce("h2", { className: "mp-h2" }, "El orden importa: se construye de abajo arriba."),
-        ce("p", { className: "mp-sub" }, "Invertir sin colchón o con una deuda cara encima es construir sobre arena. MoneyPilot te dice en qué capa estás y cuál toca ahora."))));
+        ce("p", { className: "mp-sub" }, "Invertir sin colchón o con una deuda cara encima es construir sobre arena. MoneyPilot te dice en qué capa estás y cuál toca ahora."),
+        ce("ol", { className: "mp-pasos" }, PASOS.map(([t, d], i) => ce("li", { key: t }, ce("span", { className: "mp-paso-n" }, i + 1), ce("span", null, ce("b", null, t), ce("em", null, d))))))));
 }
