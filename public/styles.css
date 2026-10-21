@@ -524,3 +524,7 @@ input::placeholder{color:#6B7280;opacity:1}
   .mp-hormiga-der:has(.mp-hormiga-pista) .mp-barras-marco{display:none}
   .mp-hormiga-pista{position:static;transform:none;width:auto;padding:8px 4px}
 }
+.mp-saltar{position:absolute;left:12px;top:-60px;z-index:100;background:#4F46E5;color:#fff;font-weight:700;font-size:14px;padding:10px 16px;border-radius:10px;transition:top .15s}
+.mp-saltar:focus{top:12px}
+main:focus{outline:none}
+svg.mx-auto{display:block}
