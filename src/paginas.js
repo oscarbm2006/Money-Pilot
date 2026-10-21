@@ -2,7 +2,8 @@ const { useState, useEffect, useRef, useCallback, useMemo, useId } = React;
 
 import { ACTIVOS_DEF, ASIGNACION, BLOG_ADMIN_EMAIL, C, CUENTA_TIPOS_DEF, I, NOMBRES_FASE_BLOG, OBJETIVOS_DEF, PERFILES_INFO, PRIORIDADES_OBJETIVO, PRIORIDAD_LABEL, QUIZ_DEF, SECCIONES_BLOG, TIPOS_ACTIVO_DEF, TIPOS_INVERSION_DEF, supa, MAX_IMPORTE } from './constantes.js';
 import { dec, aportacionNecesariaParaObjetivo, calcularCapacidadFinanciera, calcularFondoEmergencia, calcularPerfilMultidimensional, calcularPlanObjetivos, calcularSaludFinanciera, crearIdObjetivo, estadoAhorro, euros, fmtFecha, formatMeses, getNextQuestionId, mdToHtml, normalizarObjetivo, normalizarObjetivos, pct, proyeccionInteres, proyeccionLimitada, LIMITE_SIMULADOR, quizNumero, recomendacionObjetivoPorHorizonte, reconstruirEstadoQuiz, rentabilidadNecesariaParaObjetivo, simularAmortizacion, sincronizarObjetivos, slugify, tiempoNecesarioParaObjetivo, totalMensual, numEs } from './calculos.js';
-import { AnimatedNumber, quitarConSalida, Badge, BlogLinkCard, Card, DesgloseBarra, Eyebrow, FadeSwitch, NumberField, ProgressBar, SimpleAreaChart, SimpleDonut, SimpleStackedBarChart, StatCard, Termometro } from './ui-basicos.js';
+import { AnimatedNumber, quitarConSalida, Badge, BlogLinkCard, Card, DesgloseBarra, Eyebrow, FadeSwitch, NumberField, ProgressBar, SimpleAreaChart, SimpleDonut, SimpleStackedBarChart, StatCard } from './ui-basicos.js';
+import { Reloj, CapasOrden } from './reloj.js';
 import { AcordeonFase, GastosTabs, VISTAS_MIS_FINANZAS } from './secciones.js';
 import { LIBROS } from './libros-guia.js';
 
@@ -266,9 +267,10 @@ export function Dashboard({
     className: "flex flex-col sm:flex-row items-center sm:items-start gap-6"
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex items-center gap-5"
-  }, /*#__PURE__*/React.createElement(Termometro, {
+  }, /*#__PURE__*/React.createElement(Reloj, {
     score: salud.score,
-    color: salud.color
+    color: salud.color,
+    pequeno: true
   }), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(Eyebrow, null, "Salud financiera general"), /*#__PURE__*/React.createElement("div", {
     className: "flex items-baseline gap-2"
   }, /*#__PURE__*/React.createElement("span", {
@@ -4198,6 +4200,8 @@ export function PanelPrioridad({
     }, paso.texto)));
   };
 
+  const capaDe = { seguridad: 0, colchon: 0, deuda_cara: 1, fondo_emergencia: 2, inversion: 3, objetivos: 3 };
+  const actual = pasos.find(p => p.estado === "actual");
   return el(Card, {
     className: "p-5 sm:p-6"
   }, el(Eyebrow, null, "Qué deberías hacer ahora"), el("h3", {
@@ -4208,7 +4212,10 @@ export function PanelPrioridad({
     style: { color: C.muted }
   }, "Basado en tu situación: seguridad básica, deuda cara, fondo de emergencia, inversión y objetivos, en ese orden — con excepciones si tu caso lo requiere."), el("div", {
     className: "space-y-2"
-  }, pasos.map((p, i) => filaPaso(p, i))));
+  }, pasos.map((p, i) => filaPaso(p, i))), actual && capaDe[actual.id] != null && el("div", {
+    className: "mt-6 pt-5 border-t",
+    style: { borderColor: C.border }
+  }, el(CapasOrden, { activa: capaDe[actual.id], pequeno: true })));
 }
 
 // Libro sugerido para la fase en curso, afinado con más señales de la persona:

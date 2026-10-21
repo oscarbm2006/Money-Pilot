@@ -4,6 +4,7 @@ import { C, GASTOS_DISC_DEF, GASTOS_FIJOS_DEF, GASTOS_HORMIGA_EJEMPLOS, I, STATS
 import { Card, EvidenciaModal, Eyebrow, FadeSwitch, FreqField, NumberField, SimpleStackedBarChart, drawRef } from './ui-basicos.js';
 import { euros, numEs, proyeccionInteres, totalMensual } from './calculos.js';
 import { useAparicion, useInclinacion, contarHasta, prefiereMenosMovimiento, esPantallaPequena } from './movimiento.js';
+import { SeccionReloj, SeccionCapas } from './reloj.js';
 import { montarPortada3D, montarCapa3D } from './efectos-3d.js';
 
 // Longitud de una polilínea (en unidades del viewBox) a partir de su atributo points; sirve para trazarla al aparecer
@@ -698,8 +699,8 @@ export function HeroSection({
         ce("div", { className: "mp-motivos-cabeza" },
           ce(Aparece, { className: "mp-motivos-fija" },
             ce("p", { className: "mp-antetitulo" }, "Por qué importa la salud financiera"),
-            ce("h2", { className: "mp-h2" }, "¿Por qué cuesta tanto ordenar el dinero? Esto dice la investigación"),
-            ce("p", { className: "mp-sub" }, "No hace falta que leas esto para usar la herramienta — está aquí por si te ayuda entender por qué cuesta tanto y por qué merece la pena intentarlo."),
+            ce("h2", { className: "mp-h2" }, "¿Por qué importa tanto ordenar el dinero? Esto dice la investigación"),
+            ce("p", { className: "mp-sub" }, "Cinco motivos respaldados por estudios de universidades y organismos de referencia. Cada uno incluye su fuente para que puedas comprobarlo."),
             ce("div", { className: "mp-progreso", "aria-hidden": "true" }, ce("span", { ref: barra })))),
         ce("ol", { ref: lista, className: "mp-motivos-lista" }, tarjetasCientificas.map((t, i) => ce(Motivo, { key: t.titulo, t, gancho: ganchos[i] }))))),
 
@@ -710,6 +711,8 @@ export function HeroSection({
 
     /* 4 · Qué vas a conseguir */
     ce(HowItWorksSection, null),
+    ce(SeccionReloj, null),
+    ce(SeccionCapas, null),
 
     /* 5 · Capa de transición hacia el experimento del gasto hormiga */
     ce(CapaTransicion, { id: "mp-capa-2", retraso: 4500, lineas: ["El tiempo trabaja", "para quien empieza antes."], frase: "Mira cómo crece un ahorro constante, mes a mes.",
