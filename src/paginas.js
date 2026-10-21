@@ -2512,6 +2512,7 @@ export function Diagnostico({
     });
   }, [paso]);
   const [subPasoRedSeguridad, setSubPasoRedSeguridad] = useState(irADeudas ? "listaDeudas" : "colchon");
+  const finRedSeguridad = subPasoRedSeguridad === "listaDeudas" || subPasoRedSeguridad === "sinDeuda";
   const cuotasDeuda = calcularCapacidadFinanciera(datos).cuotasDeuda;
   const totalIngresos = (Number(datos.ingresos) || 0) + (Number(datos.otrosIngresos) || 0);
   const gastosFijos = totalMensual(datos.gastosFijos);
@@ -2999,7 +3000,7 @@ export function Diagnostico({
       borderColor: C.border,
       color: C.ink
     }
-  }, "Abrir simulador de deudas")))), /*#__PURE__*/React.createElement(ObjetivosFinancieros, {
+  }, "Abrir simulador de deudas")))), finRedSeguridad && /*#__PURE__*/React.createElement(ObjetivosFinancieros, {
     datos: datos,
     setDatos: setDatos,
     objetivoSeleccionadoId: objetivoSeleccionadoId,
@@ -3016,7 +3017,7 @@ export function Diagnostico({
     }
   }, /*#__PURE__*/React.createElement(I.arrowLeft, {
     size: 15
-  }), " Atrás"), /*#__PURE__*/React.createElement("button", {
+  }), " Atrás"), finRedSeguridad && /*#__PURE__*/React.createElement("button", {
     onClick: onFinalizar,
     className: "inline-flex justify-center items-center gap-2 px-5 py-3 rounded-xl text-sm font-bold",
     style: {
