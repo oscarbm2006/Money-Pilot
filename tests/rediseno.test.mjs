@@ -108,7 +108,7 @@ describe('Rediseño 3D: herramientas (Fase 2)', () => {
     for (const t of ['Construye tu foto financiera, paso a paso', 'Empezamos por lo esencial y añadimos detalle solo cuando lo necesitas. Tus cálculos se actualizan en cada paso.',
       '¿Qué puede hacer tu ahorro con el tiempo?', 'Ajusta los números y mira qué puede hacer tu ahorro con el tiempo. Si ya hiciste tu diagnóstico, partirá de tus propios datos.',
       '¿Cuánto tardarás en salir de tus deudas?', 'Escribe tus deudas y compara dos formas de pagarlas. Es una proyección educativa.']) assert.ok(app.includes(t), 'falta el texto: ' + t);
-    assert.equal((app.match(/fade-switch-enter mp-piel/g) || []).length, 9);
+    assert.equal((app.match(/fade-switch-enter mp-piel/g) || []).length, 11);
   });
   test('Cuentas, Inversiones y Patrimonio forman una sola página que conserva sus textos', () => {
     const sec = leer('src/secciones.js');
@@ -162,7 +162,7 @@ describe('Rediseño 3D: Mis finanzas en una sola página (Fase 2c)', () => {
 describe('Rediseño 3D: fondo blanco en las páginas rediseñadas', () => {
   const app = leer('src/App.js'), sec = leer('src/secciones.js'), css = leer('public/styles.css');
   test('la lista de páginas rediseñadas incluye la portada, el diagnóstico, Mis finanzas, Estrategia, los simuladores, el blog y Quiénes somos', () => {
-    assert.ok(sec.includes('export const VISTAS_REDISENADAS = ["inicio", "diagnostico", ...VISTAS_MIS_FINANZAS, "estrategia", "plan", "seguimiento", "simulador", "simulador-deudas", "blog", "quienes-somos"];'));
+    assert.ok(sec.includes('export const VISTAS_REDISENADAS = ["inicio", "diagnostico", ...VISTAS_MIS_FINANZAS, "estrategia", "plan", "seguimiento", "simulador", "simulador-deudas", "blog", "quienes-somos", "aviso-legal", "contacto"];'));
   });
   test('en esas páginas no se pintan el tono gris azulado ni el dibujo de líneas', () => {
     assert.ok(app.includes('const fondoLimpio = VISTAS_REDISENADAS.includes(vistaActual);'));
@@ -305,5 +305,58 @@ describe('Rediseño: páginas independientes (Recursos, Quiénes somos y blog)',
   test('el blog generado usa el menú nuevo y la banda oscura en los índices', () => {
     assert.ok(gen.includes('<header class="e-menu">') && gen.includes('function cabeceraIndiceHtml(seccion)'));
     assert.equal((gen.match(/cabeceraIndiceHtml\(seccion\)\);/g) || []).length, 2);
+  });
+});
+
+describe('Portada más ligera', () => {
+  const fuente = leer('src/efectos-3d.js'), css = leer('public/styles.css'), est = leer('public/estatico.css');
+  const codigo = fuente.slice(fuente.indexOf('function bucle('), fuente.indexOf('/* ---------- Portada: monedas'));
+  // Ejecuta el bucle de animación con un reloj simulado (fotogramas cada "intervalo" ms) y cuenta lo que dibuja
+  function simular(intervalo, duracion) {
+    let cola = null, dibujos = 0, avisos = 0;
+    const raf = f => { cola = f; return 1; };
+    class Observador { constructor(cb) { this.cb = cb; } observe() { this.cb([{ isIntersecting: true }]); } disconnect() {} }
+    const bucle = new Function('requestAnimationFrame', 'cancelAnimationFrame', 'IntersectionObserver', codigo + '\nreturn bucle;')(raf, () => {}, Observador);
+    bucle({}, { style: {} }, () => { dibujos++; }, () => { avisos++; });
+    for (let t = intervalo; t <= duracion; t += intervalo) { const f = cola; cola = null; f(t); }
+    return { dibujos, avisos };
+  }
+  test('en una pantalla de 120 Hz dibuja como mucho unas 60 veces por segundo', () => {
+    const r = simular(1000 / 120, 1000);
+    assert.ok(r.dibujos <= 61 && r.dibujos >= 55, 'dibujó ' + r.dibujos);
+  });
+  test('en una pantalla normal de 60 Hz no pierde fluidez ni baja la calidad', () => {
+    const r = simular(1000 / 60, 5000);
+    assert.ok(r.dibujos >= 295, 'dibujó ' + r.dibujos);
+    assert.equal(r.avisos, 0);
+  });
+  test('en un equipo lento baja la calidad una sola vez', () => {
+    assert.equal(simular(45, 8000).avisos, 1);
+  });
+  test('la portada y las capas bajan la resolución cuando el equipo va justo', () => {
+    assert.ok(fuente.includes('parar = bucle(contenedor, canvas, dibujar, () => { renderer.setPixelRatio(1); ajustar(); });'));
+    assert.ok(fuente.includes('const parar = bucle(banda, canvas, dibujar, () => { renderer.setPixelRatio(1); ajustar(); });'));
+  });
+  test('sin desenfoques caros: halos con degradado y menús fijos sin desenfocar lo de debajo', () => {
+    for (const c of ['.mp-capa-luz{width:820px;height:820px;filter:none', '.mp-cta-luz{width:760px;height:760px;right:-240px;top:-280px;filter:none', '.mp-cab-luz{width:700px;height:700px;right:-210px;top:-330px;filter:none',
+      '.mp-mf-indice{background:rgba(250,250,250,.97);-webkit-backdrop-filter:none;backdrop-filter:none}']) assert.ok(css.includes(c), 'falta ' + c);
+    assert.ok(est.includes('.e-cab-luz{width:700px;height:700px;right:-210px;top:-330px;filter:none') && est.includes('html.e-menu-claro .e-menu{background:rgba(250,250,250,.97);-webkit-backdrop-filter:none;backdrop-filter:none}'));
+  });
+});
+
+describe('Páginas legales y contacto con el diseño nuevo', () => {
+  const app = leer('src/App.js'), pag = leer('src/paginas.js');
+  test('en la app, Aviso legal y Contacto usan la cabecera nueva sin títulos duplicados', () => {
+    assert.ok(app.includes('id: "mp-cab-aviso"') && app.includes('sinCabecera: true') && app.includes('id: "mp-cab-contacto"'));
+    assert.ok(!pag.includes('Eyebrow, null, "Estamos para ayudarte"'), 'el título de Contacto ya no se repite dentro');
+    assert.ok(pag.includes('const enviar = e => {') && pag.includes('mailto:soportemoneypilot@gmail.com?subject='), 'el formulario sigue igual');
+  });
+  test('las páginas independientes de Privacidad, Aviso legal y Contacto usan el menú, la banda y la piel nuevos', () => {
+    for (const f of ['privacidad', 'aviso-legal', 'contacto']) {
+      const h = leer('public/' + f + '.html');
+      assert.ok(h.includes('<body class="e-pagina e-legal">') && h.includes('<header class="e-menu">') && h.includes('<header class="e-cab">') && h.includes('href="/estatico.css"'), f);
+      for (const m of h.matchAll(/<script\b([^>]*)>/g)) assert.ok(/src="\/[^"]+"|type="application\/(ld\+)?json"/.test(m[1]), 'script en línea en ' + f);
+    }
+    assert.ok(leer('public/privacidad.html').includes('<h1>Política de Privacidad</h1>') && leer('public/aviso-legal.html').includes('<h1>Aviso Legal y Términos de Uso</h1>'));
   });
 });
