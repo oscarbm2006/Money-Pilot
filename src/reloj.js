@@ -43,12 +43,30 @@ export function SeccionReloj() {
 
 const PASOS = [["Colchón", "Un mes de gastos esenciales a mano."], ["Deudas", "Liquida primero lo que cuesta más del 10 %."], ["Ahorro", "Fondo de emergencia hasta cubrir 6 meses."], ["Inversión", "Solo con la base firme debajo."]];
 export function SeccionCapas() {
-  return ce("section", { className: "mp-seccion mp-sans" },
+  const ref = useRef(null);
+  const [visto, setVisto] = useState(false);
+  const [activa, setActiva] = useState(-1);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || typeof IntersectionObserver === 'undefined') { setVisto(true); return; }
+    const io = new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) { setVisto(true); io.disconnect(); } }, { threshold: 0.35 });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+  useEffect(() => {
+    if (!visto) return;
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    let i = 0;
+    const t0 = setTimeout(() => setActiva(0), 1300);
+    const iv = setInterval(() => { i = (i + 1) % 4; setActiva(i); }, 2400);
+    return () => { clearTimeout(t0); clearInterval(iv); };
+  }, [visto]);
+  return ce("section", { ref, className: "mp-seccion mp-sans" },
     ce("div", { className: "mp-ancho mp-dos mp-dos-igual" },
-      ce("div", { className: "mp-escena" }, ce(CapasOrden, null)),
+      ce("div", { className: "mp-escena" + (visto ? "" : " mp-sin-ver") }, ce(CapasOrden, { activa })),
       ce("div", null,
         ce("p", { className: "mp-antetitulo" }, "Los pasos a seguir"),
         ce("h2", { className: "mp-h2" }, "El orden importa: se construye de abajo arriba."),
         ce("p", { className: "mp-sub" }, "Invertir sin colchón o con una deuda cara encima es construir sobre arena. MoneyPilot te dice en qué capa estás y cuál toca ahora."),
-        ce("ol", { className: "mp-pasos" }, PASOS.map(([t, d], i) => ce("li", { key: t }, ce("span", { className: "mp-paso-n" }, i + 1), ce("span", null, ce("b", null, t), ce("em", null, d))))))));
+        ce("ol", { className: "mp-pasos" }, PASOS.map(([t, d], i) => ce("li", { key: t, className: activa === i ? "on" : "" }, ce("span", { className: "mp-paso-n" }, i + 1), ce("span", null, ce("b", null, t), ce("em", null, d))))))));
 }
