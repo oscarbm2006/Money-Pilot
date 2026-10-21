@@ -36,12 +36,34 @@
   /* Fundido suave entre páginas (misma regla que la app y el blog) */
   @media (prefers-reduced-motion: no-preference) { @view-transition { navigation: auto; } }
 </style>
+<link rel="stylesheet" href="/estatico.css" />
+<script src="/estatico.js" defer></script>
 </head>
-<body>
-<header><a href="/">MoneyPilot</a></header>
+<body class="e-pagina e-legal">
+<header class="e-menu">
+  <div class="e-menu-fila">
+    <a href="/" class="e-logo" data-vista="inicio" aria-label="MoneyPilot, ir al inicio"><img src="/logo-moneypilot.png" alt="MoneyPilot" width="113" height="20"></a>
+    <nav class="e-nav" aria-label="Navegación principal">
+      <a href="/" data-vista="inicio">Introducción</a>
+      <a href="/blog/guia/index.html">Blog</a>
+      <a href="/recursos-y-libros.html">Recursos y libros</a>
+      <a href="/" data-vista="diagnostico" class="e-cta">Hacer mi diagnóstico</a>
+    </nav>
+  </div>
+</header>
+<header class="e-cab">
+  <div class="e-cab-luz" aria-hidden="true"></div>
+  <div class="e-cab-3d" aria-hidden="true">
+    <span class="e-obj e-moneda" style="--x:70%;--y:26%;--t:80px;--r:-8deg">€</span>
+    <span class="e-obj e-libro" style="--x:84%;--y:42%;--t:64px;--r:10deg;--c:#6366F1;--d:-2.5s"></span>
+  </div>
+  <div class="e-cab-texto">
+    <p class="e-cab-ante">Información legal</p>
+    <h1>Política de Privacidad</h1>
+    <p class="e-cab-frase">Última actualización: 14 de octubre de 2026</p>
+  </div>
+</header>
 <main>
-  <h1>Política de Privacidad</h1>
-  <p class="updated">Última actualización: 14 de octubre de 2026</p>
 
   <p><b>1. Responsable del tratamiento.</b> Óscar Baca Martínez, particular residente en España, con contacto en soportemoneypilot@gmail.com, es el responsable de los datos tratados a través de MoneyPilot.</p>
   <p><b>2. Datos que recogemos.</b> Si creas una cuenta, guardamos tu correo electrónico (o el de tu cuenta de Google, si accedes con ella) y los datos financieros que introduces voluntariamente: cuentas (banco, nombre y saldo), deudas, inversiones, activos, registros de seguimiento de tu patrimonio y tus respuestas del diagnóstico. MoneyPilot no te pide números de cuenta, tarjetas ni claves bancarias. Estos datos se usan únicamente para generar tu diagnóstico y tu plan, además de datos técnicos de navegación (dirección IP, tipo de dispositivo, páginas visitadas) recogidos de forma automática. Para prestar el servicio utilizamos Supabase (base de datos y autenticación) y Vercel (alojamiento de la web), que tratan datos por cuenta del responsable; si accedes con Google, Google interviene además en el inicio de sesión. Los datos que guardas en tu cuenta se almacenan en servidores de Supabase ubicados en la Unión Europea (Irlanda). Si lees la guía de educación financiera del blog, guardamos qué guías has leído (solo el identificador de cada guía y la fecha en que la marcaste como leída o la quitaste). Este dato se guarda en tu dispositivo y las páginas del blog no lo envían a ningún sitio. Solo si has iniciado sesión, la aplicación lo sincroniza con tu cuenta, como el resto de tus datos; si tu dispositivo y tu cuenta tienen un progreso distinto, te preguntamos cuál prefieres conservar. No usamos este dato para publicidad.</p>
@@ -53,7 +75,7 @@
 
   <a class="back" href="/">← Volver a MoneyPilot</a>
 </main>
-<footer>
+<footer class="e-pie">
   <a href="/blog/guia/index.html" style="color:var(--muted);margin:0 8px;">Blog</a> ·
   <a href="/privacidad.html" style="color:var(--muted);margin:0 8px;">Privacidad</a> ·
   <a href="/aviso-legal.html" style="color:var(--muted);margin:0 8px;">Aviso Legal</a> ·

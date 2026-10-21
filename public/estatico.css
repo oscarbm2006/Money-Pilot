@@ -118,3 +118,17 @@ html.e-menu-claro .e-dd-menu a:hover{color:#fff;background:rgba(255,255,255,.1)}
 
 @media (prefers-reduced-motion: reduce){.e-obj,.e-cab-texto>*{animation:none}.e-pilar,.e-boton{transition:none}}
 .e-cab h1 em{font-style:normal;color:var(--e-lavanda)}
+
+/* ---------- Páginas legales y contacto ---------- */
+/* Su estilo propio pinta todas las etiquetas <header>: aquí se anula para el menú y la banda nuevos */
+.e-pagina header.e-menu,.e-pagina header.e-cab{padding:0}
+.e-legal main{max-width:760px;margin:0 auto;padding:56px 20px 80px;font-size:16px;line-height:1.75;color:var(--e-suave)}
+.e-legal main b,.e-legal main strong{color:var(--e-tinta)}
+.e-legal main p{margin:0 0 18px}
+.e-legal main a{color:var(--e-indigo)}
+.e-legal .notice{border-radius:18px;border:1px solid var(--e-linea);background:var(--e-tinte);color:var(--e-tinta);padding:18px 20px}
+
+/* Más ligera: halos con degradado en vez de desenfoque y menú claro sin desenfocar lo de debajo */
+.e-cab-luz{width:700px;height:700px;right:-210px;top:-330px;filter:none;opacity:1;background:radial-gradient(closest-side,rgba(79,70,229,.36),rgba(79,70,229,.13) 50%,rgba(79,70,229,0))}
+.e-cierre::before{width:760px;height:760px;right:-260px;top:-300px;filter:none;opacity:1;background:radial-gradient(closest-side,rgba(79,70,229,.6),rgba(79,70,229,.22) 50%,rgba(79,70,229,0))}
+html.e-menu-claro .e-menu{background:rgba(250,250,250,.97);-webkit-backdrop-filter:none;backdrop-filter:none}
