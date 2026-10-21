@@ -264,7 +264,7 @@ export function Dashboard({
       borderColor: salud.color + "40"
     }
   }, /*#__PURE__*/React.createElement("div", {
-    className: "flex flex-col sm:flex-row items-center sm:items-start gap-6"
+    className: "flex flex-col sm:flex-row items-center gap-6"
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex items-center gap-5"
   }, /*#__PURE__*/React.createElement(Reloj, {

@@ -735,7 +735,7 @@ export function App() {
   }), /*#__PURE__*/React.createElement(ContinuarBar, {
     label: "Ver mis resultados",
     onClick: () => setVistaActual('estrategia'),
-    backLabel: "Volver a Diagnóstico",
+    backLabel: "Volver al diagnóstico",
     onBack: () => setVistaActual('diagnostico')
   })), vistaActual === 'estrategia' && /*#__PURE__*/React.createElement("div", {
     key: "estrategia",
@@ -852,9 +852,9 @@ export function App() {
     datos: datos,
     onSeleccionarObjetivo: setObjetivoSeleccionadoId
   }), /*#__PURE__*/React.createElement(ContinuarBar, {
-    label: "Continuar a Plan",
+    label: "Continuar al plan",
     onClick: () => setVistaActual('plan'),
-    backLabel: "Volver a Diagnóstico",
+    backLabel: "Volver al diagnóstico",
     onBack: () => setVistaActual('diagnostico')
   }))))), vistaActual === 'plan' && /*#__PURE__*/React.createElement("div", {
     key: "plan",
@@ -879,9 +879,9 @@ export function App() {
     ratioAhorro: ratioAhorro,
     onIrABlog: irAlBlog
   }), /*#__PURE__*/React.createElement(ContinuarBar, {
-    label: "Continuar a Seguimiento",
+    label: "Continuar al seguimiento",
     onClick: () => setVistaActual('seguimiento'),
-    backLabel: "Volver a Estrategia",
+    backLabel: "Volver a la estrategia",
     onBack: () => setVistaActual('estrategia')
   })))), vistaActual === 'seguimiento' && /*#__PURE__*/React.createElement("div", {
     key: "seguimiento",
@@ -913,7 +913,7 @@ export function App() {
   }), /*#__PURE__*/React.createElement(ContinuarBar, {
     label: "Probar el simulador",
     onClick: () => setVistaActual('simulador'),
-    backLabel: "Volver a Plan",
+    backLabel: "Volver al plan",
     onBack: () => setVistaActual('plan')
   })))), vistaActual === 'simulador' && /*#__PURE__*/React.createElement("div", {
     key: "simulador",

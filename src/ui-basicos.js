@@ -1340,17 +1340,14 @@ export function AuthModal({
 
 export function ContinuarBar({ label, onClick, backLabel, onBack }) {
   if (!onClick && !onBack) return null;
-  // Barra "pegajosa": queda visible en la parte baja de la pantalla mientras el
-  // usuario avanza y, al llegar al final de la página, se apoya DEBAJO del contenido
-  // (sin margen negativo), de modo que nunca tapa avisos, banners ni disclaimers.
+  // Barra al final de la página, en el flujo normal: solo aparece cuando la persona
+  // ha llegado abajo del todo, de modo que no se puede saltar sin querer.
   return /*#__PURE__*/React.createElement("div", {
-    className: "sticky z-10 no-print",
+    className: "no-print",
     style: {
-      bottom: 0,
-      marginTop: "1.5rem",
+      marginTop: "2.5rem",
       marginBottom: "1rem",
-      padding: "0.5rem 1rem calc(0.75rem + env(safe-area-inset-bottom, 0px))",
-      pointerEvents: "none"
+      padding: "0.5rem 1rem calc(0.75rem + env(safe-area-inset-bottom, 0px))"
     }
   }, /*#__PURE__*/React.createElement("div", {
     className: "max-w-3xl mx-auto flex items-center justify-between gap-3"
@@ -1358,12 +1355,12 @@ export function ContinuarBar({ label, onClick, backLabel, onBack }) {
     onClick: onBack,
     type: "button",
     className: "inline-flex items-center gap-2 text-sm font-bold px-4 py-3 rounded-xl border transition-transform hover:scale-[1.02] shadow-lg",
-    style: { backgroundColor: C.white, borderColor: C.border, color: C.ink, pointerEvents: "auto" }
+    style: { backgroundColor: C.white, borderColor: C.border, color: C.ink }
   }, /*#__PURE__*/React.createElement(I.chevronLeft, { size: 16 }), backLabel || "Volver") : /*#__PURE__*/React.createElement("span", null), onClick ? /*#__PURE__*/React.createElement("button", {
     onClick: onClick,
     type: "button",
     className: "inline-flex items-center gap-2 text-sm font-bold px-5 py-3 rounded-xl transition-transform hover:scale-[1.02] shadow-lg",
-    style: { backgroundColor: C.sand, color: C.white, pointerEvents: "auto" }
+    style: { backgroundColor: C.sand, color: C.white }
   }, label, /*#__PURE__*/React.createElement(I.chevronRight, { size: 16 })) : null));
 }
 
