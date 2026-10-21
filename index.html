@@ -66,7 +66,8 @@
     --mp-grafico: 700ms;  /* barras, anillos y gráficos */
     --mp-aparicion: 600ms; /* aparición de cajas al hacer scroll */
     --mp-curva: cubic-bezier(0.16,1,0.3,1);      /* entradas: arranca rápido y frena suave */
-    --mp-curva-suave: cubic-bezier(0.4,0,0.2,1); /* cambios de estado */
+    --mp-curva-suave: cubic-bezier(0.4,0,0.2,1);
+  --mp-curva-3d: cubic-bezier(.2,.8,.2,1); /* cambios de estado */
     --mp-curva-aparicion: cubic-bezier(0.25,0.7,0.3,1); /* más gradual que --mp-curva: no "salta" al empezar */
   }
   @media (prefers-reduced-motion: reduce) {
@@ -385,7 +386,7 @@ section.section-tinted{
   border:1px solid #DDE3EC !important; background:#F9FAFC !important;
   color:#334155 !important; font-weight:600;
   display:flex; align-items:center; justify-content:space-between;
-  transition:all var(--mp-rapido) var(--mp-curva-suave);
+  transition:background-color var(--mp-rapido) var(--mp-curva-suave), border-color var(--mp-rapido) var(--mp-curva-suave), box-shadow var(--mp-rapido) var(--mp-curva-suave), transform var(--mp-rapido) var(--mp-curva-suave);
 }
 @media (hover: hover) and (pointer: fine) {
 .quiz-option:hover{border-color:rgba(79,70,229,.38)!important;background:#F2F4FF!important;transform:translateX(2px);box-shadow:0 4px 12px rgba(79,70,229,.07)}
@@ -450,6 +451,16 @@ header .export-menu button[style*="0.08"]{ color:#FFFFFF !important; background-
   --text-strong:#1E1B4B;
   --text-body:#374151;
   --text-muted:#6B7280;
+}
+/* Reducir movimiento: se quita el desplazamiento, pero se mantienen fundidos cortos que ayudan a entender los cambios */
+@media (prefers-reduced-motion: reduce) {
+  @keyframes fadeSwitchIn { from { opacity:0; } to { opacity:1; } }
+  @keyframes staggerIn { from { opacity:0; } to { opacity:1; } }
+  @keyframes toastIn { from { opacity:0; } to { opacity:1; } }
+  @keyframes mpReveal { from { opacity:0; } to { opacity:1; } }
+  @keyframes menuPop { from { opacity:0; } to { opacity:1; } }
+  @keyframes mpPasoEntra { from { opacity:0; } to { opacity:1; } }
+  .fade-switch-enter, .stagger-item, .toast-enter, [data-reveal][data-rv], .export-menu, .mp-paso-entra { animation-duration: 150ms !important; animation-timing-function: ease-out !important; }
 }
 </style>
 </head>
