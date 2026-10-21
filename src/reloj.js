@@ -75,6 +75,7 @@ export function SeccionCapas() {
   useEffect(() => {
     if (!visto) return;
     if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if (window.matchMedia && window.matchMedia('(max-width: 720px)').matches) return; // en móvil, sin ciclo de color (más ligero)
     let i = 0;
     const t0 = setTimeout(() => setActiva(0), 1300);
     const iv = setInterval(() => { i = (i + 1) % 4; setActiva(i); }, 2400);

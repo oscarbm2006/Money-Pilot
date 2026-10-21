@@ -257,7 +257,10 @@ export async function montarCapa3D(canvas, banda, iconos, { alFallar } = {}) {
   const luz = new THREE.DirectionalLight('#FFFFFF', 2); luz.position.set(300, 500, 800); escena.add(luz);
 
   const piezas = fabrica(THREE);
-  const objetos = iconos.filter((_, k) => !pequena || k % 2 === 0).map(([tipo, x, y, s, r], k) => {
+  // En pantallas pequeñas: como mucho 3 iconos, repartidos a lo ancho para que no se toquen
+  const POS_MOVIL = [[-0.62, 0.15], [0, -0.15], [0.62, 0.15]];
+  const elegidos = pequena ? iconos.filter((_, k) => k % 2 === 0).slice(0, 3).map(([tipo, , , s, r], k) => [tipo, POS_MOVIL[k][0], POS_MOVIL[k][1], s, r]) : iconos;
+  const objetos = elegidos.map(([tipo, x, y, s, r], k) => {
     const m = piezas.crear(tipo); escena.add(m);
     return { m, x, y, s, r, fase: k * 1.9, e: 0, k };
   });
