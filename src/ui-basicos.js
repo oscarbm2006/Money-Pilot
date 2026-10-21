@@ -193,6 +193,7 @@ export function NumberField({
 }) {
   const id = useId();
   const alcanzaMax = Number(value) >= max;
+  const [neg, setNeg] = useState(false);
   return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
     htmlFor: id,
     className: "block text-sm font-bold mb-1.5",
@@ -208,6 +209,7 @@ export function NumberField({
     value: value === 0 ? "" : value,
     onChange: e => {
       const v = e.target.value;
+      setNeg(v !== "" && Number(v) < 0);
       onChange(v === "" ? 0 : Math.min(max, Math.max(0, Number(v))));
     },
     placeholder: "0",
@@ -227,7 +229,13 @@ export function NumberField({
     style: {
       color: C.crit
     }
-  }, "Máximo permitido: " + max.toLocaleString("es-ES") + (suffix ? " " + suffix : "")) : hint && /*#__PURE__*/React.createElement("p", {
+  }, "Máximo permitido: " + max.toLocaleString("es-ES") + (suffix ? " " + suffix : "")) : neg ? /*#__PURE__*/React.createElement("p", {
+    role: "alert",
+    className: "text-xs mt-1 font-bold",
+    style: {
+      color: C.crit
+    }
+  }, "Introduce un importe positivo.") : hint && /*#__PURE__*/React.createElement("p", {
     className: "text-xs mt-1",
     style: {
       color: C.muted
@@ -256,6 +264,7 @@ export function FreqField({
   hint
 }) {
   const id = useId();
+  const [aviso, setAviso] = useState("");
   return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
     htmlFor: id,
     className: "block text-sm font-bold mb-1.5",
@@ -275,6 +284,7 @@ export function FreqField({
     value: data.valor === 0 ? "" : data.valor,
     onChange: e => {
       const v = e.target.value;
+      setAviso(v !== "" && Number(v) < 0 ? "Introduce un importe positivo." : Number(v) > MAX_IMPORTE ? "Máximo permitido: " + MAX_IMPORTE.toLocaleString("es-ES") + " €" : "");
       onChange({
         ...data,
         valor: v === "" ? 0 : Math.min(MAX_IMPORTE, Math.max(0, Number(v)))
@@ -313,7 +323,13 @@ export function FreqField({
   }, FRECUENCIAS.map(f => /*#__PURE__*/React.createElement("option", {
     key: f.value,
     value: f.value
-  }, f.label)))), hint && /*#__PURE__*/React.createElement("p", {
+  }, f.label)))), aviso ? /*#__PURE__*/React.createElement("p", {
+    role: "alert",
+    className: "text-xs mt-1 font-bold",
+    style: {
+      color: C.crit
+    }
+  }, aviso) : hint && /*#__PURE__*/React.createElement("p", {
     className: "text-xs mt-1",
     style: {
       color: C.muted

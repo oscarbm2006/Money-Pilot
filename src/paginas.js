@@ -54,7 +54,7 @@ export function PrintSummary({
       padding: "32px",
       fontFamily: "ui-sans-serif, system-ui, sans-serif"
     }
-  }, /*#__PURE__*/React.createElement("h1", {
+  }, /*#__PURE__*/React.createElement("h2", {
     style: {
       fontSize: 24,
       fontWeight: 700,
@@ -2008,7 +2008,7 @@ export function ObjetivosFinancieros({
     className: "p-5 sm:p-7"
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex items-start justify-between gap-4 mb-5"
-  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(Eyebrow, null, "05 · Objetivos"), /*#__PURE__*/React.createElement("h3", {
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(Eyebrow, null, "04 · Objetivos"), /*#__PURE__*/React.createElement("h3", {
     className: "font-serif text-xl font-bold mt-1",
     style: {
       color: C.ink

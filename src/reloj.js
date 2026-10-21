@@ -60,7 +60,7 @@ export function SeccionReloj() {
       ce("div", { className: "mp-centro" }, ce(Reloj, { score: 72, etiqueta: "de 100 · Base saludable" }), ce("p", { className: "mp-nota" }, "Ejemplo ilustrativo. Tu reloj real aparece al completar el diagnóstico."))));
 }
 
-const PASOS = [["Colchón", "Un mes de gastos esenciales a mano."], ["Deudas", "Liquida primero lo que cuesta más del 10 %."], ["Ahorro", "Fondo de emergencia hasta cubrir 6 meses."], ["Inversión", "Solo con la base firme debajo."]];
+const PASOS = [["Colchón", "Un mes de gastos esenciales a mano."], ["Deudas", "Liquida primero lo que cuesta más del 10 %."], ["Ahorro", "Fondo de emergencia hasta cubrir 6 meses."], ["Inversión", "Solo con la base firme debajo."]];
 export function SeccionCapas() {
   const ref = useRef(null);
   const [visto, setVisto] = useState(false);

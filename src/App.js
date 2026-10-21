@@ -580,7 +580,10 @@ export function App() {
       opacity: 0.7,
       mixBlendMode: "multiply"
     }
-  }), /*#__PURE__*/React.createElement("header", {
+  }), /*#__PURE__*/React.createElement("a", {
+    href: "#contenido",
+    className: "mp-saltar"
+  }, "Saltar al contenido"), /*#__PURE__*/React.createElement("header", {
     className: "glass-nav sticky top-0 z-50",
     "data-compacto": navCompacto ? "1" : undefined,
     "data-abierto": navAbierto ? "1" : undefined,
@@ -686,6 +689,8 @@ export function App() {
     href: "/recursos-y-libros.html",
     className: "whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-bold nav-link-muted"
 }, "Recursos y libros")))), /*#__PURE__*/React.createElement("main", {
+    id: "contenido",
+    tabIndex: -1,
     className: "relative z-10"
   }, vistaActual === 'inicio' && /*#__PURE__*/React.createElement("div", {
     key: "inicio",
