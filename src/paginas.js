@@ -3051,9 +3051,11 @@ export function Diagnostico({
   })))))));
 }
 
+// sinCabecera: el título y la fecha ya los muestra la cabecera nueva de la página (rediseño)
 export function PaginaLegal({
   titulo,
-  children
+  children,
+  sinCabecera = false
 }) {
   return /*#__PURE__*/React.createElement("div", {
     className: "max-w-2xl mx-auto px-4 sm:px-6 py-12",
@@ -3061,9 +3063,9 @@ export function PaginaLegal({
       color: C.ink,
       lineHeight: 1.75
     }
-  }, /*#__PURE__*/React.createElement("h1", {
+  }, !sinCabecera && /*#__PURE__*/React.createElement("h1", {
     className: "font-serif text-2xl font-bold mb-1"
-  }, titulo), /*#__PURE__*/React.createElement("p", {
+  }, titulo), !sinCabecera && /*#__PURE__*/React.createElement("p", {
     className: "text-xs mb-6",
     style: {
       color: C.mutedLight
@@ -3085,17 +3087,7 @@ export function Contacto() {
   };
   return /*#__PURE__*/React.createElement("div", {
     className: "max-w-2xl mx-auto px-4 sm:px-6 py-12"
-  }, /*#__PURE__*/React.createElement(Eyebrow, null, "Estamos para ayudarte"), /*#__PURE__*/React.createElement("h1", {
-    className: "font-serif text-3xl sm:text-4xl font-bold mb-3",
-    style: {
-      color: C.ink
-    }
-  }, "Contacta con nosotros"), /*#__PURE__*/React.createElement("p", {
-    className: "text-sm sm:text-base mb-6",
-    style: {
-      color: C.muted
-    }
-  }, "¿Tienes dudas sobre algún concepto financiero, quieres comentarnos algo sobre tus objetivos o simplemente hablar con alguien sobre cómo usar mejor la herramienta? Escríbenos y te respondemos personalmente."), /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("div", {
     className: "mb-6 p-4 rounded-2xl text-sm",
     style: {
       backgroundColor: C.sandLight,

@@ -123,11 +123,30 @@ function crearEntorno(THREE, renderer) {
 }
 
 // Bucle de animación que se detiene (y oculta el lienzo) cuando no está a la vista.
-function bucle(contenedor, canvas, dibujar) {
-  let visible = true, raf = 0, vivo = true;
+// Bucle de animación, pensado para no cargar el equipo:
+// - solo dibuja mientras la escena está a la vista;
+// - como mucho 60 veces por segundo: en pantallas de 120-144 Hz no se nota más fluidez y cuesta el doble o más;
+// - si el equipo va justo (los fotogramas tardan de forma sostenida), avisa una sola vez con alIrJusto para
+//   bajar la resolución, y desde entonces dibuja a 30 por segundo (las monedas flotan despacio: no se nota).
+function bucle(contenedor, canvas, dibujar, alIrJusto) {
+  let visible = true, raf = 0, vivo = true, ultimo = 0, suma = 0, muestras = 0, justo = false;
   const io = new IntersectionObserver((es) => { visible = es[0].isIntersecting; canvas.style.visibility = visible ? '' : 'hidden'; });
   io.observe(contenedor);
-  const paso = () => { if (!vivo) return; raf = requestAnimationFrame(paso); if (visible) dibujar(); };
+  const paso = (ahora) => {
+    if (!vivo) return;
+    raf = requestAnimationFrame(paso);
+    if (!visible) { ultimo = 0; return; }
+    if (ultimo && ahora - ultimo < (justo ? 1000 / 31 : 1000 / 61)) return;
+    if (ultimo && !justo) {
+      suma += ahora - ultimo; muestras++;
+      if (suma >= 2000 && muestras >= 8) { // unos 2 segundos de muestra (sea cual sea el ritmo del equipo)
+        if (suma / muestras > 24) { justo = true; if (alIrJusto) alIrJusto(); }
+        suma = 0; muestras = 0;
+      }
+    }
+    ultimo = ahora;
+    dibujar();
+  };
   raf = requestAnimationFrame(paso);
   return () => { vivo = false; cancelAnimationFrame(raf); io.disconnect(); };
 }
@@ -211,7 +230,7 @@ export async function montarPortada3D(canvas, contenedor, { alFallar } = {}) {
 
   let parar;
   if (quieto) { dibujar(); const alScroll = () => dibujar(); window.addEventListener('scroll', alScroll, { passive: true }); parar = () => window.removeEventListener('scroll', alScroll); }
-  else parar = bucle(contenedor, canvas, dibujar);
+  else parar = bucle(contenedor, canvas, dibujar, () => { renderer.setPixelRatio(1); ajustar(); });
 
   return () => {
     parar(); ro.disconnect(); window.removeEventListener('pointermove', alMover);
@@ -278,6 +297,6 @@ export async function montarCapa3D(canvas, banda, iconos, { alFallar } = {}) {
     });
     renderer.render(escena, camara);
   };
-  const parar = bucle(banda, canvas, dibujar, (nivel) => { renderer.setPixelRatio(nivel === 1 ? 1 : 0.75); ajustar(); });
+  const parar = bucle(banda, canvas, dibujar, () => { renderer.setPixelRatio(1); ajustar(); });
   return () => { parar(); ro.disconnect(); io.disconnect(); banda.removeEventListener('pointermove', alMover); piezas.liberar(); entorno.liberar(); renderer.dispose(); renderer.forceContextLoss(); /* libera la tarjeta gráfica al salir de la pantalla */ };
 }

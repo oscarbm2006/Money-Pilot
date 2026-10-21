@@ -981,9 +981,16 @@ export function App() {
     user: user
   }))), vistaActual === 'aviso-legal' && /*#__PURE__*/React.createElement("div", {
     key: "aviso-legal",
-    className: "fade-switch-enter"
-  }, /*#__PURE__*/React.createElement(PaginaLegal, {
-    titulo: "Aviso Legal y Términos de Uso"
+    className: "fade-switch-enter mp-piel"
+  }, /*#__PURE__*/React.createElement(CabeceraHerramienta, {
+    id: "mp-cab-aviso",
+    antetitulo: "Información legal",
+    titulo: "Aviso Legal y Términos de Uso",
+    frase: "Última actualización: 1 de septiembre de 2026",
+    iconos: [["moneda", 0.4, 0.2, 0.75, 0.3], ["tarjeta", 0.7, -0.2, 0.8, -0.4], ["moneda", 0.95, 0.25, 0.55, 1.4]]
+  }), /*#__PURE__*/React.createElement(PaginaLegal, {
+    titulo: "Aviso Legal y Términos de Uso",
+    sinCabecera: true
   }, /*#__PURE__*/React.createElement("p", null, /*#__PURE__*/React.createElement("b", null, "1. Titular."), " MoneyPilot es un proyecto operado por Óscar Baca Martínez, particular residente en España, contacto: soportemoneypilot@gmail.com."), /*#__PURE__*/React.createElement("p", null, /*#__PURE__*/React.createElement("b", null, "2. Objeto."), " MoneyPilot es una herramienta informativa de educación financiera que permite analizar de forma orientativa la situación económica personal introducida por el usuario. No sustituye el asesoramiento de un profesional financiero, fiscal o legal."), /*#__PURE__*/React.createElement("p", null, /*#__PURE__*/React.createElement("b", null, "3. Ausencia de asesoramiento financiero."), " Los resultados, diagnósticos y recomendaciones generados por MoneyPilot son orientativos y educativos. No constituyen recomendación de inversión ni asesoramiento financiero personalizado bajo ninguna normativa. El usuario es el único responsable de las decisiones económicas que tome."), /*#__PURE__*/React.createElement("p", null, /*#__PURE__*/React.createElement("b", null, "4. Propiedad intelectual."), " Los contenidos, textos, diseño y código de esta web son propiedad de MoneyPilot salvo que se indique lo contrario, y no pueden reproducirse sin autorización."), /*#__PURE__*/React.createElement("p", null, /*#__PURE__*/React.createElement("b", null, "5. Publicidad."), " Esta web puede mostrar anuncios de terceros, incluido Google AdSense, para financiar el servicio gratuito."), /*#__PURE__*/React.createElement("p", null, /*#__PURE__*/React.createElement("b", null, "6. Legislación aplicable."), " Este aviso legal se rige por la legislación española."))), vistaActual === 'quienes-somos' && /*#__PURE__*/React.createElement("div", {
     key: "quienes-somos",
     className: "fade-switch-enter mp-piel"
@@ -995,8 +1002,14 @@ export function App() {
     iconos: [["moneda", 0.34, 0.25, 0.85, 0.3], ["flecha", 0.58, -0.22, 0.8, 0.3], ["tarjeta", 0.8, 0.3, 0.8, -0.4], ["moneda", 0.97, -0.25, 0.55, 1.6]]
   }), /*#__PURE__*/React.createElement(QuienesSomos, null)), vistaActual === 'contacto' && /*#__PURE__*/React.createElement("div", {
     key: "contacto",
-    className: "fade-switch-enter"
-  }, /*#__PURE__*/React.createElement(Contacto, null))), showFooterNotice && /*#__PURE__*/React.createElement("footer", {
+    className: "fade-switch-enter mp-piel"
+  }, /*#__PURE__*/React.createElement(CabeceraHerramienta, {
+    id: "mp-cab-contacto",
+    antetitulo: "Estamos para ayudarte",
+    titulo: "Contacta con nosotros",
+    frase: "¿Tienes dudas sobre algún concepto financiero, quieres comentarnos algo sobre tus objetivos o simplemente hablar con alguien sobre cómo usar mejor la herramienta? Escríbenos y te respondemos personalmente.",
+    iconos: [["billete", 0.4, 0.22, 0.8, 0.4], ["moneda", 0.68, -0.22, 0.75, 0.9], ["tarjeta", 0.94, 0.25, 0.7, -0.4]]
+  }), /*#__PURE__*/React.createElement(Contacto, null))), showFooterNotice && /*#__PURE__*/React.createElement("footer", {
     className: "relative z-10 border-t no-print",
     style: {
       borderColor: C.border,
