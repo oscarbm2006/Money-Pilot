@@ -67,12 +67,12 @@ describe('Gastos: conversión de frecuencias a euros al mes', () => {
 
 describe('Estado de ahorro y puntuación de salud financiera', () => {
   test('estadoAhorro: umbrales 0 %, 10 % y 20 %', () => {
-    assert.equal(K.estadoAhorro(-0.01).nombre, 'Construyendo tu base');
-    assert.equal(K.estadoAhorro(0).nombre, 'Margen de mejora');
-    assert.equal(K.estadoAhorro(0.099).nombre, 'Margen de mejora');
-    assert.equal(K.estadoAhorro(0.10).nombre, 'Base saludable');
-    assert.equal(K.estadoAhorro(0.199).nombre, 'Base saludable');
-    assert.equal(K.estadoAhorro(0.20).nombre, 'Muy buena base');
+    assert.equal(K.estadoAhorro(-0.01).nombre, 'Ahorro por construir');
+    assert.equal(K.estadoAhorro(0).nombre, 'Ahorro mejorable');
+    assert.equal(K.estadoAhorro(0.099).nombre, 'Ahorro mejorable');
+    assert.equal(K.estadoAhorro(0.10).nombre, 'Ahorro saludable');
+    assert.equal(K.estadoAhorro(0.199).nombre, 'Ahorro saludable');
+    assert.equal(K.estadoAhorro(0.20).nombre, 'Ahorro muy bueno');
   });
   test('puntuación máxima = 100 (ahorro ≥25 %, 6 meses de fondo, sin deuda, con perfil)', () => {
     const r = K.calcularSaludFinanciera({ ratioAhorro: 0.3, coberturaMeses: 8, cargaDeuda: 0, perfil: {} });
