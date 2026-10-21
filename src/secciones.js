@@ -399,8 +399,8 @@ export function GastoHormigaSection() {
       ce("div", { className: "mp-hormiga-rejilla" },
         ce(Aparece, { className: "mp-hormiga-izq" },
           ce("p", { className: "mp-antetitulo" }, "Un pequeño experimento"),
-          ce("h2", { className: "mp-h2" }, "Piensa en un gasto que no te aporta nada"),
-          ce("p", { className: "mp-sub" }, "Algo innecesario, que te perjudica o que pagas casi sin darte cuenta. Tómate un momento: ¿cuál es el tuyo?"),
+          ce("h2", { className: "mp-h2" }, "Piensa en un gasto totalmente evitable"),
+          ce("p", { className: "mp-sub" }, "Algo prescindible, que podrías dejar mañana sin echarlo de menos: innecesario, que te perjudica o que pagas casi sin darte cuenta. Tómate un momento: ¿cuál es el tuyo?"),
           ce("div", { className: "mp-hormiga-form" },
             ce("div", null,
               ce("label", { className: "mp-etiqueta-campo", htmlFor: "mp-hormiga-tipo" }, "¿Cuál es ese gasto?"),
@@ -506,7 +506,7 @@ export function HowItWorksSection() {
 export const VISTAS_MIS_FINANZAS = ["mis-finanzas", "cuentas", "inversiones", "patrimonio"];
 // Páginas que ya tienen el diseño nuevo: usan el fondo blanco del prototipo, sin el tono gris azulado ni el dibujo
 // de líneas. Cada vez que se rediseñe otra página, basta con añadirla aquí.
-export const VISTAS_REDISENADAS = ["inicio", "diagnostico", ...VISTAS_MIS_FINANZAS, "estrategia", "plan", "seguimiento", "simulador", "simulador-deudas"];
+export const VISTAS_REDISENADAS = ["inicio", "diagnostico", ...VISTAS_MIS_FINANZAS, "estrategia", "plan", "seguimiento", "simulador", "simulador-deudas", "blog", "quienes-somos"];
 const BLOQUES_MF = [
   ["cuentas", "1", "Tu liquidez", "Tus cuentas", "Añade tus cuentas bancarias manualmente para ver tu liquidez total consolidada. No conectamos con tu banco: tú decides qué saldo introducir y cuándo actualizarlo.", "Si una de tus cuentas es tu colchón para imprevistos, márcala como fondo de emergencia al añadirla."],
   ["inversiones", "2", "Tu cartera", "Tus inversiones", "Añade tus acciones, fondos, ETFs u otros productos con lo que has aportado y la ganancia o pérdida acumulada; nosotros calculamos el valor actual. Los datos no se actualizan solos: revísalos cuando quieras.", null],
@@ -598,6 +598,39 @@ function Moneda3D() {
       Array.from({ length: 17 }, (_, k) => ce("div", { key: k, className: "mp-moneda-canto", style: { transform: `translateZ(${k - 8}px)` } })),
       ce("div", { className: "mp-moneda-cara mp-num", style: { transform: "translateZ(9px)" } }, "€"),
       ce("div", { className: "mp-moneda-cara mp-num", style: { transform: "rotateY(180deg) translateZ(9px)" } }, "€")));
+}
+
+/* ---------- Quiénes somos ---------- */
+// Los textos de siempre, con el diseño nuevo: presentación, autor, los tres objetivos (tarjetas que se inclinan)
+// y un cierre oscuro con el correo de contacto.
+const PILARES_QS = [
+  ["1", "Tranquilidad", "Comprar tranquilidad", "Construyendo un escudo contra los imprevistos para blindar a tu familia y reducir tu ansiedad.", I.shieldCheck],
+  ["2", "Deudas", "Salir de las deudas", "Trazando planes exactos (como la bola de nieve o la avalancha) para que recuperes tu margen mensual.", I.target],
+  ["3", "Tiempo", "Poner el tiempo a tu favor", "Demostrando con datos reales cómo el interés compuesto y las decisiones tempranas pueden multiplicar tu patrimonio sin que sientas que sacrificas tu calidad de vida actual.", I.chartLine]
+];
+export function QuienesSomos() {
+  const cierre = useInclinacion(6);
+  return ce(React.Fragment, null,
+    ce("section", { className: "mp-seccion mp-sans" },
+      ce("div", { className: "max-w-6xl mx-auto px-4 sm:px-6" },
+        ce(Aparece, { as: "p", className: "mp-qs-intro" }, "Detrás de MoneyPilot hay un proyecto nacido de una realidad muy común: la falta de educación financiera genera estrés crónico y decisiones equivocadas. Somos desarrolladores y entusiastas de las finanzas personales que creemos firmemente que la tecnología debe servir para democratizar el bienestar económico."),
+        ce(Aparece, { className: "mp-qs-autor", retraso: 0.1 },
+          ce("span", { className: "mp-qs-avatar", "aria-hidden": "true" }, "ÓB"),
+          ce("p", null, "MoneyPilot está creado y mantenido por ", ce("strong", null, "Óscar Baca Martínez"), ", estudiante de Economía y apasionado de los mercados financieros, con más de 2 años gestionando su propia cartera en acciones y otros productos financieros.")),
+        ce(Aparece, { className: "mp-cabecera mp-qs-objetivo" },
+          ce("h2", { className: "mp-h2" }, "Cuál es nuestro objetivo."),
+          ce("p", { className: "mp-sub" }, "Nuestro propósito no es darte una simple hoja de cálculo matemática, sino educar, dar contexto y crear un plan de acción. Queremos ayudarte a:")),
+        ce("div", { className: "mp-herr-rejilla" }, PILARES_QS.map(([n, k, t, desc, Icon], i) => ce(TarjetaHerramienta, { key: n, n, k, t, desc, Icon, i }))))),
+    ce("section", { className: "mp-seccion mp-sans mp-qs-cierre-hueco" },
+      ce("div", { className: "mp-ancho mp-cta-hueco" },
+        ce(Aparece, null,
+          ce("div", { ref: cierre, className: "mp-cta mp-inclina" },
+            ce("div", { className: "mp-cta-luz", "aria-hidden": "true" }),
+            ce("div", { className: "mp-cta-texto" },
+              ce("h2", { className: "mp-h2 mp-qs-frase" }, "En definitiva, nuestro objetivo es acompañarte para que dejes de sobrevivir a fin de mes y empieces a diseñar tu libertad financiera."),
+              ce("p", { className: "mp-cta-copia" }, "Puedes escribirnos a soportemoneypilot@gmail.com para cualquier duda, sugerencia o colaboración."),
+              ce("a", { href: "mailto:soportemoneypilot@gmail.com", className: "mp-boton mp-boton-claro" }, "Escribir a soportemoneypilot@gmail.com")),
+            ce(Moneda3D, null))))));
 }
 
 export function HeroSection({

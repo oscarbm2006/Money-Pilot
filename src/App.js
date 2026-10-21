@@ -6,7 +6,7 @@ import { useActivosPersistidos, useActivosSync, useAuth, useCloudSync, useCuenta
 import { AuthModal, ConflictoDatosModal, ContinuarBar, ErrorBoundary, Eyebrow, FeedbackModal, Toast } from './ui-basicos.js';
 import { AmortizacionDeuda, SimuladorDeudas, Contacto, Cuentas, Dashboard, Diagnostico, Estrategia, Inversiones, NavDesktop, PaginaLegal, PanelDiagnostico, PanelPrioridad, Patrimonio, PerfilRiesgo, PlanFinanciero, PrintSummary, Seguimiento, Simulador } from './paginas.js';
 const Blog = React.lazy(() => import('./blog.js'));
-import { CabeceraHerramienta, ConfianzaPrivacidad, HeroSection, MisFinanzas, VISTAS_MIS_FINANZAS, VISTAS_REDISENADAS } from './secciones.js';
+import { CabeceraHerramienta, ConfianzaPrivacidad, HeroSection, MisFinanzas, QuienesSomos, VISTAS_MIS_FINANZAS, VISTAS_REDISENADAS } from './secciones.js';
 import { MiCuentaModal } from './cuenta.js';
 import { ReiniciarTodoModal } from './cuenta.js';
 
@@ -169,6 +169,21 @@ export function App() {
     const suave = !(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
     if (el) el.scrollIntoView({ behavior: suave ? "smooth" : "auto", block: "start" });
   };
+  // Menú integrado en las páginas rediseñadas: mientras está sobre la banda oscura de arriba (portada o cabecera)
+  // toma su mismo color; al pasar a la zona clara, toma el fondo claro de la página y el texto oscuro.
+  useEffect(() => {
+    const raiz = document.documentElement;
+    raiz.removeAttribute("data-menu-claro");
+    if (!VISTAS_REDISENADAS.includes(vistaActual)) return;
+    let io = null;
+    const t = setTimeout(() => {
+      const banda = document.querySelector("main .mp-portada, main .mp-cab");
+      if (!banda) { raiz.setAttribute("data-menu-claro", ""); return; }
+      io = new IntersectionObserver(es => { if (es[0].isIntersecting) raiz.removeAttribute("data-menu-claro"); else raiz.setAttribute("data-menu-claro", ""); }, { rootMargin: "-64px 0px 0px 0px" });
+      io.observe(banda);
+    }, 60);
+    return () => { clearTimeout(t); if (io) io.disconnect(); };
+  }, [vistaActual]);
   const vistaPreviaScroll = useRef(vistaActual);
   useEffect(() => {
     // Dentro de "Mis finanzas" (cuentas, inversiones y patrimonio en una sola página) no se sube al principio:
@@ -950,8 +965,14 @@ export function App() {
     }
   })))), vistaActual === 'blog' && /*#__PURE__*/React.createElement("div", {
     key: "blog",
-    className: "fade-switch-enter"
-  }, /*#__PURE__*/React.createElement(React.Suspense, {
+    className: "fade-switch-enter mp-piel"
+  }, /*#__PURE__*/React.createElement(CabeceraHerramienta, {
+    id: "mp-cab-blog",
+    antetitulo: "Educación financiera",
+    titulo: "Blog de finanzas personales",
+    frase: "Guías claras sobre ahorro, inversión y presupuesto, además de noticias financieras y análisis de empresas cotizadas.",
+    iconos: [["billete", 0.34, 0.2, 0.85, 0.4], ["barras", 0.58, -0.22, 0.8, -0.3], ["flecha", 0.8, 0.3, 0.8, 0.3], ["moneda", 0.97, -0.25, 0.55, 1.4]]
+  }), /*#__PURE__*/React.createElement(React.Suspense, {
     fallback: /*#__PURE__*/React.createElement("div", {
       className: "py-20 text-center text-sm",
       style: { color: C.muted }
@@ -965,21 +986,14 @@ export function App() {
     titulo: "Aviso Legal y Términos de Uso"
   }, /*#__PURE__*/React.createElement("p", null, /*#__PURE__*/React.createElement("b", null, "1. Titular."), " MoneyPilot es un proyecto operado por Óscar Baca Martínez, particular residente en España, contacto: soportemoneypilot@gmail.com."), /*#__PURE__*/React.createElement("p", null, /*#__PURE__*/React.createElement("b", null, "2. Objeto."), " MoneyPilot es una herramienta informativa de educación financiera que permite analizar de forma orientativa la situación económica personal introducida por el usuario. No sustituye el asesoramiento de un profesional financiero, fiscal o legal."), /*#__PURE__*/React.createElement("p", null, /*#__PURE__*/React.createElement("b", null, "3. Ausencia de asesoramiento financiero."), " Los resultados, diagnósticos y recomendaciones generados por MoneyPilot son orientativos y educativos. No constituyen recomendación de inversión ni asesoramiento financiero personalizado bajo ninguna normativa. El usuario es el único responsable de las decisiones económicas que tome."), /*#__PURE__*/React.createElement("p", null, /*#__PURE__*/React.createElement("b", null, "4. Propiedad intelectual."), " Los contenidos, textos, diseño y código de esta web son propiedad de MoneyPilot salvo que se indique lo contrario, y no pueden reproducirse sin autorización."), /*#__PURE__*/React.createElement("p", null, /*#__PURE__*/React.createElement("b", null, "5. Publicidad."), " Esta web puede mostrar anuncios de terceros, incluido Google AdSense, para financiar el servicio gratuito."), /*#__PURE__*/React.createElement("p", null, /*#__PURE__*/React.createElement("b", null, "6. Legislación aplicable."), " Este aviso legal se rige por la legislación española."))), vistaActual === 'quienes-somos' && /*#__PURE__*/React.createElement("div", {
     key: "quienes-somos",
-    className: "fade-switch-enter"
-  }, /*#__PURE__*/React.createElement(PaginaLegal, {
-    titulo: "Quiénes somos"
-  }, /*#__PURE__*/React.createElement("p", null, "Detrás de MoneyPilot hay un proyecto nacido de una realidad muy común: la falta de educación financiera genera estrés crónico y decisiones equivocadas. Somos desarrolladores y entusiastas de las finanzas personales que creemos firmemente que la tecnología debe servir para democratizar el bienestar económico."), /*#__PURE__*/React.createElement("p", null, "MoneyPilot está creado y mantenido por Óscar Baca Martínez, estudiante de Economía y apasionado de los mercados financieros, con más de 2 años gestionando su propia cartera en acciones y otros productos financieros."), /*#__PURE__*/React.createElement("p", null, /*#__PURE__*/React.createElement("b", null, "Cuál es nuestro objetivo."), " Nuestro propósito no es darte una simple hoja de cálculo matemática, sino educar, dar contexto y crear un plan de acción. Queremos ayudarte a:"), /*#__PURE__*/React.createElement("ul", {
-    style: {
-      listStyle: "disc",
-      paddingLeft: "1.4rem"
-    }
-  }, /*#__PURE__*/React.createElement("li", null, /*#__PURE__*/React.createElement("b", null, "Comprar tranquilidad:"), " construyendo un escudo contra los imprevistos para blindar a tu familia y reducir tu ansiedad."), /*#__PURE__*/React.createElement("li", null, /*#__PURE__*/React.createElement("b", null, "Salir de las deudas:"), " trazando planes exactos (como la bola de nieve o la avalancha) para que recuperes tu margen mensual."), /*#__PURE__*/React.createElement("li", null, /*#__PURE__*/React.createElement("b", null, "Poner el tiempo a tu favor:"), " demostrando con datos reales cómo el interés compuesto y las decisiones tempranas pueden multiplicar tu patrimonio sin que sientas que sacrificas tu calidad de vida actual.")), /*#__PURE__*/React.createElement("p", null, "En definitiva, nuestro objetivo es acompañarte para que dejes de sobrevivir a fin de mes y empieces a diseñar tu libertad financiera."), /*#__PURE__*/React.createElement("p", null, "Puedes escribirnos a ", /*#__PURE__*/React.createElement("a", {
-    href: "mailto:soportemoneypilot@gmail.com",
-    style: {
-      color: C.sand,
-      textDecoration: "underline"
-    }
-  }, "soportemoneypilot@gmail.com"), " para cualquier duda, sugerencia o colaboración."))), vistaActual === 'contacto' && /*#__PURE__*/React.createElement("div", {
+    className: "fade-switch-enter mp-piel"
+  }, /*#__PURE__*/React.createElement(CabeceraHerramienta, {
+    id: "mp-cab-qs",
+    antetitulo: "Quiénes somos",
+    titulo: "Educación financiera con un plan detrás",
+    frase: "Un proyecto nacido de una realidad muy común: la falta de educación financiera genera estrés crónico y decisiones equivocadas.",
+    iconos: [["moneda", 0.34, 0.25, 0.85, 0.3], ["flecha", 0.58, -0.22, 0.8, 0.3], ["tarjeta", 0.8, 0.3, 0.8, -0.4], ["moneda", 0.97, -0.25, 0.55, 1.6]]
+  }), /*#__PURE__*/React.createElement(QuienesSomos, null)), vistaActual === 'contacto' && /*#__PURE__*/React.createElement("div", {
     key: "contacto",
     className: "fade-switch-enter"
   }, /*#__PURE__*/React.createElement(Contacto, null))), showFooterNotice && /*#__PURE__*/React.createElement("footer", {

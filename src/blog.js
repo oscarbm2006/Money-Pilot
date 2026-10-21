@@ -253,13 +253,7 @@ async function borrar(id) {
   const postsTab = posts.filter(p => (p.categoria_seccion || 'actualidad') === tab);
   return /*#__PURE__*/React.createElement("div", {
     className: "max-w-4xl mx-auto px-4 sm:px-6 py-12"
-  }, /*#__PURE__*/React.createElement(Eyebrow, null, "Educación financiera"), /*#__PURE__*/React.createElement("h1", {
-    className: "font-serif text-3xl sm:text-4xl font-bold mb-2",
-    style: { color: C.ink }
-  }, "Blog de finanzas personales"), /*#__PURE__*/React.createElement("p", {
-    className: "text-sm sm:text-base mb-6",
-    style: { color: C.muted }
-  }, "Guías claras sobre ahorro, inversión y presupuesto, además de noticias financieras y análisis de empresas cotizadas."),
+  },
 
   /*#__PURE__*/React.createElement("div", {
     className: "flex flex-wrap gap-2 mb-8"
