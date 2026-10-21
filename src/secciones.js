@@ -664,7 +664,7 @@ export function HeroSection({
     fuente: "FUENTE: Universidad de Chicago (Premio Nobel Richard Thaler y Shlomo Benartzi)."
   }];
   const ganchos = ["¿Por qué un imprevisto duele el doble sin ahorro?", "Lo que el dinero hace dentro de una pareja", "Cómo procesa tu cuerpo una deuda", "Por qué esperar a cobrar más sale tan caro", "El truco para ahorrar sin notarlo"];
-  const portada = useEscena3D((c, s, fallar) => montarPortada3D(c, s, { alFallar: fallar }));
+  const portada = useEscena3D((c, s, fallar) => esPantallaPequena() ? Promise.resolve(() => {}) : montarPortada3D(c, s, { alFallar: fallar }));
   const lista = useRef(null), barra = useRef(null);
   useEffect(() => {
     // Barra que se llena mientras lees los motivos

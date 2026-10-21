@@ -25,6 +25,15 @@ export function App() {
     signOut
   } = useAuth();
   const [irADeudas, setIrADeudas] = useState(false);
+  // Móvil: el menú se compacta (icono de 3 rayas) cuando la persona ya ha empezado a navegar
+  const [navCompacto, setNavCompacto] = useState(false);
+  const [navAbierto, setNavAbierto] = useState(false);
+  useEffect(() => {
+    const alScroll = () => setNavCompacto(window.scrollY > 120);
+    alScroll();
+    window.addEventListener('scroll', alScroll, { passive: true });
+    return () => window.removeEventListener('scroll', alScroll);
+  }, []);
   const [vistaActual, setVistaActualBase] = useState(() => {
     if (typeof window === "undefined") return "inicio";
     try {
@@ -36,6 +45,7 @@ export function App() {
   });
   useEffect(() => {
     if (vistaActual !== 'diagnostico') setIrADeudas(false);
+    setNavAbierto(false);
   }, [vistaActual]);
   const vistaRef = useRef(vistaActual);
   vistaRef.current = vistaActual;
@@ -572,6 +582,8 @@ export function App() {
     }
   }), /*#__PURE__*/React.createElement("header", {
     className: "glass-nav sticky top-0 z-50",
+    "data-compacto": navCompacto ? "1" : undefined,
+    "data-abierto": navAbierto ? "1" : undefined,
     style: {
       backgroundColor: "rgba(6,10,19,0.88)",
       borderBottom: "1px solid " + C.glassBorder,
@@ -601,7 +613,25 @@ export function App() {
       height: "20px",
       width: "auto"
     }
-  }))), /*#__PURE__*/React.createElement(NavDesktop, {
+  }))), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: () => setNavAbierto(a => !a),
+    "aria-expanded": navAbierto,
+    "aria-label": navAbierto ? "Cerrar menú" : "Abrir menú",
+    className: "mp-hamb nav-link-muted",
+    style: { color: "#C7D2FE" }
+  }, /*#__PURE__*/React.createElement("svg", {
+    width: 22,
+    height: 22,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 2.2,
+    strokeLinecap: "round",
+    "aria-hidden": "true"
+  }, navAbierto ? /*#__PURE__*/React.createElement("path", { d: "M6 6l12 12M18 6L6 18" }) : /*#__PURE__*/React.createElement("path", { d: "M4 7h16M4 12h16M4 17h16" }))), /*#__PURE__*/React.createElement("div", {
+    className: "mp-nav-resto"
+  }, /*#__PURE__*/React.createElement(NavDesktop, {
     vistaActual: vistaActual,
     setVistaActual: setVistaActual,
     blogHref: blogHref
@@ -640,7 +670,7 @@ export function App() {
     title: "Borra tus datos guardados y vuelve a empezar"
   }, /*#__PURE__*/React.createElement(I.trash, {
     size: 13
-  })))), /*#__PURE__*/React.createElement("div", {
+  }))))), /*#__PURE__*/React.createElement("div", {
     className: "hidden"
   }, [["inicio", "Introducción"], ["diagnostico", "Diagnóstico"], ["mis-finanzas", "Cuentas, inversiones y patrimonio"], ["estrategia", "Estrategia"], ["plan", "Plan"], ["seguimiento", "Seguimiento"], ["simulador", "Simulador"], ["blog", "Blog"]].map(([id, label]) => /*#__PURE__*/React.createElement("button", {
     key: id,
