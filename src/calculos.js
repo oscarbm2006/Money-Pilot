@@ -358,6 +358,11 @@ export function numEs(n, opciones = {}) {
   return n.toLocaleString("es-ES", { ...opciones, useGrouping: "always" });
 }
 
+// Número con decimales fijos y coma española (sustituye a toFixed en los textos visibles)
+export function dec(n, decimales = 1) {
+  return numEs(Number(n), { minimumFractionDigits: decimales, maximumFractionDigits: decimales });
+}
+
 export function euros(n, dec = 0) {
   if (n == null || isNaN(n)) return "—";
   return numEs(n, {
@@ -1044,17 +1049,17 @@ export function calcularDiagnosticoAmpliado({
     if (coberturaMeses < 3) {
       preocupantes.push({
         titulo: "Tu colchón de emergencia es insuficiente",
-        texto: `Con tu liquidez actual (${euros(liquidezReal)}) cubrirías ${coberturaMeses.toFixed(1)} meses de gastos esenciales. Por debajo de 3 meses, un imprevisto puede obligarte a endeudarte.`
+        texto: `Con tu liquidez actual (${euros(liquidezReal)}) cubrirías ${dec(coberturaMeses, 1)} meses de gastos esenciales. Por debajo de 3 meses, un imprevisto puede obligarte a endeudarte.`
       });
     } else if (coberturaMeses < 6) {
       preocupantes.push({
         titulo: "Tu fondo de emergencia es mejorable",
-        texto: `Cubre ${coberturaMeses.toFixed(1)} meses de gastos esenciales. La referencia recomendada son 6 meses.`
+        texto: `Cubre ${dec(coberturaMeses, 1)} meses de gastos esenciales. La referencia recomendada son 6 meses.`
       });
     } else {
       positivos.push({
         titulo: "Tu fondo de emergencia es sólido",
-        texto: `Cubre ${coberturaMeses.toFixed(1)} meses de gastos esenciales, por encima del mínimo recomendado.`
+        texto: `Cubre ${dec(coberturaMeses, 1)} meses de gastos esenciales, por encima del mínimo recomendado.`
       });
     }
   }
@@ -1152,7 +1157,7 @@ export function calcularPrioridades({
   }, {
     id: "colchon",
     titulo: "Consigue un colchón mínimo de seguridad",
-    texto: `Tu liquidez actual cubre ${coberturaMeses == null ? "una parte todavía por calcular de" : coberturaMeses.toFixed(1)} tus gastos esenciales de un mes. Antes de atacar deudas o invertir, conviene tener al menos 1 mes cubierto para no depender de más deuda ante cualquier imprevisto.`,
+    texto: `Tu liquidez actual cubre ${coberturaMeses == null ? "una parte todavía por calcular de" : dec(coberturaMeses, 1)} tus gastos esenciales de un mes. Antes de atacar deudas o invertir, conviene tener al menos 1 mes cubierto para no depender de más deuda ante cualquier imprevisto.`,
     satisfecho: coberturaMeses == null || coberturaMeses >= 1
   }, {
     id: "deuda_cara",
@@ -1162,7 +1167,7 @@ export function calcularPrioridades({
   }, {
     id: "fondo_emergencia",
     titulo: "Completa tu fondo de emergencia",
-    texto: `Tu colchón cubre ${coberturaMeses == null ? "una parte todavía por calcular" : coberturaMeses.toFixed(1) + " de los 6"} meses de gasto recomendados. Complétalo antes de invertir con fuerza, así no tendrás que deshacer inversiones ante un imprevisto.`,
+    texto: `Tu colchón cubre ${coberturaMeses == null ? "una parte todavía por calcular" : dec(coberturaMeses, 1) + " de los 6"} meses de gasto recomendados. Complétalo antes de invertir con fuerza, así no tendrás que deshacer inversiones ante un imprevisto.`,
     satisfecho: coberturaMeses == null || coberturaMeses >= 6
   }, {
     id: "inversion",

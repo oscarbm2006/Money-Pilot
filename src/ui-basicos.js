@@ -1,7 +1,7 @@
 const { useState, useEffect, useRef, useCallback, useMemo, useId } = React;
 
 import { C, FRECUENCIAS, I, supa, MAX_IMPORTE } from './constantes.js';
-import { euros, niceTicks, traducirErrorAuth } from './calculos.js';
+import { dec, euros, niceTicks, traducirErrorAuth } from './calculos.js';
 import { PrivacyNotice } from './secciones.js';
 
 // Aparición al hacer scroll: un único observador compartido por todas las tarjetas.
@@ -443,7 +443,7 @@ export function EmergencyGauge({
     style: {
       color
     }
-  }, meses.toFixed(1)), /*#__PURE__*/React.createElement("div", {
+  }, dec(meses, 1)), /*#__PURE__*/React.createElement("div", {
     className: "text-xs font-bold",
     style: {
       color: C.muted

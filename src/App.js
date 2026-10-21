@@ -1,7 +1,7 @@
 const { useState, useEffect, useRef, useCallback, useMemo, useId } = React;
 
 import { BLOG_ADMIN_EMAIL, C, I, OBJETIVOS_DEF, PATTERN_URI_STATIC, PERFILES_INFO } from './constantes.js';
-import { calcularCapacidadFinanciera, calcularDiagnosticoAmpliado, calcularPerfilMultidimensional, calcularPlanFinanciero, calcularPlanObjetivos, calcularPrioridades, datosVacios, normalizarObjetivos, objetivoLegadoDesdeColeccion, reconstruirEstadoQuiz, totalMensual } from './calculos.js';
+import { dec, calcularCapacidadFinanciera, calcularDiagnosticoAmpliado, calcularPerfilMultidimensional, calcularPlanFinanciero, calcularPlanObjetivos, calcularPrioridades, datosVacios, normalizarObjetivos, objetivoLegadoDesdeColeccion, reconstruirEstadoQuiz, totalMensual } from './calculos.js';
 import { useActivosPersistidos, useActivosSync, useAuth, useCloudSync, useCuentasPersistidas, useCuentasSync, useDatosPersistidos, useDebouncedEffect, useDeudasMirrorSync, useGuiaProgresoSync, useInversionesPersistidas, useInversionesSync, useSeguimiento, useToast } from './hooks-datos.js';
 import { AuthModal, ConflictoDatosModal, ContinuarBar, ErrorBoundary, Eyebrow, FeedbackModal, Toast } from './ui-basicos.js';
 import { AmortizacionDeuda, SimuladorDeudas, Contacto, Cuentas, Dashboard, Diagnostico, Estrategia, Inversiones, NavDesktop, PaginaLegal, PanelDiagnostico, PanelPrioridad, Patrimonio, PerfilRiesgo, PlanFinanciero, PrintSummary, Seguimiento, Simulador } from './paginas.js';
@@ -833,7 +833,7 @@ export function App() {
     style: {
       color: C.muted
     }
-  }, planObjetivos.principal?.horizonteAniosCalculado > 0 ? `Tu horizonte es de ${planObjetivos.principal.horizonteAniosCalculado.toFixed(1)} años. El cuestionario combina ese plazo con tu tolerancia, liquidez y capacidad financiera para que la estrategia tenga sentido para tu situación.` : datos.deudas.some(d => Number(d.pendiente) > 0) ? "Con tu plan de deuda ya en marcha, veamos también qué nivel de riesgo encaja con tus objetivos y tu situación." : "El cuestionario no busca una etiqueta por sí sola: ayuda a entender qué nivel de riesgo encaja con tus objetivos y tu situación.")))), /*#__PURE__*/React.createElement("div", {
+  }, planObjetivos.principal?.horizonteAniosCalculado > 0 ? `Tu horizonte es de ${dec(planObjetivos.principal.horizonteAniosCalculado, 1)} años. El cuestionario combina ese plazo con tu tolerancia, liquidez y capacidad financiera para que la estrategia tenga sentido para tu situación.` : datos.deudas.some(d => Number(d.pendiente) > 0) ? "Con tu plan de deuda ya en marcha, veamos también qué nivel de riesgo encaja con tus objetivos y tu situación." : "El cuestionario no busca una etiqueta por sí sola: ayuda a entender qué nivel de riesgo encaja con tus objetivos y tu situación.")))), /*#__PURE__*/React.createElement("div", {
     className: "flex flex-col gap-6"
   }, /*#__PURE__*/React.createElement(PerfilRiesgo, {
     onPerfilCalculado: (nuevoPerfil, nuevoDetalle) => {

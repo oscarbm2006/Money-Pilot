@@ -1,7 +1,7 @@
 const { useState, useEffect, useRef, useCallback, useMemo, useId } = React;
 
 import { ACTIVOS_DEF, ASIGNACION, BLOG_ADMIN_EMAIL, C, CUENTA_TIPOS_DEF, I, NOMBRES_FASE_BLOG, OBJETIVOS_DEF, PERFILES_INFO, PRIORIDADES_OBJETIVO, PRIORIDAD_LABEL, QUIZ_DEF, SECCIONES_BLOG, TIPOS_ACTIVO_DEF, TIPOS_INVERSION_DEF, supa, MAX_IMPORTE } from './constantes.js';
-import { aportacionNecesariaParaObjetivo, calcularCapacidadFinanciera, calcularFondoEmergencia, calcularPerfilMultidimensional, calcularPlanObjetivos, calcularSaludFinanciera, crearIdObjetivo, estadoAhorro, euros, fmtFecha, formatMeses, getNextQuestionId, mdToHtml, normalizarObjetivo, normalizarObjetivos, pct, proyeccionInteres, proyeccionLimitada, LIMITE_SIMULADOR, quizNumero, recomendacionObjetivoPorHorizonte, reconstruirEstadoQuiz, rentabilidadNecesariaParaObjetivo, simularAmortizacion, sincronizarObjetivos, slugify, tiempoNecesarioParaObjetivo, totalMensual, numEs } from './calculos.js';
+import { dec, aportacionNecesariaParaObjetivo, calcularCapacidadFinanciera, calcularFondoEmergencia, calcularPerfilMultidimensional, calcularPlanObjetivos, calcularSaludFinanciera, crearIdObjetivo, estadoAhorro, euros, fmtFecha, formatMeses, getNextQuestionId, mdToHtml, normalizarObjetivo, normalizarObjetivos, pct, proyeccionInteres, proyeccionLimitada, LIMITE_SIMULADOR, quizNumero, recomendacionObjetivoPorHorizonte, reconstruirEstadoQuiz, rentabilidadNecesariaParaObjetivo, simularAmortizacion, sincronizarObjetivos, slugify, tiempoNecesarioParaObjetivo, totalMensual, numEs } from './calculos.js';
 import { AnimatedNumber, quitarConSalida, Badge, BlogLinkCard, Card, DesgloseBarra, Eyebrow, FadeSwitch, NumberField, ProgressBar, SimpleAreaChart, SimpleDonut, SimpleStackedBarChart, StatCard, Termometro } from './ui-basicos.js';
 import { AcordeonFase, GastosTabs, VISTAS_MIS_FINANZAS } from './secciones.js';
 import { LIBROS } from './libros-guia.js';
@@ -158,7 +158,7 @@ export function PrintSummary({
       textAlign: "right",
       fontWeight: 700
     }
-  }, coberturaMeses.toFixed(1), " meses")))), deudasActivas.length > 0 && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("h2", {
+  }, dec(coberturaMeses, 1), " meses")))), deudasActivas.length > 0 && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("h2", {
     style: {
       fontSize: 15,
       fontWeight: 700,
@@ -222,7 +222,7 @@ export function PrintSummary({
       fontSize: 13,
       marginBottom: 4
     }
-  }, /*#__PURE__*/React.createElement("b", null, o.nombre || OBJETIVOS_DEF.find(x => x.id === o.tipo)?.label || o.tipo), o.importeObjetivo > 0 && /*#__PURE__*/React.createElement(React.Fragment, null, " — ", euros(o.importeObjetivo), " en ", o.horizonteAniosCalculado > 0 ? o.horizonteAniosCalculado.toFixed(1) + " años" : "sin plazo"), planObjetivos.principal?.id === o.id && /*#__PURE__*/React.createElement(React.Fragment, null, " · Principal")))));
+  }, /*#__PURE__*/React.createElement("b", null, o.nombre || OBJETIVOS_DEF.find(x => x.id === o.tipo)?.label || o.tipo), o.importeObjetivo > 0 && /*#__PURE__*/React.createElement(React.Fragment, null, " — ", euros(o.importeObjetivo), " en ", o.horizonteAniosCalculado > 0 ? dec(o.horizonteAniosCalculado, 1) + " años" : "sin plazo"), planObjetivos.principal?.id === o.id && /*#__PURE__*/React.createElement(React.Fragment, null, " · Principal")))));
 }
 
 export function Dashboard({
@@ -1042,7 +1042,7 @@ export function Simulador({
       backgroundColor: C.saluLight,
       color: C.ink
     }
-  }, resAportacion.yaAlcanzado ? /*#__PURE__*/React.createElement("b", null, "Con tu capital inicial y la rentabilidad estimada, ya alcanzas ", euros(objetivoNum), " sin necesidad de aportar más.") : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("b", null, "Necesitarías aportar ", /*#__PURE__*/React.createElement(AnimatedNumber, { value: resAportacion.mensualNecesaria }), "/mes para llegar a ", euros(objetivoNum), " en ", horizonteSim.toFixed(1), " años."), /*#__PURE__*/React.createElement("div", {
+  }, resAportacion.yaAlcanzado ? /*#__PURE__*/React.createElement("b", null, "Con tu capital inicial y la rentabilidad estimada, ya alcanzas ", euros(objetivoNum), " sin necesidad de aportar más.") : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("b", null, "Necesitarías aportar ", /*#__PURE__*/React.createElement(AnimatedNumber, { value: resAportacion.mensualNecesaria }), "/mes para llegar a ", euros(objetivoNum), " en ", dec(horizonteSim, 1), " años."), /*#__PURE__*/React.createElement("div", {
     className: "mt-1 text-xs"
   }, "Aportado: ", /*#__PURE__*/React.createElement(AnimatedNumber, { value: resAportacion.totalAportado }), " · Intereses generados: ", /*#__PURE__*/React.createElement(AnimatedNumber, { value: resAportacion.interesGenerado }), ".")))), modo === "rentabilidad" && resRentabilidad && /*#__PURE__*/React.createElement(Card, {
     className: "p-5"
@@ -1052,7 +1052,7 @@ export function Simulador({
       backgroundColor: resRentabilidad.imposible ? C.critLight : C.saluLight,
       color: C.ink
     }
-  }, resRentabilidad.yaAlcanzado ? /*#__PURE__*/React.createElement("b", null, "Con tu capital y tu aportación actuales, ya alcanzas ", euros(objetivoNum), " sin necesidad de rentabilidad adicional.") : resRentabilidad.imposible ? /*#__PURE__*/React.createElement("b", null, "No existe una rentabilidad anual realista que alcance ", euros(objetivoNum), " en ese plazo. Prueba a aumentar el plazo o la aportación.") : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("b", null, "Necesitarías una rentabilidad anual media del ", /*#__PURE__*/React.createElement(AnimatedNumber, { value: resRentabilidad.tasaNecesaria, format: v => v.toFixed(2) }), "% para llegar a ", euros(objetivoNum), " en ", horizonteSim.toFixed(1), " años."), /*#__PURE__*/React.createElement("div", {
+  }, resRentabilidad.yaAlcanzado ? /*#__PURE__*/React.createElement("b", null, "Con tu capital y tu aportación actuales, ya alcanzas ", euros(objetivoNum), " sin necesidad de rentabilidad adicional.") : resRentabilidad.imposible ? /*#__PURE__*/React.createElement("b", null, "No existe una rentabilidad anual realista que alcance ", euros(objetivoNum), " en ese plazo. Prueba a aumentar el plazo o la aportación.") : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("b", null, "Necesitarías una rentabilidad anual media del ", /*#__PURE__*/React.createElement(AnimatedNumber, { value: resRentabilidad.tasaNecesaria, format: v => dec(v, 2) }), "% para llegar a ", euros(objetivoNum), " en ", dec(horizonteSim, 1), " años."), /*#__PURE__*/React.createElement("div", {
     className: "mt-1 text-xs"
   }, "Aportado: ", /*#__PURE__*/React.createElement(AnimatedNumber, { value: resRentabilidad.totalAportado }), " · Intereses generados: ", /*#__PURE__*/React.createElement(AnimatedNumber, { value: resRentabilidad.interesGenerado }), ".")))), seleccionado && /*#__PURE__*/React.createElement(Card, {
     className: "p-5"
@@ -1085,7 +1085,7 @@ export function Simulador({
     style: {
       color: C.ink
     }
-  }, horizonteSim ? `${horizonteSim.toFixed(1)} años` : "—")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("span", {
+  }, horizonteSim ? `${dec(horizonteSim, 1)} años` : "—")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("span", {
     style: {
       color: C.muted
     }
@@ -1718,7 +1718,7 @@ export function Estrategia({
     style: {
       color: C.ink
     }
-  }, fondo.coberturaMeses == null ? "—" : fondo.coberturaMeses.toFixed(1) + " meses")), /*#__PURE__*/React.createElement("div", {
+  }, fondo.coberturaMeses == null ? "—" : dec(fondo.coberturaMeses, 1) + " meses")), /*#__PURE__*/React.createElement("div", {
     className: "rounded-xl p-3 flex flex-col justify-between min-h-[92px] overflow-hidden",
     style: {
       backgroundColor: C.paper
@@ -1830,7 +1830,7 @@ export function Estrategia({
     style: {
       color: C.muted
     }
-  }, "Horizonte: ", principal.horizonteAniosCalculado > 0 ? principal.horizonteAniosCalculado.toFixed(1) + " años" : "por definir", ". Orientación: ", /*#__PURE__*/React.createElement("b", {
+  }, "Horizonte: ", principal.horizonteAniosCalculado > 0 ? dec(principal.horizonteAniosCalculado, 1) + " años" : "por definir", ". Orientación: ", /*#__PURE__*/React.createElement("b", {
     style: {
       color: C.ink
     }
@@ -2284,7 +2284,7 @@ export function ObjetivosFinancieros({
       style: {
         color: C.muted
       }
-    }, o.importeObjetivo != null ? `${euros(o.importeReservadoAplicado)} / ${euros(o.importeObjetivo)}` : "Importe por definir", " · ", o.fechaObjetivo && !isNaN(new Date(o.fechaObjetivo + "T00:00:00").getTime()) ? `fecha ${new Date(o.fechaObjetivo + "T00:00:00").toLocaleDateString("es-ES")}` : o.horizonteAniosCalculado > 0 ? `${o.horizonteAniosCalculado.toFixed(1)} años` : "plazo por definir"), faltaDatos.length > 0 && /*#__PURE__*/React.createElement("div", {
+    }, o.importeObjetivo != null ? `${euros(o.importeReservadoAplicado)} / ${euros(o.importeObjetivo)}` : "Importe por definir", " · ", o.fechaObjetivo && !isNaN(new Date(o.fechaObjetivo + "T00:00:00").getTime()) ? `fecha ${new Date(o.fechaObjetivo + "T00:00:00").toLocaleDateString("es-ES")}` : o.horizonteAniosCalculado > 0 ? `${dec(o.horizonteAniosCalculado, 1)} años` : "plazo por definir"), faltaDatos.length > 0 && /*#__PURE__*/React.createElement("div", {
       className: "mt-2 text-xs",
       style: {
         color: C.crit
@@ -2662,7 +2662,12 @@ export function Diagnostico({
     }
   }, "Ver mi primer avance ", /*#__PURE__*/React.createElement(I.arrowRight, {
     size: 16
-  })))), paso === 2 && /*#__PURE__*/React.createElement("div", {
+  }))), !puedePaso2 && /*#__PURE__*/React.createElement("p", {
+    className: "text-xs text-right mt-2",
+    style: {
+      color: C.muted
+    }
+  }, "Indica tus ingresos mensuales para continuar.")), paso === 2 && /*#__PURE__*/React.createElement("div", {
     className: "space-y-5 mp-paso-entra"
   }, /*#__PURE__*/React.createElement(Card, {
     className: "p-5 sm:p-7"
@@ -2806,7 +2811,7 @@ export function Diagnostico({
     style: {
       color: C.muted
     }
-  }, fondo.coberturaMeses == null ? "Cuando tengamos tus gastos esenciales podremos estimarla." : `Con lo que tienes hoy, tu colchón cubre aproximadamente ${fondo.coberturaMeses.toFixed(1)} meses de gastos esenciales.`)), /*#__PURE__*/React.createElement("div", {
+  }, fondo.coberturaMeses == null ? "Cuando tengamos tus gastos esenciales podremos estimarla." : `Con lo que tienes hoy, tu colchón cubre aproximadamente ${dec(fondo.coberturaMeses, 1)} meses de gastos esenciales.`)), /*#__PURE__*/React.createElement("div", {
     className: "flex flex-wrap justify-end gap-2 mt-5"
   }, /*#__PURE__*/React.createElement("button", {
     onClick: () => setSubPasoRedSeguridad("listaDeudas"),
@@ -3048,16 +3053,20 @@ export function Diagnostico({
     }
   }, "Margen mensual"), /*#__PURE__*/React.createElement("b", {
     style: {
-      color: ahorroReal >= 0 ? C.salu : C.mej
+      color: totalIngresos > 0 ? ahorroReal >= 0 ? C.salu : C.mej : C.muted
     }
-  }, euros(ahorroReal))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+  }, totalIngresos > 0 ? euros(ahorroReal) : "—")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     className: "text-[10px] uppercase font-bold",
     style: {
       color: C.muted
     }
-  }, "Estado"), /*#__PURE__*/React.createElement(Badge, {
+  }, "Estado"), totalIngresos > 0 ? /*#__PURE__*/React.createElement(Badge, {
     estado: estado
-  })))))));
+  }) : /*#__PURE__*/React.createElement("b", {
+    style: {
+      color: C.muted
+    }
+  }, "Sin datos")))))));
 }
 
 // sinCabecera: el título y la fecha ya los muestra la cabecera nueva de la página (rediseño)
