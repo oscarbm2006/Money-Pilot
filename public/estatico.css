@@ -29,24 +29,30 @@ body.e-pagina{background:var(--e-fondo)!important;color:var(--e-tinta);font-fami
 .e-logo img{display:block;height:20px;width:auto}
 .e-nav{margin-left:auto;display:flex;align-items:center;flex-wrap:wrap;gap:4px;font:700 13px/1 var(--e-fuente)}
 .e-nav a,.e-dd>button{display:inline-flex;align-items:center;gap:4px;min-height:38px;padding:0 12px;border:0;border-radius:999px;background:transparent;color:var(--e-lavanda-clara);text-decoration:none;font:inherit;cursor:pointer;transition:color .2s,background-color .2s}
-.e-nav a:hover,.e-dd>button:hover{color:#fff;background:rgba(255,255,255,.08)}
+@media (hover: hover) and (pointer: fine){
+.e-nav a:hover,.e-dd>button:hover{color:#fff;background:rgba(255,255,255,.08)}}
 .e-nav a:focus-visible,.e-dd>button:focus-visible{outline:2px solid var(--e-lavanda);outline-offset:2px}
 .e-nav a.e-activo{background:var(--e-indigo);color:#fff;box-shadow:0 6px 16px -8px rgba(79,70,229,.9)}
 .e-nav a.e-cta{background:#fff;color:var(--e-marino)}
 .e-dd{position:relative}
 .e-dd-menu{display:none;position:absolute;left:0;top:100%;z-index:60;min-width:220px;padding-top:6px}
 .e-dd-menu>div{background:var(--e-marino);border:1px solid rgba(199,210,254,.22);border-radius:14px;padding:6px;box-shadow:0 18px 40px -16px rgba(0,0,0,.55)}
-.e-dd:hover .e-dd-menu,.e-dd:focus-within .e-dd-menu{display:block}
+.e-dd:focus-within .e-dd-menu{display:block}
+@media (hover: hover) and (pointer: fine){
+.e-dd:hover .e-dd-menu{display:block}}
 .e-dd-menu a{display:flex;width:100%;border-radius:10px;color:#fff}
-.e-dd-menu a:hover{background:rgba(255,255,255,.1)}
+@media (hover: hover) and (pointer: fine){
+.e-dd-menu a:hover{background:rgba(255,255,255,.1)}}
 /* Zona clara: el menú toma el fondo de la página y el texto pasa a oscuro; lo activo sigue destacando */
 html.e-menu-claro .e-menu{background:rgba(250,250,250,.9);-webkit-backdrop-filter:blur(14px) saturate(160%);backdrop-filter:blur(14px) saturate(160%);border-bottom-color:var(--e-linea);box-shadow:0 10px 24px -20px rgba(30,27,75,.45)}
 html.e-menu-claro .e-nav a,html.e-menu-claro .e-dd>button{color:var(--e-tinta)}
-html.e-menu-claro .e-nav a:hover,html.e-menu-claro .e-dd>button:hover{color:var(--e-indigo);background:rgba(79,70,229,.08)}
+@media (hover: hover) and (pointer: fine){
+html.e-menu-claro .e-nav a:hover,html.e-menu-claro .e-dd>button:hover{color:var(--e-indigo);background:rgba(79,70,229,.08)}}
 html.e-menu-claro .e-nav a.e-activo{color:#fff;background:var(--e-indigo)}
 html.e-menu-claro .e-nav a.e-cta{color:#fff;background:var(--e-indigo)}
 html.e-menu-claro .e-dd-menu a{color:#fff}
-html.e-menu-claro .e-dd-menu a:hover{color:#fff;background:rgba(255,255,255,.1)}
+@media (hover: hover) and (pointer: fine){
+html.e-menu-claro .e-dd-menu a:hover{color:#fff;background:rgba(255,255,255,.1)}}
 
 /* ---------- Banda oscura de arriba, con objetos 3D en CSS ---------- */
 .e-cab{position:relative;overflow:hidden;background:var(--e-noche);color:#fff}
@@ -78,10 +84,12 @@ html.e-menu-claro .e-dd-menu a:hover{color:#fff;background:rgba(255,255,255,.1)}
 .e-h2{margin:0;font:800 clamp(28px,3.6vw,44px)/1.08 var(--e-fuente);letter-spacing:-.03em;color:var(--e-noche)}
 .e-sub{margin:16px 0 0;max-width:38rem;font-size:18px;line-height:1.65;color:var(--e-suave)}
 .e-boton{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:52px;padding:0 24px;border-radius:999px;background:#fff;color:var(--e-marino);font:700 15px/1 var(--e-fuente);text-decoration:none;transition:transform .3s cubic-bezier(.2,.8,.2,1)}
-.e-boton:hover{transform:translateY(-2px)}
+@media (hover: hover) and (pointer: fine){
+.e-boton:hover{transform:translateY(-2px)}}
 .e-pie{border-top:1px solid var(--e-linea);padding:26px 20px;text-align:center;color:var(--e-suave);font-size:13px;background:transparent}
 .e-pie a{color:var(--e-suave);margin:0 8px;text-decoration:none}
-.e-pie a:hover{color:var(--e-indigo)}
+@media (hover: hover) and (pointer: fine){
+.e-pie a:hover{color:var(--e-indigo)}}
 
 /* ---------- Quiénes somos ---------- */
 .e-qs-intro{margin:0;max-width:46rem;font-size:clamp(20px,2.3vw,26px);line-height:1.55;letter-spacing:-.01em}
@@ -91,7 +99,8 @@ html.e-menu-claro .e-dd-menu a:hover{color:#fff;background:rgba(255,255,255,.1)}
 .e-qs-avatar{flex:0 0 auto;display:flex;align-items:center;justify-content:center;width:68px;height:68px;border-radius:50%;background:var(--e-noche);color:#fff;font-weight:800;font-size:21px;transform:perspective(500px) rotateY(-18deg);box-shadow:8px 10px 0 -2px var(--e-lavanda)}
 .e-pilares{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:22px;margin-top:40px;perspective:1200px}
 .e-pilar{position:relative;background:var(--e-superficie);border:1px solid var(--e-linea);border-radius:26px;padding:30px;box-shadow:0 1px 2px rgba(30,27,75,.04),0 24px 48px -34px rgba(49,46,129,.3);transition:transform .45s cubic-bezier(.2,.8,.2,1),box-shadow .45s}
-.e-pilar:hover{transform:translateY(-6px) rotateX(4deg);box-shadow:0 30px 60px -30px rgba(49,46,129,.45)}
+@media (hover: hover) and (pointer: fine){
+.e-pilar:hover{transform:translateY(-6px) rotateX(4deg);box-shadow:0 30px 60px -30px rgba(49,46,129,.45)}}
 .e-pilar-num{position:absolute;top:10px;right:20px;font:400 72px/1 var(--e-cifras);color:var(--e-indigo);opacity:.14}
 .e-pilar-icono{display:flex;align-items:center;justify-content:center;width:56px;height:56px;border-radius:16px;background:var(--e-tinte);color:var(--e-indigo);margin-bottom:28px}
 .e-pilar h3{margin:0 0 8px;font:800 21px/1.25 var(--e-fuente);letter-spacing:-.02em;color:var(--e-noche)}
