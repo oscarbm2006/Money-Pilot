@@ -2,7 +2,8 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#060A13" />
 <title>MoneyPilot – Diagnóstico y plan de tu salud financiera gratis</title>
 <meta name="description" content="Descubre el estado real de tus finanzas en minutos. MoneyPilot analiza tus datos y te da un diagnóstico y un plan de acción personalizado, gratis." />
 <meta name="robots" content="index, follow" />
@@ -96,7 +97,9 @@ html, body { overflow-x: hidden; max-width: 100%; }
     background-image:none;
     transition: box-shadow var(--mp-medio) var(--mp-curva-suave), border-color var(--mp-medio) var(--mp-curva-suave);
   }
+  @media (hover: hover) and (pointer: fine) {
   .border:hover { border-color: rgba(79,70,229,0.45); box-shadow: 0 4px 16px rgba(79,70,229,0.12); }
+}
 
   /* Foco accesible consistente en toda la app, sin depender de los estilos inline por color */
   button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible {
@@ -217,7 +220,9 @@ html, body { overflow-x: hidden; max-width: 100%; }
   .text-indigo-600, .text-indigo-700 { color:#4338CA !important; }
   .bg-indigo-600 { background-color:#4F46E5 !important; }
   .bg-indigo-700 { background-color:#4338CA !important; }
+  @media (hover: hover) and (pointer: fine) {
   .hover\:bg-indigo-700:hover { background-color:#4338CA !important; }
+}
   .shadow-lg, .shadow-xl { box-shadow:0 8px 24px rgba(30,30,46,.08) !important; }
   @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration:.01ms !important; animation-iteration-count:1 !important; scroll-behavior:auto !important; } }
 
@@ -382,7 +387,9 @@ section.section-tinted{
   display:flex; align-items:center; justify-content:space-between;
   transition:all var(--mp-rapido) var(--mp-curva-suave);
 }
+@media (hover: hover) and (pointer: fine) {
 .quiz-option:hover{border-color:rgba(79,70,229,.38)!important;background:#F2F4FF!important;transform:translateX(2px);box-shadow:0 4px 12px rgba(79,70,229,.07)}
+}
 .chart-interactive{cursor:crosshair}
 .chart-interactive svg text{user-select:none}
 
@@ -410,13 +417,19 @@ section.section-tinted{
 /* Menú superior más legible: texto más claro y algo mayor (13 px). Mismos valores en el blog y en Recursos y libros. */
 header nav.text-xs{ font-size:.8125rem; line-height:1.25rem; }
 .nav-link-muted{ color:#CBD5E1 !important; transition:color var(--mp-medio) var(--mp-curva-suave); }
+@media (hover: hover) and (pointer: fine) {
 .nav-link-muted:hover{ color:#FFFFFF !important; }
+}
 header nav .nav-link-active{ color:#FFFFFF !important; background-color:rgba(79,70,229,.45); border-bottom-color:#A5B4FC !important; }
 header .export-menu button{ font-size:.8125rem; color:#F1F5F9 !important; white-space:nowrap; }
+@media (hover: hover) and (pointer: fine) {
 header .export-menu button:hover{ color:#FFFFFF !important; }
+}
 header .export-menu button[style*="0.08"]{ color:#FFFFFF !important; background-color:rgba(79,70,229,.55) !important; }
 .nav-menu-text{ color:#CBD5E1 !important; transition:color var(--mp-medio) var(--mp-curva-suave); }
+@media (hover: hover) and (pointer: fine) {
 .nav-menu-text:hover{ color:#FFFFFF !important; }
+}
 .export-menu{ transform-origin: top right; animation: menuPop var(--mp-medio) var(--mp-curva); }
 @keyframes menuPop{ from{ opacity:0; transform:scale(0.94) translateY(-4px); } to{ opacity:1; transform:scale(1) translateY(0); } }
 
