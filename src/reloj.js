@@ -1,3 +1,4 @@
+import { contarHasta, prefiereMenosMovimiento } from './movimiento.js';
 const { useState, useEffect, useRef } = React;
 const ce = React.createElement;
 
@@ -13,11 +14,18 @@ export function Reloj({ score, color, etiqueta, pequeno }) {
     return () => io.disconnect();
   }, []);
   const s = Math.max(0, Math.min(100, Number(score) || 0));
+  const numRef = useRef(null);
+  useEffect(() => {
+    if (!listo) return;
+    // El número cuenta a la vez que barre la aguja (misma duración y retardo).
+    const t = setTimeout(() => contarHasta(numRef.current, s, v => String(Math.round(v)), 1600), 200);
+    return () => clearTimeout(t);
+  }, [listo, s]);
   return ce("div", { ref, className: "mp-panel" + (pequeno ? " mp-panel-p" : ""), role: "img", "aria-label": `Puntuación ${Math.round(s)} de 100${etiqueta ? ", " + etiqueta : ""}` },
     ce("div", { className: "mp-gauge", "aria-hidden": "true" },
       ce("div", { className: "mp-needle", style: { rotate: (listo ? s * 2.7 - 135 : -135) + "deg" } }),
       ce("div", { className: "mp-hub" }),
-      ce("div", { className: "mp-read" }, ce("b", null, Math.round(s)), ce("small", null, etiqueta || "de 100"))));
+      ce("div", { className: "mp-read" }, ce("b", { ref: numRef }, prefiereMenosMovimiento() ? Math.round(s) : 0), ce("small", null, etiqueta || "de 100"))));
 }
 
 export const CAPAS = ["Colchón", "Deudas", "Ahorro", "Inversión"];

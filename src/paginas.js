@@ -287,7 +287,7 @@ export function Dashboard({
       color: C.muted
     }
   }, "/ 100")), /*#__PURE__*/React.createElement("div", {
-    className: "mt-1.5"
+    className: "mt-1.5 mp-revela"
   }, /*#__PURE__*/React.createElement(Badge, {
     estado: {
       nombre: salud.nombre,
@@ -296,7 +296,7 @@ export function Dashboard({
       Ico: saludIco
     }
   })), /*#__PURE__*/React.createElement("p", {
-    className: "text-xs mt-3 max-w-sm",
+    className: "text-xs mt-3 max-w-sm mp-revela",
     style: {
       color: C.muted
     }
@@ -306,25 +306,26 @@ export function Dashboard({
     label: "Ahorro",
     pts: salud.desglose.ptsAhorro,
     max: 40,
-    color: C.exc
+    color: C.exc,
+    delay: 300
   }), /*#__PURE__*/React.createElement(DesgloseBarra, {
     label: "Fondo de emergencia",
     pts: salud.desglose.ptsFondo,
     max: 30,
     color: C.salu,
-    delay: 120
+    delay: 600
   }), /*#__PURE__*/React.createElement(DesgloseBarra, {
     label: "Peso de tus deudas sobre tus ingresos",
     pts: salud.desglose.ptsDeuda,
     max: 20,
     color: C.mej,
-    delay: 240
+    delay: 900
   }), /*#__PURE__*/React.createElement(DesgloseBarra, {
     label: "Perfil de riesgo",
     pts: salud.desglose.ptsPerfil,
     max: 10,
     color: C.sand,
-    delay: 360
+    delay: 1200
   })))), /*#__PURE__*/React.createElement("div", {
     className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
   }, /*#__PURE__*/React.createElement(StatCard, {
