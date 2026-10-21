@@ -299,19 +299,37 @@ const CTA_PRESETS = {
 };
 
 function headerHtml(activo) {
+  // Menú integrado con el fondo (estilos en /estatico.css; /estatico.js lo pasa a claro sobre la zona clara)
   const item = (href, texto, clave, extra) => {
-    const clases = [activo === clave ? 'active' : '', extra || ''].filter(Boolean).join(' ');
-    return `<a href="${href}"${clases ? ` class="${clases}"` : ''}>${texto}</a>`;
+    const clases = [activo === clave ? 'e-activo' : '', extra || ''].filter(Boolean).join(' ');
+    return `<a href="${href}"${clases ? ` class="${clases}"` : ''}${activo === clave ? ' aria-current="page"' : ''}>${texto}</a>`;
   };
-  return `<header class="site-header">
-  <div class="nav-inner">
-    <a href="/" class="logo-pill" aria-label="MoneyPilot, ir al inicio"><img src="/logo-moneypilot.png" alt="MoneyPilot" width="113" height="20"></a>
-    <nav class="main-nav" aria-label="Navegación principal">
+  return `<header class="e-menu">
+  <div class="e-menu-fila">
+    <a href="/" class="e-logo" aria-label="MoneyPilot, ir al inicio"><img src="/logo-moneypilot.png" alt="MoneyPilot" width="113" height="20"></a>
+    <nav class="e-nav" aria-label="Navegación principal">
       ${item('/', 'Introducción', 'inicio')}
       ${item('/blog/guia/index.html', 'Blog', 'blog')}
       ${item('/recursos-y-libros.html', 'Recursos y libros', 'recursos')}
-      ${item('/', 'Hacer mi diagnóstico', 'diag', 'cta-nav')}
+      ${item('/', 'Hacer mi diagnóstico', 'diag', 'e-cta')}
     </nav>
+  </div>
+</header>`;
+}
+
+// Banda oscura de arriba de los índices del blog (con objetos 3D hechos solo con CSS)
+function cabeceraIndiceHtml(seccion) {
+  return `<header class="e-cab">
+  <div class="e-cab-luz" aria-hidden="true"></div>
+  <div class="e-cab-3d" aria-hidden="true">
+    <span class="e-obj e-libro" style="--x:66%;--y:22%;--t:68px;--r:-12deg;--c:#4F46E5"></span>
+    <span class="e-obj e-moneda" style="--x:79%;--y:48%;--t:76px;--r:10deg;--d:-2.5s">€</span>
+    <span class="e-obj e-libro" style="--x:90%;--y:14%;--t:56px;--r:8deg;--c:#312E81;--d:-4s"></span>
+  </div>
+  <div class="e-cab-texto">
+    <p class="e-cab-ante">Educación financiera</p>
+    <h1>${escHtml(seccion.tituloIndex)}</h1>
+    <p class="e-cab-frase">${escHtml(seccion.descIndex)}</p>
   </div>
 </header>`;
 }
@@ -480,8 +498,10 @@ ${jsonLd({
   })}
 </script>
 <style>${STYLE}</style>
+<link rel="stylesheet" href="/estatico.css" />
+<script src="/estatico.js" defer></script>
 </head>
-<body>
+<body class="e-pagina e-blog">
 <div class="read-progress" aria-hidden="true"></div>
 ${headerHtml('blog')}
 <main>
@@ -532,12 +552,9 @@ function tarjetaHtml(p, seccion) {
 function indexPageCronologico(posts, seccion) {
   const items = posts.filter(p => p.slug).map(p => tarjetaHtml(p, seccion)).join('\n');
   return paginaBase(seccion, `
-  <div class="eyebrow">Educación financiera</div>
-  <h1>${escHtml(seccion.tituloIndex)}</h1>
-  <p class="lead">${escHtml(seccion.descIndex)}</p>
   ${tabsHtml(seccion.key)}
   ${items ? `<div class="cards">${items}</div>` : '<div class="empty">Muy pronto publicaremos aquí nuevos artículos.</div>'}
-  `, !items);
+  `, !items, cabeceraIndiceHtml(seccion));
 }
 
 // Índice de la Guía: fases desplegables (1 a 5), igual que en la web.
@@ -566,9 +583,6 @@ function indexPageGuia(posts, seccion) {
 
   const sinFase = porFase[0] || [];
   return paginaBase(seccion, `
-  <div class="eyebrow">Educación financiera</div>
-  <h1>${escHtml(seccion.tituloIndex)}</h1>
-  <p class="lead">${escHtml(seccion.descIndex)}</p>
   ${tabsHtml(seccion.key)}
   <section class="gp" id="guia-progreso" hidden aria-label="Tu progreso en la guía">
     <div class="gp-cab"><strong class="gp-titulo"></strong><span class="gp-pct"></span></div>
@@ -579,10 +593,10 @@ function indexPageGuia(posts, seccion) {
   ${guiaDatosHtml(ordenLecturaGuia(posts), seccion)}
   ${bloques}
   ${sinFase.length ? `<h2 style="font-family:var(--serif);color:var(--strong);margin:28px 0 12px;">Otros artículos de la guía</h2><div class="cards">${sinFase.map(p => tarjetaHtml(p, seccion)).join('\n')}</div>` : ''}
-  `, !posts.some(p => p.slug));
+  `, !posts.some(p => p.slug), cabeceraIndiceHtml(seccion));
 }
 
-function paginaBase(seccion, cuerpoHtml, sinContenido) {
+function paginaBase(seccion, cuerpoHtml, sinContenido, cabeceraHtml) {
   return `<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -602,9 +616,12 @@ function paginaBase(seccion, cuerpoHtml, sinContenido) {
 <link rel="icon" type="image/x-icon" href="/favicon.ico" />
 <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
 <style>${STYLE}</style>
+<link rel="stylesheet" href="/estatico.css" />
+<script src="/estatico.js" defer></script>
 </head>
-<body>
+<body class="e-pagina e-blog">
 ${headerHtml('blog')}
+${cabeceraHtml || ''}
 <main class="wide">
   ${cuerpoHtml}
 </main>
