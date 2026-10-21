@@ -227,7 +227,7 @@ describe('Rediseño 3D: Plan y Seguimiento (Fase 4)', () => {
     assert.ok(!app.includes('Eyebrow, null, "Tu plan"') && !app.includes('Eyebrow, null, "Tu evolución"'), 'quedan introducciones antiguas');
     const plan = app.slice(app.indexOf("vistaActual === 'plan' &&"), app.indexOf("vistaActual === 'seguimiento' &&"));
     const seg = app.slice(app.indexOf("vistaActual === 'seguimiento' &&"), app.indexOf("vistaActual === 'simulador' &&"));
-    assert.ok(plan.includes('React.createElement(PlanFinanciero, {') && plan.includes('label: "Continuar a Seguimiento"'));
+    assert.ok(plan.includes('React.createElement(PlanFinanciero, {') && plan.includes('label: "Continuar al seguimiento"'));
     for (const p of ['onRegistrar', 'onEliminar', 'onBorrarTodo', 'onOpenAuth', 'label: "Probar el simulador"']) assert.ok(seg.includes(p), 'falta ' + p);
   });
 });
