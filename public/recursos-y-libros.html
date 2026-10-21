@@ -262,49 +262,53 @@
   /* Fundido suave entre páginas (misma regla que la app y el blog) */
   @media (prefers-reduced-motion: no-preference) { @view-transition { navigation: auto; } }
 </style>
+<link rel="stylesheet" href="/estatico.css" />
+<script src="/estatico.js" defer></script>
 </head>
-<body>
+<body class="e-pagina e-recursos">
 
-<div class="bg-aura"></div>
 
-<header class="glass-nav">
-  <div class="nav-inner">
-    <a href="/" class="logo-link" data-vista="inicio" aria-label="MoneyPilot, ir al inicio">
-      <span class="logo-pill"><img src="/logo-moneypilot.png" alt="MoneyPilot" width="113" height="20"></span>
-    </a>
-    <nav class="main-nav" aria-label="Navegación principal">
-      <a href="/" data-vista="inicio" class="nav-item nav-link-muted">Introducción</a>
-      <div class="nav-dd">
-        <button type="button" class="nav-item nav-link-muted" aria-haspopup="true">Mis Finanzas<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
-        <div class="nav-menu">
-          <a href="/" data-vista="diagnostico">Diagnóstico</a>
-          <a href="/" data-vista="cuentas">Cuentas</a>
-          <a href="/" data-vista="inversiones">Inversiones</a>
-          <a href="/" data-vista="patrimonio">Patrimonio</a>
-        </div>
-      </div>
-      <div class="nav-dd">
-        <button type="button" class="nav-item nav-link-muted" aria-haspopup="true">Plan<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
-        <div class="nav-menu">
-          <a href="/" data-vista="estrategia">Estrategia</a>
-          <a href="/" data-vista="plan">Plan</a>
-          <a href="/" data-vista="seguimiento">Seguimiento</a>
-        </div>
-      </div>
-      <a href="/" data-vista="simulador" class="nav-item nav-link-muted">Simulador</a>
-      <a href="/blog/guia/index.html" class="nav-item nav-link-muted">Blog</a>
-      <a href="/recursos-y-libros.html" class="nav-item nav-active" aria-current="page">Recursos y libros</a>
+<header class="e-menu">
+  <div class="e-menu-fila">
+    <a href="/" class="e-logo" data-vista="inicio" aria-label="MoneyPilot, ir al inicio"><img src="/logo-moneypilot.png" alt="MoneyPilot" width="113" height="20"></a>
+    <nav class="e-nav" aria-label="Navegación principal">
+      <a href="/" data-vista="inicio">Introducción</a>
+      <div class="e-dd"><button type="button" aria-haspopup="true">Mis Finanzas <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button><div class="e-dd-menu"><div>
+        <a href="/" data-vista="diagnostico">Diagnóstico</a>
+        <a href="/" data-vista="mis-finanzas">Cuentas, inversiones y patrimonio</a>
+      </div></div></div>
+      <div class="e-dd"><button type="button" aria-haspopup="true">Hoja de ruta <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button><div class="e-dd-menu"><div>
+        <a href="/" data-vista="estrategia">Estrategia</a>
+        <a href="/" data-vista="plan">Plan</a>
+        <a href="/" data-vista="seguimiento">Seguimiento</a>
+      </div></div></div>
+      <div class="e-dd"><button type="button" aria-haspopup="true">Simuladores <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button><div class="e-dd-menu"><div>
+        <a href="/" data-vista="simulador">Ahorro e inversión</a>
+        <a href="/" data-vista="simulador-deudas">Deudas</a>
+      </div></div></div>
+      <a href="/blog/guia/index.html">Blog</a>
+      <a href="/recursos-y-libros.html" class="e-activo" aria-current="page">Recursos y libros</a>
     </nav>
+  </div>
+</header>
+
+<header class="e-cab">
+  <div class="e-cab-luz" aria-hidden="true"></div>
+  <div class="e-cab-3d" aria-hidden="true">
+    <span class="e-obj e-libro" style="--x:64%;--y:22%;--t:70px;--r:-14deg;--c:#4F46E5"></span>
+    <span class="e-obj e-libro" style="--x:76%;--y:44%;--t:84px;--r:8deg;--c:#6366F1;--d:-2.5s"></span>
+    <span class="e-obj e-libro" style="--x:88%;--y:16%;--t:62px;--r:-6deg;--c:#312E81;--d:-4s"></span>
+    <span class="e-obj e-moneda" style="--x:70%;--y:68%;--t:58px;--r:12deg;--d:-1.2s">€</span>
+  </div>
+  <div class="e-cab-texto">
+    <p class="e-cab-ante">Recursos seleccionados</p>
+    <h1>Lecturas para acompañar<br><em>tu diagnóstico</em></h1>
+    <p class="e-cab-frase">Después de ver tu diagnóstico en MoneyPilot, estos libros te ayudan a entender el porqué, poner en orden tus cuentas y dar el siguiente paso, según dónde estés ahora.</p>
   </div>
 </header>
 
 <section class="resources-section">
 
-  <div class="page-header">
-    <div class="eyebrow">Recursos seleccionados</div>
-    <h1>Lecturas para acompañar<br><em>tu diagnóstico</em></h1>
-    <p>Después de ver tu diagnóstico en MoneyPilot, estos libros te ayudan a entender el porqué, poner en orden tus cuentas y dar el siguiente paso, según dónde estés ahora.</p>
-  </div>
 
   <div class="reading-path">
     <a class="path-stop" href="#bloque-1" style="--stop-color:#4f46e5"><div class="dot">1</div><div class="label">Mentalidad</div></a>

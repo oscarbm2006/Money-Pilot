@@ -37,31 +37,69 @@
   /* Fundido suave entre páginas (misma regla que la app y el blog) */
   @media (prefers-reduced-motion: no-preference) { @view-transition { navigation: auto; } }
 </style>
+<link rel="stylesheet" href="/estatico.css" />
+<script src="/estatico.js" defer></script>
 </head>
-<body>
-<header><a href="/">MoneyPilot</a></header>
+<body class="e-pagina">
+<header class="e-menu">
+  <div class="e-menu-fila">
+    <a href="/" class="e-logo" data-vista="inicio" aria-label="MoneyPilot, ir al inicio"><img src="/logo-moneypilot.png" alt="MoneyPilot" width="113" height="20"></a>
+    <nav class="e-nav" aria-label="Navegación principal">
+      <a href="/" data-vista="inicio">Introducción</a>
+      <a href="/blog/guia/index.html">Blog</a>
+      <a href="/recursos-y-libros.html">Recursos y libros</a>
+      <a href="/" data-vista="diagnostico" class="e-cta">Hacer mi diagnóstico</a>
+    </nav>
+  </div>
+</header>
+<header class="e-cab">
+  <div class="e-cab-luz" aria-hidden="true"></div>
+  <div class="e-cab-3d" aria-hidden="true">
+    <span class="e-obj e-moneda" style="--x:66%;--y:24%;--t:92px;--r:-8deg">€</span>
+    <span class="e-obj e-libro" style="--x:80%;--y:46%;--t:70px;--r:10deg;--c:#6366F1;--d:-2.5s"></span>
+    <span class="e-obj e-moneda" style="--x:90%;--y:14%;--t:56px;--r:14deg;--d:-4s">€</span>
+  </div>
+  <div class="e-cab-texto">
+    <p class="e-cab-ante">Quiénes somos</p>
+    <h1>Educación financiera con un plan detrás</h1>
+    <p class="e-cab-frase">Un proyecto nacido de una realidad muy común: la falta de educación financiera genera estrés crónico y decisiones equivocadas.</p>
+  </div>
+</header>
 <main>
-  <h1>Quiénes somos</h1>
-
-  <p>Detrás de MoneyPilot hay un proyecto nacido de una realidad muy común: la falta de educación financiera genera estrés crónico y decisiones equivocadas. Somos desarrolladores y entusiastas de las finanzas personales que creemos firmemente que la tecnología debe servir para democratizar el bienestar económico.</p>
-  <p>MoneyPilot está creado y mantenido por Óscar Baca Martínez, estudiante de Economía y apasionado de los mercados financieros, con más de 2 años gestionando su propia cartera en acciones y otros productos financieros.</p>
-  <p><b>Cuál es nuestro objetivo.</b> Nuestro propósito no es darte una simple hoja de cálculo matemática, sino educar, dar contexto y crear un plan de acción. Queremos ayudarte a:</p>
-  <ul>
-    <li><b>Comprar tranquilidad:</b> construyendo un escudo contra los imprevistos para blindar a tu familia y reducir tu ansiedad.</li>
-    <li><b>Salir de las deudas:</b> trazando planes exactos (como la bola de nieve o la avalancha) para que recuperes tu margen mensual.</li>
-    <li><b>Poner el tiempo a tu favor:</b> demostrando con datos reales cómo el interés compuesto y las decisiones tempranas pueden multiplicar tu patrimonio sin que sientas que sacrificas tu calidad de vida actual.</li>
-  </ul>
-  <p>En definitiva, nuestro objetivo es acompañarte para que dejes de sobrevivir a fin de mes y empieces a diseñar tu libertad financiera.</p>
-  <p>Puedes escribirnos a <a class="inline" href="mailto:soportemoneypilot@gmail.com">soportemoneypilot@gmail.com</a> para cualquier duda, sugerencia o colaboración.</p>
-
-  <a class="back" href="/">← Volver a MoneyPilot</a>
+  <section class="e-seccion">
+    <div class="e-ancho">
+      <p class="e-qs-intro">Detrás de MoneyPilot hay un proyecto nacido de una realidad muy común: la falta de educación financiera genera estrés crónico y decisiones equivocadas. Somos desarrolladores y entusiastas de las finanzas personales que creemos firmemente que la tecnología debe servir para democratizar el bienestar económico.</p>
+      <div class="e-qs-autor">
+        <span class="e-qs-avatar" aria-hidden="true">ÓB</span>
+        <p>MoneyPilot está creado y mantenido por <strong>Óscar Baca Martínez</strong>, estudiante de Economía y apasionado de los mercados financieros, con más de 2 años gestionando su propia cartera en acciones y otros productos financieros.</p>
+      </div>
+      <div style="margin-top:64px">
+        <h2 class="e-h2">Cuál es nuestro objetivo.</h2>
+        <p class="e-sub">Nuestro propósito no es darte una simple hoja de cálculo matemática, sino educar, dar contexto y crear un plan de acción. Queremos ayudarte a:</p>
+      </div>
+      <div class="e-pilares">
+        <article class="e-pilar"><span class="e-pilar-num" aria-hidden="true">1</span><div class="e-pilar-icono"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg></div><h3>Comprar tranquilidad</h3><p>Construyendo un escudo contra los imprevistos para blindar a tu familia y reducir tu ansiedad.</p></article>
+        <article class="e-pilar"><span class="e-pilar-num" aria-hidden="true">2</span><div class="e-pilar-icono"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></div><h3>Salir de las deudas</h3><p>Trazando planes exactos (como la bola de nieve o la avalancha) para que recuperes tu margen mensual.</p></article>
+        <article class="e-pilar"><span class="e-pilar-num" aria-hidden="true">3</span><div class="e-pilar-icono"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="m7 15 4-4 3 3 5-6"/></svg></div><h3>Poner el tiempo a tu favor</h3><p>Demostrando con datos reales cómo el interés compuesto y las decisiones tempranas pueden multiplicar tu patrimonio sin que sientas que sacrificas tu calidad de vida actual.</p></article>
+      </div>
+    </div>
+  </section>
+  <section class="e-seccion" style="padding-top:0">
+    <div class="e-ancho">
+      <div class="e-cierre">
+        <h2 class="e-h2">En definitiva, nuestro objetivo es acompañarte para que dejes de sobrevivir a fin de mes y empieces a diseñar tu libertad financiera.</h2>
+        <p>Puedes escribirnos a <a href="mailto:soportemoneypilot@gmail.com" style="color:#fff">soportemoneypilot@gmail.com</a> para cualquier duda, sugerencia o colaboración.</p>
+        <a class="e-boton" href="/">← Volver a MoneyPilot</a>
+      </div>
+    </div>
+  </section>
 </main>
-<footer>
-  <a href="/blog/guia/index.html" style="color:var(--muted);margin:0 8px;">Blog</a> ·
-  <a href="/privacidad.html" style="color:var(--muted);margin:0 8px;">Privacidad</a> ·
-  <a href="/aviso-legal.html" style="color:var(--muted);margin:0 8px;">Aviso Legal</a> ·
-  <a href="/quienes-somos.html" style="color:var(--muted);margin:0 8px;">Quiénes somos</a> ·
-  <a href="/contacto.html" style="color:var(--muted);margin:0 8px;">Contacto</a>
+<footer class="e-pie">
+  <a href="/blog/guia/index.html">Blog</a> ·
+  <a href="/privacidad.html">Privacidad</a> ·
+  <a href="/aviso-legal.html">Aviso Legal</a> ·
+  <a href="/quienes-somos.html">Quiénes somos</a> ·
+  <a href="/contacto.html">Contacto</a>
 </footer>
 </body>
 </html>

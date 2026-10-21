@@ -372,3 +372,30 @@ section.mp-seccion.mp-seccion.mp-superficie:not(.mp-oscura){background:var(--mp-
 .mp-select{-webkit-appearance:none;appearance:none;padding-right:44px;cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%234F46E5' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 16px center}
 .mp-select:focus,.mp-campo-texto:focus{outline:none;border-color:var(--mp-indigo);box-shadow:0 0 0 4px rgba(79,70,229,.15)}
 .mp-hormiga-pista-campo{margin:6px 0 0;font-size:13px;color:var(--mp-texto-suave)}
+
+/* ============================================================
+   Menú integrado con el fondo (páginas rediseñadas)
+   Arriba, el menú tiene el mismo color que la banda oscura que hay debajo (sin borde ni sombra): parece parte
+   de la página. Al bajar a la zona clara (App.js marca <html data-menu-claro>), toma el fondo claro de la página
+   con un ligero desenfoque y el texto pasa a oscuro. El apartado activo siempre destaca en índigo.
+   ============================================================ */
+.mp-fondo-limpio header.glass-nav{background-color:var(--mp-noche)!important;border-bottom:1px solid transparent!important;box-shadow:none!important;-webkit-backdrop-filter:none;backdrop-filter:none}
+.mp-fondo-limpio header.glass-nav .nav-link-muted{color:var(--mp-lavanda-clara)!important}
+.mp-fondo-limpio header.glass-nav .nav-link-muted:hover{color:#fff!important}
+.mp-fondo-limpio header.glass-nav nav .nav-link-active{background-color:var(--mp-indigo)!important;color:#fff!important;border-bottom-color:transparent!important;box-shadow:0 6px 16px -8px rgba(79,70,229,.9)}
+html[data-menu-claro] .mp-fondo-limpio header.glass-nav{background-color:rgba(250,250,250,.9)!important;-webkit-backdrop-filter:blur(14px) saturate(160%);backdrop-filter:blur(14px) saturate(160%);border-bottom:1px solid var(--mp-linea)!important;box-shadow:0 10px 24px -20px rgba(30,27,75,.45)!important}
+html[data-menu-claro] .mp-fondo-limpio header.glass-nav .nav-link-muted{color:var(--mp-tinta)!important}
+html[data-menu-claro] .mp-fondo-limpio header.glass-nav .nav-link-muted:hover{color:var(--mp-indigo)!important}
+html[data-menu-claro] .mp-fondo-limpio header.glass-nav button[style*="rgb(199, 210, 254)"]{color:var(--mp-indigo)!important}
+html[data-menu-claro] .mp-fondo-limpio header.glass-nav .hover\:bg-white\/10:hover{background-color:rgba(79,70,229,.08)}
+.mp-fondo-limpio header.glass-nav{transition:background-color .35s ease,border-color .35s ease,box-shadow .35s ease}
+
+/* ===== Quiénes somos ===== */
+.mp-qs-intro{margin:0;max-width:46rem;font-size:clamp(20px,2.3vw,26px);line-height:1.55;letter-spacing:-.01em;color:var(--mp-tinta)}
+.mp-qs-autor{display:flex;align-items:center;gap:18px;max-width:46rem;margin-top:30px;padding:20px 22px;border-radius:22px;background:var(--mp-superficie);border:1px solid var(--mp-linea)}
+.mp-qs-autor p{margin:0;font-size:16px;line-height:1.6;color:var(--mp-texto-suave)}
+.mp-qs-autor strong{color:var(--mp-tinta)}
+.mp-qs-avatar{flex:0 0 auto;display:flex;align-items:center;justify-content:center;width:68px;height:68px;border-radius:50%;background:var(--mp-noche);color:#fff;font-weight:800;font-size:21px;transform:perspective(500px) rotateY(-18deg);box-shadow:8px 10px 0 -2px var(--mp-lavanda)}
+.mp-qs-objetivo{margin-top:64px}
+.mp-piel>section.mp-qs-cierre-hueco{padding-top:0}
+.mp-seccion .mp-cta .mp-h2.mp-qs-frase{font-size:clamp(24px,3vw,36px);line-height:1.2;max-width:28ch}
