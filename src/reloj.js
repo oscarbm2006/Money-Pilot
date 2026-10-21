@@ -24,9 +24,20 @@ export const CAPAS = ["Colchón", "Deudas", "Ahorro", "Inversión"];
 
 // Capas isométricas (prototipo B · Capas). `activa` (0–3) resalta la capa en la que estás.
 export function CapasOrden({ activa, pequeno }) {
-  return ce("div", { className: "mp-iso" + (pequeno ? " mp-iso-p" : ""), "aria-hidden": "true" },
+  const ref = useRef(null);
+  const [visto, setVisto] = useState(!pequeno);
+  useEffect(() => {
+    if (!pequeno) return;
+    const el = ref.current;
+    if (!el || typeof IntersectionObserver === 'undefined') { setVisto(true); return; }
+    const io = new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) { setVisto(true); io.disconnect(); } }, { threshold: 0.3 });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [pequeno]);
+  const cuerpo = ce("div", { className: "mp-iso" + (pequeno ? " mp-iso-p" : ""), "aria-hidden": "true" },
     ce("div", { className: "mp-iso-in" }, CAPAS.map((c, i) =>
       ce("div", { key: c, className: "mp-slab " + ["mp-s1", "mp-s2", "mp-s3", "mp-s4"][i] + (activa === i ? " mp-slab-on" : "") }, ce("span", null, c)))));
+  return pequeno ? ce("div", { ref, className: "mp-escena mp-escena-p" + (visto ? "" : " mp-sin-ver") }, cuerpo) : cuerpo;
 }
 
 export function SeccionReloj() {
