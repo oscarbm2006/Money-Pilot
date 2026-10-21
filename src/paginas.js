@@ -266,7 +266,7 @@ export function Dashboard({
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex flex-col sm:flex-row items-center gap-6"
   }, /*#__PURE__*/React.createElement("div", {
-    className: "flex items-center gap-5"
+    className: "flex flex-col sm:flex-row items-center gap-5 min-w-0"
   }, /*#__PURE__*/React.createElement(Reloj, {
     score: salud.score,
     color: salud.color,
