@@ -108,7 +108,7 @@ describe('Rediseño 3D: herramientas (Fase 2)', () => {
     for (const t of ['Construye tu foto financiera, paso a paso', 'Empezamos por lo esencial y añadimos detalle solo cuando lo necesitas. Tus cálculos se actualizan en cada paso.',
       '¿Qué puede hacer tu ahorro con el tiempo?', 'Ajusta los números y mira qué puede hacer tu ahorro con el tiempo. Si ya hiciste tu diagnóstico, partirá de tus propios datos.',
       '¿Cuánto tardarás en salir de tus deudas?', 'Escribe tus deudas y compara dos formas de pagarlas. Es una proyección educativa.']) assert.ok(app.includes(t), 'falta el texto: ' + t);
-    assert.equal((app.match(/fade-switch-enter mp-piel/g) || []).length, 7);
+    assert.equal((app.match(/fade-switch-enter mp-piel/g) || []).length, 9);
   });
   test('Cuentas, Inversiones y Patrimonio forman una sola página que conserva sus textos', () => {
     const sec = leer('src/secciones.js');
@@ -161,8 +161,8 @@ describe('Rediseño 3D: Mis finanzas en una sola página (Fase 2c)', () => {
 
 describe('Rediseño 3D: fondo blanco en las páginas rediseñadas', () => {
   const app = leer('src/App.js'), sec = leer('src/secciones.js'), css = leer('public/styles.css');
-  test('la lista de páginas rediseñadas incluye la portada, el diagnóstico, Mis finanzas, Estrategia y los simuladores', () => {
-    assert.match(sec, /export const VISTAS_REDISENADAS = \["inicio", "diagnostico", \.\.\.VISTAS_MIS_FINANZAS, "estrategia", "plan", "seguimiento", "simulador", "simulador-deudas"\];/);
+  test('la lista de páginas rediseñadas incluye la portada, el diagnóstico, Mis finanzas, Estrategia, los simuladores, el blog y Quiénes somos', () => {
+    assert.ok(sec.includes('export const VISTAS_REDISENADAS = ["inicio", "diagnostico", ...VISTAS_MIS_FINANZAS, "estrategia", "plan", "seguimiento", "simulador", "simulador-deudas", "blog", "quienes-somos"];'));
   });
   test('en esas páginas no se pintan el tono gris azulado ni el dibujo de líneas', () => {
     assert.ok(app.includes('const fondoLimpio = VISTAS_REDISENADAS.includes(vistaActual);'));
@@ -176,8 +176,8 @@ describe('Rediseño 3D: fondo blanco en las páginas rediseñadas', () => {
   test('el fondo blanco no toca ninguna otra sección: las zonas oscuras siguen oscuras', () => {
     // Una regla general sobre "section" empataba en prioridad con las zonas oscuras y las volvía claras
     assert.ok(!/\.mp-fondo-limpio section:nth-of-type/.test(css));
-    const bloque = css.slice(css.indexOf('Fondo limpio (como el prototipo)'));
-    assert.equal((bloque.match(/\.mp-fondo-limpio [^{]*\{/g) || []).length, 1, 'el fondo limpio solo debe quitar el tinte de las secciones de herramientas');
+    const reglasSeccion = css.match(/\.mp-fondo-limpio section[^{]*\{/g) || [];
+    assert.deepEqual(reglasSeccion, ['.mp-fondo-limpio section.section-tinted{'], 'el fondo limpio solo debe quitar el tinte de las secciones de herramientas');
   });
 });
 
@@ -236,7 +236,8 @@ describe('Simulador de gastos innecesarios: recorrido sencillo', () => {
   const src = leer('src/secciones.js');
   const seccion = src.slice(src.indexOf('export function GastoHormigaSection()'), src.indexOf('/* ---------- ¿Qué pasa con'));
   test('primero invita a pensar en un gasto que no aporta nada', () => {
-    assert.ok(seccion.includes('Piensa en un gasto que no te aporta nada'));
+    assert.ok(seccion.includes('Piensa en un gasto totalmente evitable'));
+    assert.ok(seccion.includes('Algo prescindible, que podrías dejar mañana sin echarlo de menos'));
   });
   test('el gasto se elige en un desplegable con los ejemplos y la opción de escribir uno propio', () => {
     assert.ok(seccion.includes('ce("select", { id: "mp-hormiga-tipo"'));
@@ -251,5 +252,58 @@ describe('Simulador de gastos innecesarios: recorrido sencillo', () => {
   test('muestra lo que ha costado, lo que habría generado y el total al 8 %', () => {
     for (const t of ['Lo que te ha costado', 'Lo que habría generado', 'proyeccion.totalAportado', 'proyeccion.interesGenerado', 'proyeccion.valorFuturo']) assert.ok(seccion.includes(t), 'falta ' + t);
     assert.ok(!seccion.includes('TASA_INDICE_GLOBAL'));
+  });
+});
+
+describe('Rediseño 3D: Blog, Quiénes somos y menú integrado (Fase 6)', () => {
+  const app = leer('src/App.js'), sec = leer('src/secciones.js'), blog = leer('src/blog.js'), css = leer('public/styles.css');
+  test('el blog usa la cabecera nueva con sus textos y conserva pestañas, lista y lector', () => {
+    assert.ok(app.includes('id: "mp-cab-blog"') && app.includes('titulo: "Blog de finanzas personales"'));
+    assert.ok(!blog.includes('"Blog de finanzas personales"'), 'el título ya no se repite dentro del componente');
+    for (const t of ['SECCIONES_BLOG.map', 'dangerouslySetInnerHTML: { __html: mdToHtml(post.content) }']) assert.ok(blog.includes(t), 'falta ' + t);
+  });
+  test('Quiénes somos conserva todos sus textos con el diseño nuevo', () => {
+    assert.ok(app.includes('React.createElement(QuienesSomos, null)') && app.includes('id: "mp-cab-qs"'));
+    for (const t of ['la falta de educación financiera genera estrés crónico y decisiones equivocadas', 'Óscar Baca Martínez', 'con más de 2 años gestionando su propia cartera',
+      'Cuál es nuestro objetivo.', 'Comprar tranquilidad', 'Salir de las deudas', 'Poner el tiempo a tu favor',
+      'para que dejes de sobrevivir a fin de mes y empieces a diseñar tu libertad financiera', 'mailto:soportemoneypilot@gmail.com']) assert.ok(sec.includes(t), 'falta ' + t);
+  });
+  test('el menú se integra con el fondo: oscuro sobre la banda de arriba y claro sobre la zona clara', () => {
+    assert.ok(app.includes('raiz.setAttribute("data-menu-claro", "")') && app.includes('document.querySelector("main .mp-portada, main .mp-cab")'));
+    assert.ok(css.includes('.mp-fondo-limpio header.glass-nav{background-color:var(--mp-noche)!important'));
+    assert.ok(css.includes('html[data-menu-claro] .mp-fondo-limpio header.glass-nav{background-color:rgba(250,250,250,.9)!important'));
+    assert.ok(css.includes('html[data-menu-claro] .mp-fondo-limpio header.glass-nav .nav-link-muted{color:var(--mp-tinta)!important}'));
+  });
+});
+
+describe('Rediseño: páginas independientes (Recursos, Quiénes somos y blog)', () => {
+  const css = leer('public/estatico.css'), js = leer('public/estatico.js');
+  const rec = leer('public/recursos-y-libros.html'), qs = leer('public/quienes-somos.html'), gen = leer('generate-blog.js');
+  test('los estilos y el script compartidos existen y el menú se integra con el fondo', () => {
+    assert.ok(css.includes('.e-menu{position:sticky') && css.includes('html.e-menu-claro .e-menu{background:rgba(250,250,250,.9)'));
+    assert.ok(js.includes("raiz.classList.toggle('e-menu-claro', !entradas[0].isIntersecting)"));
+    assert.ok(!/@import|https?:\/\//.test(css.replace(/http:\/\/www\.w3\.org\/2000\/svg/g, '')), 'sin recursos externos (la CSP no los admite)');
+  });
+  test('las tres páginas cargan los estilos y el script compartidos, sin JavaScript en línea', () => {
+    for (const [n, h] of [['recursos', rec], ['quiénes somos', qs]]) {
+      assert.ok(h.includes('<link rel="stylesheet" href="/estatico.css" />') && h.includes('<script src="/estatico.js" defer></script>'), n);
+      for (const m of h.matchAll(/<script\b([^>]*)>/g)) assert.ok(/src="\/[^"]+"|type="application\/(ld\+)?json"/.test(m[1]), 'script en línea en ' + n);
+    }
+    assert.ok(gen.includes('<link rel="stylesheet" href="/estatico.css" />') && gen.includes('<script src="/estatico.js" defer></script>'));
+  });
+  test('Recursos conserva sus enlaces de afiliado y su contenido, con el menú actualizado', () => {
+    assert.equal((rec.match(/https:\/\/amzn\.to\//g) || []).length, 19);
+    assert.ok(rec.includes('https://refnocode.trade.re/26037sv4') && rec.includes('Como afiliado de Amazon'));
+    assert.ok(rec.includes('<header class="e-cab">') && rec.includes('Lecturas para acompañar<br><em>tu diagnóstico</em>'));
+    for (const v of ['mis-finanzas', 'estrategia', 'simulador-deudas']) assert.ok(rec.includes('data-vista="' + v + '"'), 'falta ' + v);
+    assert.ok(rec.includes('>Hoja de ruta ') && !rec.includes('data-vista="cuentas"'));
+  });
+  test('Quiénes somos (página independiente) conserva sus textos y sus etiquetas para Google', () => {
+    for (const t of ['<title>Quiénes somos – MoneyPilot</title>', 'rel="canonical"', 'Óscar Baca Martínez', 'Comprar tranquilidad', 'Salir de las deudas',
+      'Poner el tiempo a tu favor', 'mailto:soportemoneypilot@gmail.com', 'href="/privacidad.html"', 'href="/aviso-legal.html"']) assert.ok(qs.includes(t), 'falta ' + t);
+  });
+  test('el blog generado usa el menú nuevo y la banda oscura en los índices', () => {
+    assert.ok(gen.includes('<header class="e-menu">') && gen.includes('function cabeceraIndiceHtml(seccion)'));
+    assert.equal((gen.match(/cabeceraIndiceHtml\(seccion\)\);/g) || []).length, 2);
   });
 });
