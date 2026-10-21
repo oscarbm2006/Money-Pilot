@@ -515,3 +515,12 @@ body{padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inse
 }
 @media(max-width:640px){.mp-escena:not(.mp-escena-p) .mp-iso-in{transform:rotateX(58deg) rotateZ(-38deg) scale(.62);top:78px}}
 @media(max-width:640px){.mp-escena-p{min-height:280px}.mp-escena-p .mp-iso-in{transform:rotateX(58deg) rotateZ(-38deg) scale(.56);top:76px}}
+
+/* Fase B móvil: zonas táctiles de 44 px sin cambiar el aspecto, y placeholders legibles */
+@media (pointer:coarse){.mp-tap{position:relative}.mp-tap::after{content:"";position:absolute;left:-6px;right:-6px;top:50%;height:max(100%,44px);transform:translateY(-50%)}}
+input::placeholder{color:#6B7280;opacity:1}
+@media (max-width:480px){.mp-continuar{flex-direction:column-reverse;align-items:stretch}.mp-continuar button{justify-content:center;width:100%}}
+@media (max-width:720px){
+  .mp-hormiga-der:has(.mp-hormiga-pista) .mp-barras-marco{display:none}
+  .mp-hormiga-pista{position:static;transform:none;width:auto;padding:8px 4px}
+}
