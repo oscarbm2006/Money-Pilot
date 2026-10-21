@@ -477,6 +477,26 @@ export function proyeccionInteres(inicial, mensual, tasaAnual, anios) {
   };
 }
 
+// Tope de cifras que muestra el simulador: por encima de este importe los resultados
+// dejan de ser realistas, así que solo se calcula hasta aquí.
+export const LIMITE_SIMULADOR = 100000000;
+
+export function proyeccionLimitada(inicial, mensual, tasaAnual, anios) {
+  const p = proyeccionInteres(inicial, mensual, tasaAnual, anios);
+  const limitado = p.valorFuturo > LIMITE_SIMULADOR || p.totalAportado > LIMITE_SIMULADOR;
+  if (!limitado) return { ...p, valorReal: p.valorFuturo, limitado: false };
+  const valorFuturo = LIMITE_SIMULADOR;
+  const totalAportado = Math.min(p.totalAportado, LIMITE_SIMULADOR);
+  return {
+    anios,
+    totalAportado,
+    valorFuturo,
+    interesGenerado: Math.max(0, valorFuturo - totalAportado),
+    valorReal: p.valorFuturo,
+    limitado: true
+  };
+}
+
 // Fase 2.1: las 3 preguntas que antes solo resolvían las "4 calculadoras" en un
 // documento aparte. Usan el mismo método (interés compuesto mes a mes) que
 // proyeccionInteres, para que los 4 modos del simulador den resultados coherentes

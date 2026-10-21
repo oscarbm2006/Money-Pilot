@@ -1,7 +1,7 @@
 const { useState, useEffect, useRef, useCallback, useMemo, useId } = React;
 
 import { ACTIVOS_DEF, ASIGNACION, BLOG_ADMIN_EMAIL, C, CUENTA_TIPOS_DEF, I, NOMBRES_FASE_BLOG, OBJETIVOS_DEF, PERFILES_INFO, PRIORIDADES_OBJETIVO, PRIORIDAD_LABEL, QUIZ_DEF, SECCIONES_BLOG, TIPOS_ACTIVO_DEF, TIPOS_INVERSION_DEF, supa, MAX_IMPORTE } from './constantes.js';
-import { aportacionNecesariaParaObjetivo, calcularCapacidadFinanciera, calcularFondoEmergencia, calcularPerfilMultidimensional, calcularPlanObjetivos, calcularSaludFinanciera, crearIdObjetivo, estadoAhorro, euros, fmtFecha, formatMeses, getNextQuestionId, mdToHtml, normalizarObjetivo, normalizarObjetivos, pct, proyeccionInteres, quizNumero, recomendacionObjetivoPorHorizonte, reconstruirEstadoQuiz, rentabilidadNecesariaParaObjetivo, simularAmortizacion, sincronizarObjetivos, slugify, tiempoNecesarioParaObjetivo, totalMensual, numEs } from './calculos.js';
+import { aportacionNecesariaParaObjetivo, calcularCapacidadFinanciera, calcularFondoEmergencia, calcularPerfilMultidimensional, calcularPlanObjetivos, calcularSaludFinanciera, crearIdObjetivo, estadoAhorro, euros, fmtFecha, formatMeses, getNextQuestionId, mdToHtml, normalizarObjetivo, normalizarObjetivos, pct, proyeccionInteres, proyeccionLimitada, LIMITE_SIMULADOR, quizNumero, recomendacionObjetivoPorHorizonte, reconstruirEstadoQuiz, rentabilidadNecesariaParaObjetivo, simularAmortizacion, sincronizarObjetivos, slugify, tiempoNecesarioParaObjetivo, totalMensual, numEs } from './calculos.js';
 import { AnimatedNumber, quitarConSalida, Badge, BlogLinkCard, Card, DesgloseBarra, Eyebrow, FadeSwitch, NumberField, ProgressBar, SimpleAreaChart, SimpleDonut, SimpleStackedBarChart, StatCard, Termometro } from './ui-basicos.js';
 import { AcordeonFase, GastosTabs, VISTAS_MIS_FINANZAS } from './secciones.js';
 import { LIBROS } from './libros-guia.js';
@@ -847,16 +847,16 @@ export function Simulador({
   const horizonteSim = Number(horizonte) > 0 ? Number(horizonte) : 10;
   const serie = useMemo(() => Array.from({
     length: 50
-  }, (_, i) => proyeccionInteres(Number(inicial) || 0, Number(mensual) || 0, Number(tasa) || 0, i + 1)), [inicial, mensual, tasa]);
+  }, (_, i) => proyeccionLimitada(Number(inicial) || 0, Number(mensual) || 0, Number(tasa) || 0, i + 1)), [inicial, mensual, tasa]);
   const resultadoObjetivo = useMemo(() => {
     if (!seleccionado || !horizonteSim || seleccionado.importeObjetivo == null) return null;
-    const p = proyeccionInteres(Number(inicial) || 0, Number(mensual) || 0, Number(tasa) || 0, horizonteSim);
+    const p = proyeccionLimitada(Number(inicial) || 0, Number(mensual) || 0, Number(tasa) || 0, horizonteSim);
     const objetivo = Number(seleccionado.importeObjetivo);
     return {
       objetivo,
       restante: seleccionado.importeRestante,
       valor: p.valorFuturo,
-      alcanzado: p.valorFuturo >= objetivo,
+      alcanzado: p.valorReal >= objetivo,
       aportado: p.totalAportado
     };
   }, [seleccionado, inicial, mensual, tasa, horizonteSim]);
@@ -866,7 +866,7 @@ export function Simulador({
     }, (_, i) => i + 1);
     return anos.map(a => serie[a - 1]).filter(Boolean).map((d, i, arr) => ({
       ...d,
-      diferenciaAnterior: d.valorFuturo - (i === 0 ? Number(inicial) || 0 : arr[i - 1].valorFuturo)
+      diferenciaAnterior: Math.max(0, d.valorFuturo - (i === 0 ? Math.min(Number(inicial) || 0, LIMITE_SIMULADOR) : arr[i - 1].valorFuturo))
     }));
   }, [serie, vista, inicial, horizonteSim]);
   const anioObjetivoRedondeado = seleccionado && horizonteSim ? Math.max(1, Math.min(50, Math.round(horizonteSim))) : null;
@@ -882,8 +882,15 @@ export function Simulador({
     if (modo === "rentabilidad" && resRentabilidad) tas = resRentabilidad.tasaNecesaria;
     return Array.from({
       length: 50
-    }, (_, i) => proyeccionInteres(ini, men, tas, i + 1));
+    }, (_, i) => proyeccionLimitada(ini, men, tas, i + 1));
   }, [modo, serie, inicial, mensual, tasa, resAportacion, resRentabilidad, objetivoNum]);
+  const hayLimiteSimulador = serie.some(d => d.limitado) || serieParaGrafico.some(d => d.limitado) || (resultadoObjetivo && resultadoObjetivo.valor >= LIMITE_SIMULADOR);
+  const avisoLimite = hayLimiteSimulador ? /*#__PURE__*/React.createElement("p", {
+    className: "text-xs font-bold mt-3",
+    style: {
+      color: C.crit
+    }
+  }, "Por encima de " + numEs(LIMITE_SIMULADOR) + " € el simulador deja de calcular: las cifras se muestran hasta ese límite.") : null;
   const anioMarcaGrafico = modo === "tiempo" && resTiempo ? Math.max(1, Math.min(50, Math.round(resTiempo.anios + (resTiempo.meses > 0 ? 1 : 0)))) : anioObjetivoRedondeado;
   const chartData = serieParaGrafico.slice(0, 50).map(d => ({
     anio: d.anios,
@@ -1139,7 +1146,7 @@ export function Simulador({
     }
   }), "Intereses generados")), /*#__PURE__*/React.createElement("p", {
     className: "text-[11px] readable-note mt-3"
-  }, "Este cálculo es una simulación matemática. La rentabilidad elegida es una hipótesis educativa y no constituye una previsión ni una garantía.")), /*#__PURE__*/React.createElement(Card, {
+  }, "Este cálculo es una simulación matemática. La rentabilidad elegida es una hipótesis educativa y no constituye una previsión ni una garantía."), avisoLimite), /*#__PURE__*/React.createElement(Card, {
     className: "p-5 overflow-x-auto"
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex items-center justify-between flex-wrap gap-3"
@@ -1156,7 +1163,9 @@ export function Simulador({
     value: "5anos"
   }, "Ver cada 5 años"), /*#__PURE__*/React.createElement("option", {
     value: "anoAno"
-  }, "Ver año a año"))), /*#__PURE__*/React.createElement("table", {
+  }, "Ver año a año"))), /*#__PURE__*/React.createElement("p", {
+    className: "mp-pista-scroll text-[11px] readable-note mt-3"
+  }, "Desliza la tabla hacia los lados para ver todas las columnas →"), /*#__PURE__*/React.createElement("table", {
     className: "w-full mt-4 text-sm min-w-[680px]"
   }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", {
     style: {
