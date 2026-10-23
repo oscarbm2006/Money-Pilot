@@ -18,7 +18,7 @@ const SUPABASE_URL = "https://yhxebtkxagxowrvrqssf.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InloeGVidGt4YWd4b3dydnJxc3NmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc1MTc0MTMsImV4cCI6MjEwMzA5MzQxM30.Mt9vWxpTP-YnZp38qtBAuZVmMMKmIxIKyXA4ni4WZzM";
 // Si más adelante tienes dominio propio, define SITE_URL en Vercel (Settings > Environment Variables)
 // o cambia el valor por defecto de aquí.
-const SITE_URL = (process.env.SITE_URL || "https://money-pilot-seven-orpin.vercel.app").replace(/\/+$/, '');
+const SITE_URL = (process.env.SITE_URL || "https://moneypilot.es").replace(/\/+$/, '');
 // Se escribe dentro de public/ para que Vite lo copie tal cual a dist/ al compilar.
 const PUBLIC_DIR = path.join(__dirname, 'public');
 const BASE_DIR = path.join(PUBLIC_DIR, 'blog');
