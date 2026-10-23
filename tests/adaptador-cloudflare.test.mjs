@@ -129,7 +129,7 @@ test('Adaptador Cloudflare con las funciones reales de api/', async t => {
 
 test('Cloudflare Pages: archivos de configuración presentes', async () => {
   const { readFileSync, existsSync } = await import('node:fs');
-  for (const f of ['functions/api/csp-report.js', 'functions/api/eliminar-cuenta.js', 'functions/api/generar-inversion.js', 'functions/api/posts-admin.js', 'public/_headers', 'wrangler.toml']) {
+  for (const f of ['lib/adaptador-cloudflare.mjs', 'public/_headers', 'wrangler.toml']) {
     assert.ok(existsSync(new URL('../' + f, import.meta.url)), f + ' debe existir');
   }
   const cabeceras = readFileSync(new URL('../public/_headers', import.meta.url), 'utf8');
