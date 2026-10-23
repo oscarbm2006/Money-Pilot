@@ -1,5 +1,16 @@
-# Configuración de Cloudflare Pages para MoneyPilot
+# Configuración de Cloudflare (Workers + archivos estáticos) para MoneyPilot
 name = "moneypilot"
-pages_build_output_dir = "dist"
+main = "worker/index.mjs"
 compatibility_date = "2025-09-01"
 compatibility_flags = ["nodejs_compat"]
+# Conserva las variables y claves que pongas en el panel de Cloudflare al desplegar
+keep_vars = true
+
+[assets]
+directory = "./dist"
+binding = "ASSETS"
+not_found_handling = "404-page"
+# Sirve las páginas con su dirección exacta (/privacidad.html), sin quitar el .html ni redirigir
+html_handling = "none"
+# Solo /api/ y las carpetas con index.html pasan por el código; el resto son archivos estáticos
+run_worker_first = ["/api/*", "/", "/blog/guia/", "/blog/actualidad/", "/blog/bolsa/", "/blog/tesis/"]
