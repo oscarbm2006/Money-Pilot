@@ -618,7 +618,7 @@ export function PerfilResultado({ nombrePerfil, info, resultado, dimensiones, ca
 // Radar hexagonal con las seis dimensiones (0–100). Se dibuja al entrar en pantalla.
 function RadarPerfil({ dimensiones }) {
   const ref = useAparicion();
-  const n = dimensiones.length, cx = 150, cy = 150, R = 105;
+  const n = dimensiones.length, cx = 150, cy = 150, R = 112;
   const punto = (i, v) => {
     const a = -Math.PI / 2 + i * 2 * Math.PI / n;
     return [cx + Math.cos(a) * R * v, cy + Math.sin(a) * R * v];
@@ -639,6 +639,6 @@ function RadarPerfil({ dimensiones }) {
     return el("circle", { key: i, className: "hr-radar-forma", cx: x, cy: y, r: 4.5, fill: "#fff" });
   }), dimensiones.map(([e], i) => {
     const [x, y] = punto(i, 1.22);
-    return el("text", { key: e, x, y, textAnchor: Math.abs(x - cx) < 10 ? "middle" : x > cx ? "start" : "end", dominantBaseline: "middle", fill: "#C7D2FE", fontSize: 11, fontWeight: 700 }, cortas[e] || e);
+    return el("text", { key: e, x, y, textAnchor: Math.abs(x - cx) < 10 ? "middle" : x > cx ? "start" : "end", dominantBaseline: "middle", fill: "#C7D2FE", fontSize: 12, fontWeight: 700 }, cortas[e] || e);
   }));
 }
