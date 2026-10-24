@@ -627,7 +627,7 @@ function RadarPerfil({ dimensiones }) {
   const valores = dimensiones.map(([, v]) => (v == null ? 0 : v) / 100);
   const cortas = { "Capacidad para soportar pérdidas": "Capacidad", "Tolerancia al riesgo": "Tolerancia", "Horizonte temporal": "Horizonte", "Necesidad de liquidez": "Liquidez", "Conocimientos / experiencia": "Experiencia" };
   return el("svg", {
-    ref, viewBox: "0 0 300 300", className: "hr-radar mp-aparece", role: "img",
+    ref, viewBox: "-65 -5 430 310", className: "hr-radar mp-aparece", role: "img",
     "aria-label": dimensiones.map(([e, v]) => e + ": " + (v == null ? "sin datos" : v + " de 100")).join("; ")
   }, [0.25, 0.5, 0.75, 1].map(k => el("polygon", { key: k, points: poligono(k), fill: "none", stroke: "rgba(255,255,255,.16)" })), dimensiones.map((_, i) => {
     const [x, y] = punto(i, 1);
@@ -636,9 +636,9 @@ function RadarPerfil({ dimensiones }) {
     className: "hr-radar-forma", points: poligono(i => valores[i]), fill: "rgba(165,180,252,.35)", stroke: "#A5B4FC", strokeWidth: 2.5, strokeLinejoin: "round"
   }), valores.map((v, i) => {
     const [x, y] = punto(i, v);
-    return el("circle", { key: i, className: "hr-radar-forma", cx: x, cy: y, r: 4.5, fill: "#fff" });
+    return el("circle", { key: i, className: "hr-radar-forma", cx: x, cy: y, r: 5.5, fill: "#fff" });
   }), dimensiones.map(([e], i) => {
-    const [x, y] = punto(i, 1.22);
-    return el("text", { key: e, x, y, textAnchor: Math.abs(x - cx) < 10 ? "middle" : x > cx ? "start" : "end", dominantBaseline: "middle", fill: "#C7D2FE", fontSize: 12, fontWeight: 700 }, cortas[e] || e);
+    const [x, y] = punto(i, 1.2);
+    return el("text", { key: e, x, y, textAnchor: Math.abs(x - cx) < 10 ? "middle" : x > cx ? "start" : "end", dominantBaseline: "middle", fill: "#E0E7FF", fontSize: 15, fontWeight: 700 }, cortas[e] || e);
   }));
 }
