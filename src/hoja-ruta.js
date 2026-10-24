@@ -1,8 +1,8 @@
 const { useState, useEffect, useRef } = React;
 
-import { C, I } from './constantes.js';
-import { euros } from './calculos.js';
-import { AnimatedNumber } from './ui-basicos.js';
+import { ACTIVOS_DEF, ASIGNACION, C, I } from './constantes.js';
+import { dec, euros } from './calculos.js';
+import { AnimatedNumber, SimpleDonut } from './ui-basicos.js';
 import { CapaTransicion } from './secciones.js';
 import { prefiereMenosMovimiento, useAparicion, useInclinacion } from './movimiento.js';
 
@@ -392,7 +392,7 @@ export function PanelPrioridadVisual({ prioridad }) {
   }, pasos.map((p, i) => el(PasoLinea, { key: p.id, paso: p, indice: i }))));
 }
 
-function PasoLinea({ paso, indice }) {
+function PasoLinea({ paso, indice, soloTitulo = false }) {
   const ref = useAparicion();
   const actual = paso.estado === "actual";
   const hecho = paso.estado === "hecho";
@@ -404,11 +404,145 @@ function PasoLinea({ paso, indice }) {
   }, el("span", { className: "hr-linea-punto", "aria-hidden": "true" }, hecho ? el(I.check, { size: 16 }) : indice + 1), el("div", {
     className: "hr-card hr-linea-tarjeta"
   }, el("div", { style: { display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" } }, el("h3", {
-    className: "hr-titulo", style: { fontSize: actual ? 22 : 17, color: hecho || noAplica ? C.muted : "#1E1B4B" }
+    className: "hr-titulo", style: { fontSize: soloTitulo ? 16 : actual ? 22 : 17, fontWeight: soloTitulo ? 600 : 800, lineHeight: 1.5, flex: soloTitulo ? "1 1 260px" : undefined, color: hecho || noAplica ? C.muted : "#1E1B4B" }
   }, paso.titulo), el("span", {
     className: "hr-chip hr-chip-peq",
     style: { backgroundColor: hecho ? C.saluLight : actual ? C.mejLight : C.bgDeepMid, color: hecho ? "#047857" : actual ? "#92400E" : C.muted }
-  }, actual && el("span", { className: "hr-pulso" }), etiqueta)), !hecho && !noAplica && el("p", {
+  }, actual && el("span", { className: "hr-pulso" }), etiqueta)), !hecho && !noAplica && paso.texto && el("p", {
     className: "hr-texto", style: { marginTop: 6 }
   }, paso.texto)));
+}
+
+// Estrategia financiera: misma información que antes, repartida en bloques con jerarquía clara
+// (cifras grandes, una tarjeta destacada para el objetivo, comprobaciones visuales y pasos en línea)
+// y entradas con el scroll.
+const TONOS = {
+  aviso: { fondo: C.mejLight, color: "#92400E", Icono: I.alertTriangle },
+  alerta: { fondo: C.critLight, color: "#B91C1C", Icono: I.alertTriangle },
+  info: { fondo: C.excLight, color: "#0369A1", Icono: I.info },
+  bien: { fondo: C.saluLight, color: "#047857", Icono: I.checkCircle }
+};
+const ESTADO_OBJETIVO = {
+  viable: TONOS.bien, completado: TONOS.bien, ajustado: TONOS.aviso, no_viable: TONOS.alerta
+};
+
+export function EstrategiaVisual({ perfil, info, planObjetivos, fondo, deudaActiva, principal, estadoPrincipal, estadoLabel, perfilObjetivo, puedeValorarInversion, pasos, onSimularObjetivo, onIrASimulador }) {
+  const capacidad = planObjetivos.capacidadMensual;
+  const avisos = [];
+  if (capacidad == null) avisos.push({ tono: "aviso", titulo: "Nos falta información", texto: "Añade tus ingresos, gastos y deudas para calcular cuánto te queda libre cada mes." });
+  else if (capacidad <= 0) avisos.push({ tono: "alerta", titulo: "Gastas más de lo que ingresas", texto: "Tu margen mensual es " + euros(capacidad) + ". Antes de ahorrar o invertir, ajusta gastos o ingresos." });
+  if (fondo.objetivo != null && fondo.falta > 0) avisos.push({ tono: "aviso", titulo: "Refuerza tu colchón", texto: "Te faltan " + euros(fondo.falta) + " para cubrir 6 meses de gastos esenciales. Es tu prioridad antes de invertir." });
+  if (deudaActiva.length > 0) avisos.push({ tono: "alerta", titulo: "Reduce tus deudas", texto: "Pagas " + euros(planObjetivos.cuotasDeuda) + "/mes en cuotas. Eliminarlas te dejará más dinero libre." });
+  if (planObjetivos.conflictoObjetivos) avisos.push({ tono: "alerta", titulo: "Tus objetivos piden más de lo que puedes aportar", texto: "Necesitas " + euros(planObjetivos.aportacionComprometida) + "/mes y tienes " + euros(planObjetivos.capacidadParaObjetivos) + "/mes (faltan " + euros(planObjetivos.deficitMensual) + "/mes). Decide cuál cubrir primero." });
+  if (planObjetivos.ejecucion) avisos.push({ tono: "info", titulo: "Automatiza tu aportación", texto: "Programa la aportación mensual y revisa el plan cada pocos meses: así es más fácil mantenerlo." });
+
+  const kpis = [
+    { etiqueta: "Capacidad mensual", Icono: I.wallet, valor: capacidad == null ? "—" : el(AnimatedNumber, { value: capacidad }) },
+    { etiqueta: "Fondo de emergencia", Icono: I.shieldCheck, valor: fondo.coberturaMeses == null ? "—" : dec(fondo.coberturaMeses, 1) + " meses" },
+    { etiqueta: "Deuda activa", Icono: I.receipt, valor: deudaActiva.length ? el(AnimatedNumber, { value: planObjetivos.cuotasDeuda, format: v => euros(v) + "/mes" }) : "Sin deuda" },
+    { etiqueta: "Ahorro actual", Icono: I.piggy, valor: el(AnimatedNumber, { value: planObjetivos.ahorroActual }) },
+    { etiqueta: "Perfil global", Icono: I.compass, valor: perfil, color: info.color }
+  ];
+
+  const asignacion = ASIGNACION[perfil];
+  const activos = asignacion ? ACTIVOS_DEF.filter(a => (asignacion[a.key] || 0) > 0) : [];
+  const comprobaciones = [
+    ["Fondo de emergencia de 6 meses", fondo.objetivo != null && fondo.coberturaMeses != null && fondo.coberturaMeses >= 6],
+    ["Sin deuda pendiente", deudaActiva.length === 0],
+    ["Margen mensual positivo", capacidad != null && capacidad > 0]
+  ];
+
+  return el("div", {
+    className: "hr-est"
+  }, el(Aparece, null, el("p", { className: "hr-etiqueta", style: { color: C.primary } }, "Estrategia financiera"), el("h2", {
+    className: "hr-titular"
+  }, "Tu estrategia,", el("br"), el("span", { className: "hr-titular-suave" }, "en una sola mirada.")), el("p", {
+    className: "hr-texto", style: { fontSize: 16, maxWidth: 620, marginTop: -12 }
+  }, "Orientación educativa construida con tu situación, tus objetivos, su horizonte y tu perfil global.")),
+
+  el("div", { className: "hr-kpis" }, kpis.map((k, i) => el(Aparece, { key: k.etiqueta, retraso: i * 0.08 }, el("div", {
+    className: "hr-card hr-kpi-tarjeta"
+  }, el("span", { className: "hr-icono", style: { backgroundColor: C.primaryLight, color: C.primary, width: 36, height: 36, borderRadius: 10 } }, el(k.Icono, { size: 17 })), el("span", {
+    className: "hr-mini", style: { margin: 0 }
+  }, k.etiqueta), el("span", { className: "hr-cifra", style: { fontSize: 30, color: k.color || "#1E1B4B" } }, k.valor))))),
+
+  avisos.length > 0 && el("section", { className: "hr-bloque-est" }, el(Aparece, null, el("h3", { className: "hr-subtitular" }, "Lo que te ayudará ahora")), el("div", {
+    className: "hr-avisos"
+  }, avisos.map((a, i) => {
+    const t = TONOS[a.tono];
+    return el(Aparece, { key: a.titulo, retraso: i * 0.08 }, el("div", {
+      className: "hr-card hr-aviso", style: { "--hr-tono": t.color }
+    }, el("span", { className: "hr-icono", style: { backgroundColor: t.fondo, color: t.color } }, el(t.Icono, { size: 19 })), el("div", { style: { minWidth: 0 } }, el("p", {
+      className: "hr-titulo", style: { fontSize: 16 }
+    }, a.titulo), el("p", { className: "hr-texto", style: { marginTop: 4 } }, a.texto))));
+  }))),
+
+  principal && el(Aparece, null, el(TarjetaObjetivo, { principal, planObjetivos, estadoPrincipal, estadoLabel, perfil, perfilObjetivo, onSimular: onSimularObjetivo })),
+
+  el("section", { className: "hr-bloque-est" }, el(Aparece, null, el("h3", { className: "hr-subtitular" }, "Tu base antes de invertir")), el("div", {
+    className: "hr-base"
+  }, el(Aparece, null, el("div", { className: "hr-card hr-base-col" }, el("p", {
+    className: "hr-texto", style: { fontSize: 15, color: "#1E1B4B" }
+  }, puedeValorarInversion ? "Tu base está cubierta: puedes valorar, de forma educativa, una estrategia de largo plazo coherente con tu perfil." : "La inversión a largo plazo no debe desplazar las prioridades anteriores. Antes de invertir, comprueba estas tres piezas:"), el("ul", {
+    className: "hr-checks"
+  }, comprobaciones.map(([texto, ok]) => el("li", { key: texto, className: ok ? "hr-check-ok" : "hr-check-no" }, el("span", {
+    className: "hr-check-icono"
+  }, el(ok ? I.check : I.x, { size: 15 })), texto, el("span", { className: "hr-oculto" }, ok ? " (cumplido)" : " (pendiente)")))), principal && principal.horizonteAniosCalculado != null && principal.horizonteAniosCalculado < 5 && el("p", {
+    className: "hr-texto", style: { fontSize: 13 }
+  }, "Tienes un objetivo cercano que requiere especial prudencia."))), asignacion && el(Aparece, { retraso: 0.12 }, el("div", {
+    className: "hr-card hr-base-col"
+  }, el("p", { className: "hr-mini", style: { margin: 0 } }, "Asignación orientativa · " + perfil), el("div", {
+    className: "hr-donut"
+  }, el(SimpleDonut, {
+    data: activos.map(a => ({ name: a.label, value: asignacion[a.key], color: a.color })), size: 176, thickness: 26
+  }), el("ul", { className: "hr-leyenda" }, activos.map(a => el("li", { key: a.key }, el("span", {
+    className: "hr-leyenda-punto", style: { backgroundColor: a.color }
+  }), el("span", { style: { flex: 1 } }, a.label), el("b", { className: "hr-cifra", style: { fontSize: 22 } }, asignacion[a.key] + "%"))))), el("p", {
+    className: "hr-texto", style: { fontSize: 12 }
+  }, "Distribución orientativa y educativa asociada a tu perfil " + perfil.toLowerCase() + ". No es una recomendación de inversión personalizada."))))),
+
+  el("section", { className: "hr-bloque-est" }, el(Aparece, null, el("h3", { className: "hr-subtitular" }, "Tus próximos pasos")), el("ol", {
+    className: "hr-linea"
+  }, pasos.slice(0, 5).map((p, i) => el(PasoLinea, { key: i, paso: { titulo: p, estado: i === 0 ? "actual" : "pendiente" }, indice: i, soloTitulo: true }))), !principal && el(Aparece, null, el("button", {
+    type: "button", onClick: onIrASimulador, className: "hr-enlace-blog"
+  }, el("span", null, "Prueba cuánto podría crecer tu ahorro en el simulador"), el(I.arrowRight, { size: 18 })))),
+
+  el("p", {
+    className: "hr-texto", style: { fontSize: 12, display: "flex", gap: 8, alignItems: "flex-start" }
+  }, el(I.info, { size: 14, className: "shrink-0", style: { marginTop: 2 } }), "Contenido educativo. El perfil global y la adecuación de cada objetivo son conceptos distintos. Las hipótesis del simulador no garantizan resultados ni constituyen recomendaciones de productos concretos."));
+}
+
+// Tarjeta destacada del objetivo principal: lo que falta, lo que necesita al mes frente a lo que
+// tienes disponible, el horizonte y el acceso directo al simulador.
+function TarjetaObjetivo({ principal, planObjetivos, estadoPrincipal, estadoLabel, perfil, perfilObjetivo, onSimular }) {
+  const t = ESTADO_OBJETIVO[estadoPrincipal] || { fondo: C.bgDeepMid, color: C.muted };
+  const necesita = principal.aportacionNecesaria;
+  const tiene = planObjetivos.capacidadParaObjetivos;
+  const tope = Math.max(necesita || 0, tiene || 0, 1);
+  const barra = (etiqueta, valor, color) => el("div", { className: "hr-comparar" }, el("div", {
+    style: { display: "flex", justifyContent: "space-between", fontSize: 13, color: "#C7D2FE" }
+  }, el("span", null, etiqueta), el("b", { style: { color: "#fff" } }, valor == null ? "Por definir" : euros(valor) + "/mes")), el("div", {
+    className: "hr-comparar-barra"
+  }, el("span", { style: { width: (valor == null ? 0 : Math.max(4, valor / tope * 100)) + "%", background: color } })));
+  return el("section", {
+    className: "hr-objetivo", "aria-label": "Tu objetivo prioritario"
+  }, el("div", { className: "hr-objetivo-texto" }, el("p", {
+    className: "hr-etiqueta", style: { color: "#A5B4FC" }
+  }, "Tu objetivo prioritario"), el("h3", { className: "hr-objetivo-titulo" }, principal.nombre || "Objetivo principal"), el("div", {
+    style: { display: "flex", flexWrap: "wrap", gap: 8 }
+  }, el("span", { className: "hr-chip", style: { backgroundColor: "#fff", color: t.color } }, "Estado: " + estadoLabel), principal.horizonteAniosCalculado > 0 && el("span", {
+    className: "hr-chip", style: { backgroundColor: "rgba(255,255,255,.12)", color: "#fff" }
+  }, dec(principal.horizonteAniosCalculado, 1) + " años")), el("div", null, el("div", { style: { fontSize: 13, color: "#C7D2FE" } }, "Te faltan"), el("div", {
+    className: "hr-cifra", style: { fontSize: 52, color: "#fff" }
+  }, principal.importeRestante == null ? "Por definir" : el(AnimatedNumber, { value: principal.importeRestante }))), el("p", {
+    style: { margin: 0, fontSize: 14, lineHeight: 1.6, color: "#C7D2FE" }
+  }, el("b", { style: { color: "#fff" } }, principal.recomendacionHorizonte.titulo + ". "), principal.recomendacionHorizonte.texto), perfilObjetivo && perfilObjetivo.modo !== "invertir" && el("p", {
+    style: { margin: 0, fontSize: 13, color: "#FDE68A" }
+  }, "Tu perfil global es " + perfil.toLowerCase() + ", pero el horizonte de este objetivo pide un tratamiento más prudente.")), el("div", {
+    className: "hr-objetivo-lado"
+  }, barra("Necesitas aportar", necesita, "linear-gradient(90deg,#F59E0B,#FBBF24)"), barra("Tienes disponible", tiene, "linear-gradient(90deg,#818CF8,#A5B4FC)"), el("button", {
+    type: "button", onClick: onSimular, className: "hr-boton hr-boton-claro"
+  }, "Simular " + (principal.nombre || "este objetivo"), el(I.arrowRight, { size: 16 })), el("span", {
+    style: { fontSize: 12, color: "#A5B4FC" }
+  }, "Los cambios del simulador no modifican tu objetivo guardado.")));
 }
