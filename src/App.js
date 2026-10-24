@@ -4,11 +4,11 @@ import { BLOG_ADMIN_EMAIL, C, I, OBJETIVOS_DEF, PATTERN_URI_STATIC, PERFILES_INF
 import { dec, calcularCapacidadFinanciera, calcularDiagnosticoAmpliado, calcularPerfilMultidimensional, calcularPlanFinanciero, calcularPlanObjetivos, calcularPrioridades, datosVacios, normalizarObjetivos, objetivoLegadoDesdeColeccion, reconstruirEstadoQuiz, totalMensual } from './calculos.js';
 import { useActivosPersistidos, useActivosSync, useAuth, useCloudSync, useCuentasPersistidas, useCuentasSync, useDatosPersistidos, useDebouncedEffect, useDeudasMirrorSync, useGuiaProgresoSync, useInversionesPersistidas, useInversionesSync, useSeguimiento, useToast } from './hooks-datos.js';
 import { AuthModal, ConflictoDatosModal, ContinuarBar, ErrorBoundary, Eyebrow, FeedbackModal, Toast } from './ui-basicos.js';
-import { AmortizacionDeuda, SimuladorDeudas, Contacto, Cuentas, Dashboard, Diagnostico, Estrategia, Inversiones, NavDesktop, PaginaLegal, PanelDiagnostico, PanelPrioridad, Patrimonio, PerfilRiesgo, PlanFinanciero, PrintSummary, Seguimiento, Simulador } from './paginas.js';
+import { AmortizacionDeuda, SimuladorDeudas, Contacto, Cuentas, Dashboard, Diagnostico, Estrategia, Inversiones, NavDesktop, PaginaLegal, Patrimonio, PerfilRiesgo, PlanFinanciero, PrintSummary, Seguimiento, Simulador } from './paginas.js';
 const Blog = React.lazy(() => import('./blog.js'));
 import { CabeceraHerramienta, ConfianzaPrivacidad, HeroSection, MisFinanzas, QuienesSomos, VISTAS_MIS_FINANZAS, VISTAS_REDISENADAS } from './secciones.js';
 import { MiCuentaModal } from './cuenta.js';
-import { AvisoSinDiagnostico, PasosHojaRuta, ResumenAccion, SeguimientoVistaPrevia } from './hoja-ruta.js';
+import { AvisoSinDiagnostico, PanelDiagnosticoVisual, PanelPrioridadVisual, PasosHojaRuta, ResumenAccion, SeguimientoVistaPrevia } from './hoja-ruta.js';
 import { ReiniciarTodoModal } from './cuenta.js';
 
 export function App() {
@@ -833,9 +833,9 @@ export function App() {
   }), diagnosticoHecho && /*#__PURE__*/React.createElement(ResumenAccion, {
     diagnostico: diagnosticoAmpliado,
     prioridad: prioridadActual
-  }), diagnosticoHecho && /*#__PURE__*/React.createElement(PanelPrioridad, {
+  }), diagnosticoHecho && /*#__PURE__*/React.createElement(PanelPrioridadVisual, {
     prioridad: prioridadActual
-  }), diagnosticoHecho && /*#__PURE__*/React.createElement(PanelDiagnostico, {
+  }), diagnosticoHecho && /*#__PURE__*/React.createElement(PanelDiagnosticoVisual, {
     diagnostico: diagnosticoAmpliado,
     onIrABlog: irAlBlog
   }), datos.deudas.some(d => Number(d.pendiente) > 0) && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
@@ -914,7 +914,7 @@ export function App() {
   }), /*#__PURE__*/React.createElement("section", {
     className: "py-16 sm:py-24 section-tinted"
   }, /*#__PURE__*/React.createElement("div", {
-    className: "max-w-5xl mx-auto px-4 sm:px-6 space-y-6"
+    className: "max-w-6xl mx-auto px-4 sm:px-6 space-y-6"
   }, /*#__PURE__*/React.createElement(PasosHojaRuta, {
     actual: "plan",
     onIr: setVistaActual
@@ -946,7 +946,7 @@ export function App() {
   }), /*#__PURE__*/React.createElement("section", {
     className: "py-16 sm:py-24 section-tinted"
   }, /*#__PURE__*/React.createElement("div", {
-    className: "max-w-5xl mx-auto px-4 sm:px-6 space-y-6"
+    className: "max-w-6xl mx-auto px-4 sm:px-6 space-y-6"
   }, /*#__PURE__*/React.createElement(PasosHojaRuta, {
     actual: "seguimiento",
     onIr: setVistaActual

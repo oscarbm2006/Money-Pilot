@@ -311,3 +311,103 @@ export function SeguimientoVistaPrevia({ onOpenAuth }) {
     style: { fontSize: 13, color: C.muted }
   }, "Necesitas una cuenta gratuita para guardar el historial. Ejemplo ilustrativo."))));
 }
+
+// Estrategia: diagnóstico detallado. Una balanza que se llena al llegar con el scroll y
+// tarjetas que entran desde cada lado: lo que va bien por la izquierda, lo que preocupa por la derecha.
+export function PanelDiagnosticoVisual({ diagnostico, onIrABlog }) {
+  const { positivos, preocupantes } = diagnostico;
+  const balanza = useAparicion();
+  if (positivos.length === 0 && preocupantes.length === 0) return null;
+  const total = positivos.length + preocupantes.length;
+  const pctBien = Math.round(positivos.length / total * 100);
+
+  const columna = (items, tipo) => items.length > 0 && el("div", {
+    className: "hr-diag-columna"
+  }, el("p", {
+    className: "hr-etiqueta", style: { color: tipo === "bien" ? "#047857" : "#B91C1C" }
+  }, tipo === "bien" ? "Lo que va bien" : "Lo que preocupa, y por qué"), items.map((item, i) => el(TarjetaDiagnostico, {
+    key: item.titulo, item, tipo, retraso: 0.1 + i * 0.12
+  })));
+
+  return el("section", {
+    className: "hr-diag", "aria-labelledby": "hr-diag-t"
+  }, el(Aparece, null, el("p", { className: "hr-etiqueta", style: { color: C.primary } }, "Tu diagnóstico"), el("h2", {
+    id: "hr-diag-t", className: "hr-titular"
+  }, "Qué está bien, qué preocupa", el("br"), el("span", { className: "hr-titular-suave" }, "y por qué."))), el("div", {
+    ref: balanza, className: "hr-balanza mp-aparece", style: { "--hr-bien": pctBien + "%" }
+  }, el("div", { className: "hr-balanza-cifras" }, el("span", null, el("b", { className: "hr-cifra", style: { color: "#047857" } }, positivos.length), " va bien"), el("span", null, el("b", {
+    className: "hr-cifra", style: { color: "#B91C1C" }
+  }, preocupantes.length), preocupantes.length === 1 ? " preocupa" : " preocupan")), el("div", {
+    className: "hr-balanza-barra", role: "img",
+    "aria-label": positivos.length + " puntos van bien y " + preocupantes.length + " preocupan"
+  }, el("span", { className: "hr-balanza-bien" }), el("span", { className: "hr-balanza-mal" }))), el("div", {
+    className: "hr-diag-rejilla"
+  }, columna(positivos, "bien"), columna(preocupantes, "mal")), onIrABlog && el(Aparece, null, el("button", {
+    type: "button", onClick: onIrABlog, className: "hr-enlace-blog"
+  }, el("span", null, "Profundiza en estos temas en nuestro blog"), el(I.arrowRight, { size: 18 }))));
+}
+
+function TarjetaDiagnostico({ item, tipo, retraso }) {
+  const ref = useAparicion();
+  const inclina = useInclinacion(6);
+  const bien = tipo === "bien";
+  return el("div", {
+    ref, className: "hr-entra-lado " + (bien ? "hr-desde-izq" : "hr-desde-der"), style: { "--mp-retraso": retraso + "s" }
+  }, el("article", {
+    ref: inclina,
+    className: "hr-card hr-diag-item mp-inclina",
+    style: { "--hr-tono": bien ? "#10B981" : "#EF4444" }
+  }, el("span", { className: "mp-brillo", "aria-hidden": "true" }), el("div", {
+    className: "hr-icono hr-icono-3d",
+    style: { backgroundColor: bien ? C.saluLight : C.critLight, color: bien ? "#047857" : "#B91C1C" }
+  }, el(bien ? I.checkCircle : I.alertTriangle, { size: 20 })), el("div", { style: { minWidth: 0 } }, el("h3", {
+    className: "hr-titulo", style: { fontSize: 17 }
+  }, item.titulo), el("p", { className: "hr-texto", style: { marginTop: 4 } }, item.texto))));
+}
+
+// Estrategia: orden de actuación como línea de tiempo. La línea se va rellenando
+// a medida que cada paso entra en pantalla al hacer scroll.
+export function PanelPrioridadVisual({ prioridad }) {
+  const { pasos, todoEnOrden } = prioridad;
+  if (todoEnOrden) {
+    return el(Aparece, null, el("section", {
+      className: "hr-card hr-sin-datos", style: { borderColor: C.salu + "66" }
+    }, el("div", { className: "hr-icono hr-icono-grande", style: { backgroundColor: C.saluLight, color: C.salu } }, el(I.checkCircle, { size: 30 })), el("div", {
+      style: { flex: "999 1 320px", minWidth: 0 }
+    }, el("p", { className: "hr-etiqueta", style: { color: "#047857" } }, "Qué deberías hacer ahora"), el("h2", {
+      className: "hr-titulo-grande"
+    }, "Tu situación está en orden"), el("p", {
+      className: "hr-texto"
+    }, "Tu fondo de emergencia está cubierto, no tienes deuda cara pendiente y tu margen de ahorro es positivo. Revisa esta pantalla si tu situación cambia."))));
+  }
+  return el("section", {
+    className: "hr-orden", "aria-labelledby": "hr-orden-t"
+  }, el(Aparece, null, el("p", { className: "hr-etiqueta", style: { color: C.primary } }, "Qué deberías hacer ahora"), el("h2", {
+    id: "hr-orden-t", className: "hr-titular"
+  }, "Tu orden de actuación,", el("br"), el("span", { className: "hr-titular-suave" }, "paso a paso.")), el("p", {
+    className: "hr-texto", style: { fontSize: 16, maxWidth: 620, marginTop: -12, marginBottom: 32 }
+  }, "Seguridad básica, deuda cara, fondo de emergencia, inversión y objetivos, en ese orden, con excepciones si tu caso lo requiere.")), el("ol", {
+    className: "hr-linea"
+  }, pasos.map((p, i) => el(PasoLinea, { key: p.id, paso: p, indice: i }))));
+}
+
+function PasoLinea({ paso, indice }) {
+  const ref = useAparicion();
+  const actual = paso.estado === "actual";
+  const hecho = paso.estado === "hecho";
+  const noAplica = paso.estado === "no_aplica";
+  const color = hecho ? C.salu : actual ? C.mej : noAplica ? "#CBD5E1" : "#A5B4FC";
+  const etiqueta = hecho ? "Hecho" : actual ? "Ahora" : noAplica ? "No aplica" : "Después";
+  return el("li", {
+    ref, className: "hr-linea-paso mp-aparece" + (actual ? " hr-linea-actual" : ""), style: { "--hr-color": color }
+  }, el("span", { className: "hr-linea-punto", "aria-hidden": "true" }, hecho ? el(I.check, { size: 16 }) : indice + 1), el("div", {
+    className: "hr-card hr-linea-tarjeta"
+  }, el("div", { style: { display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" } }, el("h3", {
+    className: "hr-titulo", style: { fontSize: actual ? 22 : 17, color: hecho || noAplica ? C.muted : "#1E1B4B" }
+  }, paso.titulo), el("span", {
+    className: "hr-chip hr-chip-peq",
+    style: { backgroundColor: hecho ? C.saluLight : actual ? C.mejLight : C.bgDeepMid, color: hecho ? "#047857" : actual ? "#92400E" : C.muted }
+  }, actual && el("span", { className: "hr-pulso" }), etiqueta)), !hecho && !noAplica && el("p", {
+    className: "hr-texto", style: { marginTop: 6 }
+  }, paso.texto)));
+}
