@@ -208,7 +208,8 @@ export function RecorridoFases({ fases }) {
     retraso: 600,
     lineas: ["Tu ruta,", "fase a fase."],
     frase: "Baja para recorrer cada etapa: dónde estás, cuánto te falta y qué viene después.",
-    iconos: [["moneda", 0.12, 0.25, 0.8, 0.4], ["flecha", 0.3, -0.3, 0.75, 0.2], ["barras", 0.72, 0.3, 0.8, -0.3], ["moneda", 0.9, -0.2, 0.6, 1.5]]
+    // x e y van de -1 a 1 desde el centro: los iconos quedan en los laterales, lejos del titular
+    iconos: [["moneda", -0.86, 0.35, 0.75, 0.4], ["flecha", -0.66, -0.4, 0.7, 0.2], ["barras", 0.66, 0.4, 0.75, -0.3], ["moneda", 0.86, -0.35, 0.6, 1.5]]
   })), el("section", {
     className: "hr-recorrido", "aria-label": "Fases de tu plan"
   }, el("div", {
@@ -243,7 +244,7 @@ function EscaleraFases({ fases, activa, onElegir }) {
       "aria-current": i === activa ? "step" : undefined,
       className: "hr-bloque" + (i === activa ? " hr-bloque-activo" : ""),
       style: { "--hr-i": i, "--hr-alto": 26 + i * 22 + "px", "--hr-color": color }
-    }, el("span", { className: "hr-cara hr-cara-top" }, f.estado === "completado" ? "✓" : i + 1), el("span", {
+    }, el("span", { className: "hr-cara hr-cara-top" }, f.estado === "completado" ? el(I.check, { size: 20 }) : i + 1), el("span", {
       className: "hr-cara hr-cara-frente"
     }), el("span", { className: "hr-cara hr-cara-lado" }), i === activa && el("span", {
       className: "hr-marcador", "aria-hidden": "true"

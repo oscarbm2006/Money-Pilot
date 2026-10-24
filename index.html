@@ -513,11 +513,11 @@ header .export-menu button[style*="0.08"]{ color:#FFFFFF !important; background-
   .hr-capa { border-radius:28px; overflow:hidden; margin:24px 0 8px; }
   .hr-capa .mp-capa { min-height:64svh; }
   .hr-recorrido { display:grid; grid-template-columns:minmax(0, 5fr) minmax(0, 7fr); gap:48px; margin-top:48px; }
-  .hr-recorrido-fijo { position:sticky; top:96px; align-self:start; display:flex; flex-direction:column; gap:8px; }
+  .hr-recorrido-fijo { position:sticky; top:max(88px, calc(50vh - 220px)); align-self:start; align-items:center; text-align:center; display:flex; flex-direction:column; gap:8px; }
   .hr-recorrido-cabeza { display:flex; flex-direction:column; gap:4px; }
   .hr-recorrido-actual { font-size:20px; font-weight:800; color:#1E1B4B; }
-  .hr-escalera-marco { height:360px; display:flex; align-items:center; justify-content:center; }
-  .hr-escalera { position:relative; width:330px; height:66px; transform-style:preserve-3d; transform:scale(var(--hr-esc, 1)) rotateX(58deg) rotateZ(-45deg); }
+  .hr-escalera-marco { width:100%; height:360px; display:flex; align-items:center; justify-content:center; }
+  .hr-escalera { position:relative; width:330px; height:66px; transform-style:preserve-3d; transform:translateY(var(--hr-esc-y, 50px)) scale(var(--hr-esc, 1)) rotateX(58deg) rotateZ(-45deg); }
   .hr-bloque { position:absolute; top:0; left:calc(var(--hr-i) * 66px); width:66px; height:66px; padding:0; border:0; background:none; cursor:pointer; transform-style:preserve-3d; transition:transform var(--mp-lento) var(--mp-curva); }
   .hr-bloque-activo { transform:translateZ(16px); }
   .hr-cara { position:absolute; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:18px; color:#fff; backface-visibility:hidden; }
@@ -546,7 +546,7 @@ header .export-menu button[style*="0.08"]{ color:#FFFFFF !important; background-
     .hr-recorrido { grid-template-columns:1fr; gap:16px; }
     .hr-recorrido-fijo { top:64px; z-index:5; padding:10px 14px 0; border-radius:18px; background:rgba(245,246,250,.94); backdrop-filter:blur(8px); }
     .hr-escalera-marco { height:170px; }
-    .hr-escalera { --hr-esc:.55; }
+    .hr-escalera { --hr-esc:.55; --hr-esc-y:28px; }
     .hr-lamina { min-height:52vh; padding:22px; flex-direction:column; gap:8px; }
     .hr-recorrido-actual { font-size:16px; }
   }
