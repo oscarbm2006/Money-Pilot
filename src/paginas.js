@@ -6,6 +6,7 @@ import { AnimatedNumber, quitarConSalida, Badge, BlogLinkCard, Card, DesgloseBar
 import { Reloj, CapasOrden } from './reloj.js';
 import { AcordeonFase, GastosTabs, VISTAS_MIS_FINANZAS } from './secciones.js';
 import { LIBROS } from './libros-guia.js';
+import { AvisoSinDiagnostico, RecorridoFases, SiguientePaso } from './hoja-ruta.js';
 
 // ISIN: 2 letras de país + 9 caracteres alfanuméricos + 1 dígito de control.
 const ISIN_RE = /^[A-Z]{2}[A-Z0-9]{9}[0-9]$/;
@@ -4283,6 +4284,8 @@ function TarjetaLibroPlan({ libro }) {
 
 export function PlanFinanciero({
   plan,
+  diagnosticoHecho = true,
+  onIrADiagnostico,
   datos,
   setDatos,
   liquidezReal,
@@ -4292,64 +4295,17 @@ export function PlanFinanciero({
   onIrABlog
 }) {
   const el = React.createElement;
-  const { fases, resumenSituacion, recomendaciones } = plan;
+  const { fases } = plan;
   const faseEnCurso = fases.find(f => f.estado === "en_curso");
   const numDeudas = (datos?.deudas || []).filter(d => Number(d.pendiente) > 0).length;
   const libroFase = faseEnCurso ? libroParaFase(faseEnCurso.id, { numDeudas, ratioAhorro, perfil }) : null;
 
-  const iconoPorFase = id => id === "colchon_inicial" ? I.shieldCheck : id === "deuda" ? I.trash : id === "fondo_emergencia" ? I.piggy : id === "inversion" ? I.chartLine : I.target;
-
-  const badgeEstado = estado => {
-    const cfg = estado === "no_aplica" ? { texto: "No aplica", bg: C.bgDeepMid, color: C.muted } : estado === "completado" ? { texto: "Completado", bg: C.saluLight, color: C.salu } : estado === "en_curso" ? { texto: "En curso ahora", bg: C.sandLight, color: C.navy } : { texto: "Pendiente", bg: C.bgDeepMid, color: C.muted };
-    return el("span", {
-      className: "text-[10px] font-bold uppercase px-2 py-1 rounded-full shrink-0",
-      style: { backgroundColor: cfg.bg, color: cfg.color }
-    }, cfg.texto);
-  };
-
-  const tarjetaFase = (fase, index) => {
-    const Icono = iconoPorFase(fase.id);
-    const barra = fase.progreso == null ? null : el("div", {
-      className: "h-1.5 rounded-full mt-3 overflow-hidden",
-      style: { backgroundColor: C.bgDeepMid }
-    }, el("div", {
-      className: "h-full rounded-full",
-      style: { width: fase.progreso + "%", backgroundColor: fase.estado === "completado" ? C.salu : C.sand }
-    }));
-    return el(Card, {
-      key: fase.id,
-      className: "p-5",
-      style: { borderColor: fase.estado === "en_curso" ? C.sand + "66" : C.border }
-    }, el("div", {
-      className: "flex items-start justify-between gap-3"
-    }, el("div", {
-      className: "flex items-center gap-3 min-w-0"
-    }, el("div", {
-      className: "w-9 h-9 rounded-xl flex items-center justify-center shrink-0 text-xs font-bold",
-      style: { backgroundColor: fase.estado === "completado" ? C.saluLight : C.sandLight, color: fase.estado === "completado" ? C.salu : C.navy }
-    }, fase.estado === "completado" ? el(I.check, { size: 16 }) : (index + 1)), el("div", {
-      className: "min-w-0"
-    }, el("div", {
-      className: "font-serif text-base font-bold",
-      style: { color: C.ink }
-    }, fase.titulo), el("p", {
-      className: "text-xs mt-0.5",
-      style: { color: C.muted }
-    }, fase.objetivoTexto))), badgeEstado(fase.estado)), fase.meta != null && el("div", {
-      className: "flex gap-4 mt-3 text-xs"
-    }, el("span", {
-      style: { color: C.muted }
-    }, "Meta: ", el("b", { style: { color: C.ink } }, euros(fase.meta))), el("span", {
-      style: { color: C.muted }
-    }, "Ahora: ", el("b", { style: { color: C.ink } }, euros(fase.actual)))), barra, el("p", {
-      className: "text-sm mt-3",
-      style: { color: C.ink }
-    }, fase.accion));
-  };
-
   return el("div", {
     className: "space-y-6"
-  }, datos && setDatos && el(Card, {
+  }, diagnosticoHecho ? el(SiguientePaso, { plan }) : el(AvisoSinDiagnostico, {
+    onIrADiagnostico,
+    texto: "Tu plan se calcula a partir de tu diagnóstico: con tus ingresos, gastos, ahorro y deudas te diremos en qué fase estás y qué toca ahora."
+  }), diagnosticoHecho && el(RecorridoFases, { fases }), datos && setDatos && el(Card, {
     className: "p-5"
   }, el(Eyebrow, null, "Ahorro actual / Fondo de emergencia"), cuentas.length > 0 ? el("p", {
     className: "text-sm mt-2",
@@ -4363,24 +4319,7 @@ export function PlanFinanciero({
   }), el("p", {
     className: "text-xs mt-1.5",
     style: { color: C.muted }
-  }, "Si registras tus cuentas reales en \"Cuentas\", usaremos ese saldo en su lugar."))), el(Card, {
-    className: "p-5 sm:p-6",
-    style: { backgroundColor: C.sandLight, border: "1px solid rgba(79,70,229,.16)" }
-  }, el(Eyebrow, null, "Tu plan"), el("h3", {
-    className: "font-serif text-xl font-bold mt-1",
-    style: { color: C.ink }
-  }, resumenSituacion), el("div", {
-    className: "mt-3 space-y-1.5"
-  }, recomendaciones.map((texto, i) => el("div", {
-    key: i,
-    className: "flex items-start gap-2 text-sm",
-    style: { color: C.ink }
-  }, el("span", {
-    className: "font-bold shrink-0",
-    style: { color: C.navy }
-  }, (i + 1) + "."), el("span", null, texto))))), el("div", {
-    className: "space-y-4"
-  }, fases.map((f, i) => tarjetaFase(f, i))), libroFase && el(TarjetaLibroPlan, { libro: libroFase }), el("p", {
+  }, "Si registras tus cuentas reales en \"Cuentas\", usaremos ese saldo en su lugar."))), diagnosticoHecho && libroFase && el(TarjetaLibroPlan, { libro: libroFase }), el("p", {
     className: "text-[11px] readable-note"
   }, "El plan se recalcula cada vez que entras, con tus datos actuales. Para ver tu evolución en el tiempo, guarda una foto cada mes en Seguimiento."), onIrABlog && el(BlogLinkCard, {
     texto: "Lee más guías y análisis en nuestro blog",

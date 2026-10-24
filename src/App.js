@@ -8,6 +8,7 @@ import { AmortizacionDeuda, SimuladorDeudas, Contacto, Cuentas, Dashboard, Diagn
 const Blog = React.lazy(() => import('./blog.js'));
 import { CabeceraHerramienta, ConfianzaPrivacidad, HeroSection, MisFinanzas, QuienesSomos, VISTAS_MIS_FINANZAS, VISTAS_REDISENADAS } from './secciones.js';
 import { MiCuentaModal } from './cuenta.js';
+import { AvisoSinDiagnostico, PasosHojaRuta, ResumenAccion, SeguimientoVistaPrevia } from './hoja-ruta.js';
 import { ReiniciarTodoModal } from './cuenta.js';
 
 export function App() {
@@ -470,6 +471,8 @@ export function App() {
   const gastoTotal = totalMensual(datos.gastosFijos) + totalMensual(datos.gastosDiscrecionales) + cuotasDeuda;
   const ahorroDisponible = capacidadFinanciera.capacidadMensual == null ? 0 : capacidadFinanciera.capacidadMensual;
   const ratioAhorro = capacidadFinanciera.ingresos > 0 ? ahorroDisponible / capacidadFinanciera.ingresos : 0;
+  // Sin ingresos todavía no hay diagnóstico: la hoja de ruta no debe dar fases por superadas
+  const diagnosticoHecho = Number(capacidadFinanciera.ingresos) > 0;
   // Fase 1.1: un único "ahorro real" para toda la app. Si el usuario tiene Cuentas
   // registradas, se usa la suma real de sus saldos; si no, se recurre al valor que
   // escribió a mano en Diagnóstico. Antes esto solo pasaba en Plan/Estrategia; ahora
@@ -785,7 +788,12 @@ export function App() {
     className: "py-16 sm:py-24 section-tinted"
   }, /*#__PURE__*/React.createElement("div", {
     className: "max-w-6xl mx-auto px-4 sm:px-6 space-y-12"
-  }, (() => {
+  }, /*#__PURE__*/React.createElement(PasosHojaRuta, {
+    actual: "estrategia",
+    onIr: setVistaActual
+  }), !diagnosticoHecho ? /*#__PURE__*/React.createElement(AvisoSinDiagnostico, {
+    onIrADiagnostico: () => setVistaActual('diagnostico')
+  }) : (() => {
     const faltan = [];
     if (cuentas.length === 0) faltan.push(["cuentas", "Añadir mis cuentas"]);
     if (inversiones.length === 0) faltan.push(["inversiones", "Añadir mis inversiones"]);
@@ -809,12 +817,7 @@ export function App() {
       className: "text-xs font-bold px-3 py-2 rounded-lg border",
       style: { borderColor: C.border, color: C.ink, backgroundColor: C.white }
     }, texto))));
-  })(), /*#__PURE__*/React.createElement(PanelDiagnostico, {
-    diagnostico: diagnosticoAmpliado,
-    onIrABlog: irAlBlog
-  }), /*#__PURE__*/React.createElement(PanelPrioridad, {
-    prioridad: prioridadActual
-  }), /*#__PURE__*/React.createElement(Dashboard, {
+  })(), /*#__PURE__*/React.createElement(Dashboard, {
     planObjetivos: planObjetivos,
     objetivos: normalizarObjetivos(datos),
     ingresos: capacidadFinanciera.ingresos,
@@ -827,6 +830,14 @@ export function App() {
     historial: historial,
     user: user,
     onOpenAuth: () => setShowAuthModal(true)
+  }), diagnosticoHecho && /*#__PURE__*/React.createElement(ResumenAccion, {
+    diagnostico: diagnosticoAmpliado,
+    prioridad: prioridadActual
+  }), diagnosticoHecho && /*#__PURE__*/React.createElement(PanelPrioridad, {
+    prioridad: prioridadActual
+  }), diagnosticoHecho && /*#__PURE__*/React.createElement(PanelDiagnostico, {
+    diagnostico: diagnosticoAmpliado,
+    onIrABlog: irAlBlog
   }), datos.deudas.some(d => Number(d.pendiente) > 0) && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     className: "max-w-3xl mb-5 section-intro"
   }, /*#__PURE__*/React.createElement(Eyebrow, null, "Plan de amortización"), /*#__PURE__*/React.createElement("h3", {
@@ -903,9 +914,14 @@ export function App() {
   }), /*#__PURE__*/React.createElement("section", {
     className: "py-16 sm:py-24 section-tinted"
   }, /*#__PURE__*/React.createElement("div", {
-    className: "max-w-4xl mx-auto px-4 sm:px-6 space-y-6"
-  }, /*#__PURE__*/React.createElement(PlanFinanciero, {
+    className: "max-w-5xl mx-auto px-4 sm:px-6 space-y-6"
+  }, /*#__PURE__*/React.createElement(PasosHojaRuta, {
+    actual: "plan",
+    onIr: setVistaActual
+  }), /*#__PURE__*/React.createElement(PlanFinanciero, {
     plan: planFinanciero,
+    diagnosticoHecho: diagnosticoHecho,
+    onIrADiagnostico: () => setVistaActual('diagnostico'),
     datos: datos,
     setDatos: setDatos,
     liquidezReal: liquidezReal,
@@ -930,8 +946,13 @@ export function App() {
   }), /*#__PURE__*/React.createElement("section", {
     className: "py-16 sm:py-24 section-tinted"
   }, /*#__PURE__*/React.createElement("div", {
-    className: "max-w-4xl mx-auto px-4 sm:px-6 space-y-6"
-  }, /*#__PURE__*/React.createElement(Seguimiento, {
+    className: "max-w-5xl mx-auto px-4 sm:px-6 space-y-6"
+  }, /*#__PURE__*/React.createElement(PasosHojaRuta, {
+    actual: "seguimiento",
+    onIr: setVistaActual
+  }), !user ? /*#__PURE__*/React.createElement(SeguimientoVistaPrevia, {
+    onOpenAuth: () => setShowAuthModal(true)
+  }) : /*#__PURE__*/React.createElement(Seguimiento, {
     user: user,
     historial: historialSeguimiento,
     cargando: cargandoSeguimiento,
