@@ -362,8 +362,8 @@ function TarjetaDiagnostico({ item, tipo, retraso }) {
     className: "hr-icono hr-icono-3d",
     style: { backgroundColor: bien ? C.saluLight : C.critLight, color: bien ? "#047857" : "#B91C1C" }
   }, el(bien ? I.checkCircle : I.alertTriangle, { size: 20 })), el("div", { style: { minWidth: 0 } }, el("h3", {
-    className: "hr-titulo", style: { fontSize: 17 }
-  }, item.titulo), el("p", { className: "hr-texto", style: { marginTop: 4 } }, item.texto))));
+    className: "hr-titulo", style: item.texto ? { fontSize: 17 } : { fontSize: 15, fontWeight: 600, lineHeight: 1.5 }
+  }, item.titulo), item.texto && el("p", { className: "hr-texto", style: { marginTop: 4 } }, item.texto))));
 }
 
 // Estrategia: orden de actuación como línea de tiempo. La línea se va rellenando
@@ -545,4 +545,100 @@ function TarjetaObjetivo({ principal, planObjetivos, estadoPrincipal, estadoLabe
   }, "Simular " + (principal.nombre || "este objetivo"), el(I.arrowRight, { size: 16 })), el("span", {
     style: { fontSize: 12, color: "#A5B4FC" }
   }, "Los cambios del simulador no modifican tu objetivo guardado.")));
+}
+
+// Resultado del test de perfil de riesgo: el perfil en grande dentro de un espectro de cinco niveles,
+// un gráfico radar con las seis dimensiones y, al bajar, el porqué y los factores tenidos en cuenta.
+const PERFILES_ORDEN = ["Muy conservador", "Conservador", "Moderado", "Agresivo", "Muy agresivo"];
+
+export function PerfilResultado({ nombrePerfil, info, resultado, dimensiones, cambioSignificativo, onRepetir }) {
+  const nivel = Math.max(0, PERFILES_ORDEN.indexOf(nombrePerfil));
+  const confianzaTono = resultado.confianza === "Alta" ? TONOS.bien : resultado.confianza === "Media" ? TONOS.aviso : TONOS.alerta;
+  return el("div", {
+    className: "hr-est"
+  }, el(Aparece, null, el("section", {
+    className: "hr-objetivo hr-perfil", "aria-label": "Tu perfil de riesgo"
+  }, el("div", { className: "hr-objetivo-texto" }, el("p", {
+    className: "hr-etiqueta", style: { color: "#A5B4FC" }
+  }, "Tu perfil de riesgo"), el("h2", { className: "hr-objetivo-titulo" }, nombrePerfil), el("p", {
+    style: { margin: 0, fontSize: 15, lineHeight: 1.6, color: "#C7D2FE", maxWidth: 520 }
+  }, info.explicacion), el("div", {
+    className: "hr-espectro", role: "img", "aria-label": "Nivel " + (nivel + 1) + " de 5: " + nombrePerfil
+  }, PERFILES_ORDEN.map((p, i) => el("span", {
+    key: p, className: "hr-espectro-tramo" + (i === nivel ? " hr-espectro-activo" : ""), style: { "--hr-i": i }
+  }))), el("div", {
+    className: "hr-espectro-extremos", "aria-hidden": "true"
+  }, el("span", null, "Más prudente"), el("span", null, "Más arriesgado")), el("span", {
+    className: "hr-chip", style: { backgroundColor: "#fff", color: confianzaTono.color }
+  }, "Confianza " + resultado.confianza.toLowerCase())), el("div", {
+    className: "hr-objetivo-lado hr-radar-caja"
+  }, el(RadarPerfil, { dimensiones })))), resultado.faltantes.length > 0 && el("p", {
+    className: "hr-texto", style: { fontSize: 13, marginTop: -24 }
+  }, "Faltan datos importantes (" + resultado.faltantes.join(", ") + "), por lo que el resultado tiene menor confianza."),
+
+  el("section", { className: "hr-bloque-est" }, el(Aparece, null, el("h3", { className: "hr-subtitular" }, "Tus seis dimensiones")), el("div", {
+    className: "hr-kpis"
+  }, dimensiones.map(([etiqueta, valor], i) => el(Aparece, { key: etiqueta, retraso: i * 0.07 }, el("div", {
+    className: "hr-card hr-kpi-tarjeta"
+  }, el("span", { className: "hr-mini", style: { margin: 0 } }, etiqueta), el("span", {
+    className: "hr-cifra", style: { fontSize: 34 }
+  }, valor == null ? "—" : el(AnimatedNumber, { value: valor, format: v => String(Math.round(v)) }), el("span", {
+    style: { fontSize: 15, color: C.muted }
+  }, valor == null ? " sin datos" : " /100")), valor != null && el("div", {
+    className: "hr-barra", style: { height: 8 }
+  }, el("div", { className: "hr-barra-relleno", style: { width: valor + "%", background: info.color } }))))))),
+
+  el("section", { className: "hr-bloque-est" }, el(Aparece, null, el("h3", { className: "hr-subtitular" }, "¿Por qué tienes este perfil?")), el("div", {
+    className: "hr-diag-rejilla"
+  }, el("div", { className: "hr-diag-columna" }, el("p", { className: "hr-etiqueta", style: { color: "#047857" } }, "Lo que lo impulsa"), resultado.factoresPositivos.map((f, i) => el(TarjetaDiagnostico, {
+    key: i, item: { titulo: f }, tipo: "bien", retraso: 0.1 + i * 0.1
+  }))), el("div", { className: "hr-diag-columna" }, el("p", { className: "hr-etiqueta", style: { color: "#B91C1C" } }, "Lo que lo limita"), resultado.factoresNegativos.map((f, i) => el(TarjetaDiagnostico, {
+    key: i, item: { titulo: f }, tipo: "mal", retraso: 0.1 + i * 0.1
+  }))))),
+
+  el("section", { className: "hr-bloque-est" }, el(Aparece, null, el("h3", { className: "hr-subtitular" }, "Lo que hemos tenido en cuenta"), el("p", {
+    className: "hr-texto", style: { marginTop: -8, marginBottom: 16, maxWidth: 680 }
+  }, "El perfil no sale de una única puntuación: la capacidad financiera incluye ahorro, fondo de emergencia, deuda, estabilidad de ingresos, patrimonio y objetivos; los conocimientos se evalúan aparte.")), el("ul", {
+    className: "hr-pastillas"
+  }, resultado.factoresTenidosEnCuenta.map((f, i) => el(Aparece, { key: i, retraso: i * 0.05 }, el("li", null, el(I.check, { size: 14, color: C.primary }), f))))),
+
+  el(Aparece, null, el("div", {
+    className: "hr-card hr-sin-datos"
+  }, cambioSignificativo && el("div", {
+    className: "hr-icono", style: { backgroundColor: C.mejLight, color: "#B45309" }
+  }, el(I.alert, { size: 20 })), el("div", { style: { flex: "999 1 320px", minWidth: 0 } }, el("p", {
+    className: "hr-titulo", style: { fontSize: 17 }
+  }, cambioSignificativo ? "Tu situación ha cambiado desde que hiciste el test" : "¿Han cambiado tus circunstancias?"), el("p", {
+    className: "hr-texto", style: { marginTop: 4 }
+  }, cambioSignificativo ? "Repetirlo puede darte un perfil más ajustado a cómo estás ahora." : "Repite el test cuando cambien tus ingresos, tus ahorros o tus objetivos.")), el("button", {
+    type: "button", onClick: onRepetir, className: "hr-boton hr-boton-primario", style: { flex: "1 1 180px" }
+  }, "Repetir el test"))));
+}
+
+// Radar hexagonal con las seis dimensiones (0–100). Se dibuja al entrar en pantalla.
+function RadarPerfil({ dimensiones }) {
+  const ref = useAparicion();
+  const n = dimensiones.length, cx = 150, cy = 150, R = 105;
+  const punto = (i, v) => {
+    const a = -Math.PI / 2 + i * 2 * Math.PI / n;
+    return [cx + Math.cos(a) * R * v, cy + Math.sin(a) * R * v];
+  };
+  const poligono = v => dimensiones.map((_, i) => punto(i, typeof v === "function" ? v(i) : v).join(",")).join(" ");
+  const valores = dimensiones.map(([, v]) => (v == null ? 0 : v) / 100);
+  const cortas = { "Capacidad para soportar pérdidas": "Capacidad", "Tolerancia al riesgo": "Tolerancia", "Horizonte temporal": "Horizonte", "Necesidad de liquidez": "Liquidez", "Conocimientos / experiencia": "Experiencia" };
+  return el("svg", {
+    ref, viewBox: "0 0 300 300", className: "hr-radar mp-aparece", role: "img",
+    "aria-label": dimensiones.map(([e, v]) => e + ": " + (v == null ? "sin datos" : v + " de 100")).join("; ")
+  }, [0.25, 0.5, 0.75, 1].map(k => el("polygon", { key: k, points: poligono(k), fill: "none", stroke: "rgba(255,255,255,.16)" })), dimensiones.map((_, i) => {
+    const [x, y] = punto(i, 1);
+    return el("line", { key: i, x1: cx, y1: cy, x2: x, y2: y, stroke: "rgba(255,255,255,.12)" });
+  }), el("polygon", {
+    className: "hr-radar-forma", points: poligono(i => valores[i]), fill: "rgba(165,180,252,.35)", stroke: "#A5B4FC", strokeWidth: 2.5, strokeLinejoin: "round"
+  }), valores.map((v, i) => {
+    const [x, y] = punto(i, v);
+    return el("circle", { key: i, className: "hr-radar-forma", cx: x, cy: y, r: 4.5, fill: "#fff" });
+  }), dimensiones.map(([e], i) => {
+    const [x, y] = punto(i, 1.22);
+    return el("text", { key: e, x, y, textAnchor: Math.abs(x - cx) < 10 ? "middle" : x > cx ? "start" : "end", dominantBaseline: "middle", fill: "#C7D2FE", fontSize: 11, fontWeight: 700 }, cortas[e] || e);
+  }));
 }

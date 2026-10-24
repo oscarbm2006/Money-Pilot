@@ -6,7 +6,7 @@ import { AnimatedNumber, quitarConSalida, Badge, BlogLinkCard, Card, DesgloseBar
 import { Reloj, CapasOrden } from './reloj.js';
 import { AcordeonFase, GastosTabs, VISTAS_MIS_FINANZAS } from './secciones.js';
 import { LIBROS } from './libros-guia.js';
-import { AvisoSinDiagnostico, EstrategiaVisual, RecorridoFases, SiguientePaso } from './hoja-ruta.js';
+import { AvisoSinDiagnostico, EstrategiaVisual, PerfilResultado, RecorridoFases, SiguientePaso } from './hoja-ruta.js';
 
 // ISIN: 2 letras de país + 9 caracteres alfanuméricos + 1 dígito de control.
 const ISIN_RE = /^[A-Z]{2}[A-Z0-9]{9}[0-9]$/;
@@ -1359,191 +1359,14 @@ export function PerfilRiesgo({
       return diffRelativo(snapshot.ingresos, Number(capacidadActual.ingresos) || 0) > 0.20 || diffRelativo(snapshot.deudaPendiente, deudaPendienteActual) > 0.30 || diffRelativo(snapshot.ahorroActual, Number(datos.ahorroActual) || 0) > 0.30 || diffRelativo(snapshot.capacidadMensual, Number(capacidadActual.capacidadMensual) || 0) > 0.30;
     })();
     const dimensiones = [["Edad", resultado.edad], ["Tolerancia al riesgo", resultado.toleranciaRiesgo], ["Capacidad para soportar pérdidas", resultado.capacidadRiesgo], ["Horizonte temporal", resultado.horizonte], ["Necesidad de liquidez", resultado.liquidez], ["Conocimientos / experiencia", resultado.experiencia]];
-    const confianzaColor = resultado.confianza === "Alta" ? C.salu : resultado.confianza === "Media" ? C.mej : C.crit;
-    return /*#__PURE__*/React.createElement("div", {
-      className: "space-y-6"
-    }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h1", {
-      className: "font-serif text-2xl font-bold readable-title"
-    }, "Test de perfil de riesgo")), /*#__PURE__*/React.createElement(Card, {
-      className: "p-8",
-      style: {
-        borderColor: info.color + "55"
-      }
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "text-center"
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "w-16 h-16 rounded-full mx-auto flex items-center justify-center mb-4",
-      style: {
-        backgroundColor: info.light
-      }
-    }, /*#__PURE__*/React.createElement(I.shieldCheck, {
-      size: 28,
-      color: info.color
-    })), /*#__PURE__*/React.createElement("div", {
-      className: "text-xs font-bold uppercase",
-      style: {
-        color: C.muted,
-        letterSpacing: "0.1em"
-      }
-    }, "Perfil final"), /*#__PURE__*/React.createElement("div", {
-      className: "font-serif text-3xl font-bold mt-1",
-      style: {
-        color: info.color
-      }
-    }, nombrePerfil), /*#__PURE__*/React.createElement("p", {
-      className: "text-sm mt-4 max-w-xl mx-auto",
-      style: {
-        color: C.muted
-      }
-    }, info.explicacion)), /*#__PURE__*/React.createElement("div", {
-      className: "grid grid-cols-1 sm:grid-cols-2 gap-3 mt-6"
-    }, dimensiones.map(([label, value]) => /*#__PURE__*/React.createElement("div", {
-      key: label,
-      className: "rounded-xl border p-3",
-      style: {
-        borderColor: C.border,
-        backgroundColor: C.paper
-      }
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "flex items-center justify-between gap-3"
-    }, /*#__PURE__*/React.createElement("span", {
-      className: "text-xs font-bold",
-      style: {
-        color: C.ink
-      }
-    }, label), /*#__PURE__*/React.createElement("span", {
-      className: "text-sm font-bold",
-      style: {
-        color: value == null ? C.muted : C.navy
-      }
-    }, value == null ? "Sin datos" : value + "/100")), value != null && /*#__PURE__*/React.createElement("div", {
-      className: "h-1.5 rounded-full mt-2 overflow-hidden",
-      style: {
-        backgroundColor: C.bgDeepMid
-      }
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "h-full rounded-full",
-      style: {
-        width: value + "%",
-        backgroundColor: info.color
-      }
-    }))))), /*#__PURE__*/React.createElement("div", {
-      className: "rounded-xl border p-4 mt-5",
-      style: {
-        borderColor: confianzaColor + "55",
-        backgroundColor: confianzaColor + "10"
-      }
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "flex items-center justify-between gap-3"
-    }, /*#__PURE__*/React.createElement("span", {
-      className: "text-xs font-bold uppercase",
-      style: {
-        color: C.muted,
-        letterSpacing: "0.08em"
-      }
-    }, "Nivel de confianza"), /*#__PURE__*/React.createElement("span", {
-      className: "text-sm font-bold",
-      style: {
-        color: confianzaColor
-      }
-    }, resultado.confianza)), resultado.faltantes.length > 0 && /*#__PURE__*/React.createElement("p", {
-      className: "text-xs mt-2",
-      style: {
-        color: C.muted
-      }
-    }, "Faltan datos importantes (", resultado.faltantes.join(", "), "), por lo que el resultado tiene menor confianza.")), /*#__PURE__*/React.createElement("div", {
-      className: "mt-5"
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "font-serif text-lg font-bold readable-title"
-    }, "¿Por qué tienes este perfil?"), /*#__PURE__*/React.createElement("div", {
-      className: "grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3"
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "rounded-xl p-4",
-      style: {
-        backgroundColor: C.saluLight
-      }
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "text-xs font-bold uppercase mb-2",
-      style: {
-        color: C.salu
-      }
-    }, "Factores positivos"), /*#__PURE__*/React.createElement("ul", {
-      className: "space-y-1.5 text-xs",
-      style: {
-        color: C.ink
-      }
-    }, resultado.factoresPositivos.map((f, i) => /*#__PURE__*/React.createElement("li", {
-      key: i
-    }, "• ", f)))), /*#__PURE__*/React.createElement("div", {
-      className: "rounded-xl p-4",
-      style: {
-        backgroundColor: C.critLight
-      }
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "text-xs font-bold uppercase mb-2",
-      style: {
-        color: C.crit
-      }
-    }, "Factores a vigilar"), /*#__PURE__*/React.createElement("ul", {
-      className: "space-y-1.5 text-xs",
-      style: {
-        color: C.ink
-      }
-    }, resultado.factoresNegativos.map((f, i) => /*#__PURE__*/React.createElement("li", {
-      key: i
-    }, "• ", f)))))), /*#__PURE__*/React.createElement("div", {
-      className: "mt-5 rounded-xl p-4",
-      style: {
-        backgroundColor: C.paper,
-        border: "1px solid " + C.border
-      }
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "font-serif text-lg font-bold readable-title"
-    }, "Factores que hemos tenido en cuenta"), /*#__PURE__*/React.createElement("ul", {
-      className: "grid sm:grid-cols-2 gap-1.5 mt-3 text-xs",
-      style: {
-        color: C.ink
-      }
-    }, resultado.factoresTenidosEnCuenta.map((f, i) => /*#__PURE__*/React.createElement("li", {
-      key: i
-    }, "• ", f)))), /*#__PURE__*/React.createElement("div", {
-      className: "text-xs mt-5 p-3 rounded-lg",
-      style: {
-        backgroundColor: C.bgDeepMid,
-        color: C.muted
-      }
-    }, "El perfil no se determina por una única puntuación: la capacidad financiera incorpora ahorro disponible, fondo de emergencia, deuda, estabilidad de ingresos, patrimonio y necesidades de los objetivos, mientras que los conocimientos se evalúan en un bloque independiente."), /*#__PURE__*/React.createElement("div", {
-      className: "text-center"
-    }, cambioSignificativo && /*#__PURE__*/React.createElement("div", {
-      className: "rounded-xl p-4 mb-4 text-left",
-      style: {
-        backgroundColor: C.mejLight,
-        border: "1px solid " + C.mej
-      }
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "flex items-start gap-2.5"
-    }, /*#__PURE__*/React.createElement(I.alert, {
-      size: 16,
-      color: C.mej,
-      className: "mt-0.5 shrink-0"
-    }), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("b", {
-      className: "text-sm",
-      style: {
-        color: C.ink
-      }
-    }, "Tu situación financiera ha cambiado desde que hiciste este test"), /*#__PURE__*/React.createElement("p", {
-      className: "text-xs mt-1",
-      style: {
-        color: C.muted
-      }
-    }, "Repetirlo puede darte un perfil más ajustado a cómo estás ahora.")))), /*#__PURE__*/React.createElement("button", {
-      onClick: repetir,
-      className: "inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-transform hover:scale-[1.03] active:scale-[0.98]",
-      style: {
-        backgroundColor: C.navy,
-        color: C.white
-      }
-    }, "Repetir el test"))));
+    return React.createElement(PerfilResultado, {
+      nombrePerfil,
+      info,
+      resultado,
+      dimensiones,
+      cambioSignificativo,
+      onRepetir: repetir
+    });
   }
   const completadas = Math.max(0, currentIndex);
   const remainingEstimate = Math.max(1, rutaCompletaEstimable - Math.max(0, currentIndex + 1));
