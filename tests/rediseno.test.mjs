@@ -198,7 +198,7 @@ describe('Rediseño 3D: Estrategia y fin del diagnóstico (Fase 3)', () => {
     assert.ok(!app.includes('Eyebrow, null, "Resultados y estrategia"'), 'queda la introducción antigua');
     const est = app.slice(app.indexOf("vistaActual === 'estrategia' &&"), app.indexOf("vistaActual === 'plan' &&"));
     assert.ok(est.includes('className: "fade-switch-enter mp-piel"'));
-    for (const c of ['PanelDiagnostico', 'PanelPrioridad', 'Dashboard', 'AmortizacionDeuda', 'PerfilRiesgo', 'Estrategia', 'ContinuarBar']) assert.ok(est.includes('React.createElement(' + c + ','), 'falta ' + c);
+    for (const c of ['PanelDiagnosticoVisual', 'PanelPrioridadVisual', 'Dashboard', 'AmortizacionDeuda', 'PerfilRiesgo', 'Estrategia', 'ContinuarBar']) assert.ok(est.includes('React.createElement(' + c + ','), 'falta ' + c);
     assert.ok(est.includes('Afina tus resultados (opcional)'));
   });
   test('los subtítulos con la caja antigua se integran sin caja en las páginas rediseñadas', () => {
