@@ -172,7 +172,7 @@ function Aparece({ as = "div", retraso = 0, className = "", style = {}, children
 }
 
 // Capa de transición: titular + iconos 3D que llegan girando
-function CapaTransicion({ id, lineas, frase, iconos, retraso }) {
+export function CapaTransicion({ id, lineas, frase, iconos, retraso }) {
   const { lienzo, caja } = useEscena3D((c, b, fallar) => esPantallaPequena() ? Promise.resolve(() => {}) : montarCapa3D(c, b, iconos, { alFallar: fallar }), retraso);
   const visible = useAparicion();
   return ce("section", { ref: el => { caja.current = el; visible.current = el; }, className: "mp-capa", "aria-labelledby": id },
