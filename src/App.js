@@ -8,7 +8,7 @@ import { AmortizacionDeuda, SimuladorDeudas, Contacto, Cuentas, Dashboard, Diagn
 const Blog = React.lazy(() => import('./blog.js'));
 import { CabeceraHerramienta, ConfianzaPrivacidad, HeroSection, MisFinanzas, QuienesSomos, VISTAS_MIS_FINANZAS, VISTAS_REDISENADAS } from './secciones.js';
 import { MiCuentaModal } from './cuenta.js';
-import { ObjetoBrujula, ObjetoEscalera, ObjetoGrafica, ObjetoLupa } from './cabeceras.js';
+import { ObjetoAbanico, ObjetoBrujula, ObjetoColumnas, ObjetoDeuda, ObjetoEscalera, ObjetoGrafica, ObjetoLupa } from './cabeceras.js';
 import { AvisoSinDiagnostico, PanelDiagnosticoVisual, PanelPrioridadVisual, PasosHojaRuta, ResumenAccion, SeguimientoVistaPrevia } from './hoja-ruta.js';
 import { ReiniciarTodoModal } from './cuenta.js';
 
@@ -753,7 +753,9 @@ export function App() {
     antetitulo: "Mis finanzas",
     titulo: "Tu patrimonio, en un solo sitio",
     frase: "Tus cuentas, tus inversiones y tus otros bienes, juntos. Con ellos calculamos tu patrimonio neto: todo lo que tienes menos todo lo que debes.",
-    iconos: [["tarjeta", 0.34, 0.2, 0.9, -0.4], ["barras", 0.58, -0.22, 0.8, -0.3], ["moneda", 0.8, 0.3, 0.75, 0.8], ["flecha", 0.97, -0.25, 0.6, 0.6]]
+    objeto: React.createElement(ObjetoAbanico, null),
+    composicion: "derecha",
+    acento: "#14B8A6"
   }), /*#__PURE__*/React.createElement(MisFinanzas, {
     seccion: vistaActual,
     cuentas: /*#__PURE__*/React.createElement(Cuentas, {
@@ -1000,7 +1002,9 @@ export function App() {
     antetitulo: "Simulador de ahorro",
     titulo: "¿Qué puede hacer tu ahorro con el tiempo?",
     frase: "Ajusta los números y mira qué puede hacer tu ahorro con el tiempo. Si ya hiciste tu diagnóstico, partirá de tus propios datos.",
-    iconos: [["flecha", 0.32, 0.25, 0.85, 0.2], ["barras", 0.56, -0.25, 0.85, -0.4], ["moneda", 0.8, 0.3, 0.7, 1], ["moneda", 0.97, -0.3, 0.55, 2]]
+    objeto: React.createElement(ObjetoColumnas, null),
+    composicion: "izquierda",
+    acento: "#A78BFA"
   }), /*#__PURE__*/React.createElement("section", {
     className: "py-16 sm:py-24 section-tinted"
   }, /*#__PURE__*/React.createElement("div", {
@@ -1028,7 +1032,9 @@ export function App() {
     antetitulo: "Simulador de deudas",
     titulo: "¿Cuánto tardarás en salir de tus deudas?",
     frase: "Escribe tus deudas y compara dos formas de pagarlas. Es una proyección educativa.",
-    iconos: [["tarjeta", 0.34, 0.2, 0.9, -0.4], ["billete", 0.62, -0.2, 0.85, 0.5], ["moneda", 0.88, 0.3, 0.7, 0.9]]
+    objeto: React.createElement(ObjetoDeuda, null),
+    composicion: "derecha",
+    acento: "#F43F5E"
   }), /*#__PURE__*/React.createElement("section", {
     className: "py-16 sm:py-24 section-tinted"
   }, /*#__PURE__*/React.createElement("div", {
