@@ -719,6 +719,32 @@ header .export-menu button[style*="0.08"]{ color:#FFFFFF !important; background-
     .cb-billete, .cb-escaner, .cb-lupa, .cb-brujula-anillo, .cb-brujula-aguja, .cb-grafica-linea, .cb-grafica-punto { animation:none; }
     .cb-brujula-aguja { transform:rotate(24deg); }
   }
+  /* Abanico de tarjetas (Mis finanzas) */
+  .cb-abanico { position:relative; width:300px; height:220px; }
+  .cb-carta { position:absolute; left:40px; top:40px; width:220px; height:136px; border-radius:16px; padding:16px; display:flex; flex-direction:column; justify-content:space-between; color:#fff; transform-origin:30% 120%; box-shadow:0 24px 40px -18px rgba(0,0,0,.5); animation:cbAbre 1.4s cubic-bezier(.2,.8,.2,1) .3s both; }
+  .cb-carta-1 { background:linear-gradient(135deg, #5EEAD4, #0D9488); --cb-giro:-18deg; --cb-x:-46px; }
+  .cb-carta-2 { background:linear-gradient(135deg, #818CF8, #4338CA); --cb-giro:0deg; --cb-x:0px; }
+  .cb-carta-3 { background:linear-gradient(135deg, #FDE68A, #D97706); --cb-giro:18deg; --cb-x:46px; color:#451A03; }
+  .cb-carta-chip { width:34px; height:26px; border-radius:6px; background:linear-gradient(135deg, rgba(255,255,255,.85), rgba(255,255,255,.35)); }
+  .cb-carta-texto { font-weight:800; font-size:18px; letter-spacing:-.01em; }
+  .cb-carta-linea { height:6px; width:60%; border-radius:999px; background:rgba(255,255,255,.45); }
+  @keyframes cbAbre { from { transform:rotate(0deg) translateX(0); } to { transform:rotate(var(--cb-giro)) translateX(var(--cb-x)); } }
+  /* Columnas de monedas (simulador de ahorro) */
+  .cb-columnas { display:flex; align-items:flex-end; gap:14px; height:230px; padding-bottom:10px; }
+  .cb-columna { display:flex; flex-direction:column-reverse; align-items:center; }
+  .cb-moneda { display:block; width:58px; height:18px; margin-top:-6px; border-radius:50%; background:radial-gradient(ellipse at 50% 35%, #EDE9FE, #A78BFA 60%, #7C3AED); box-shadow:0 5px 0 #5B21B6, 0 8px 14px rgba(0,0,0,.25); animation:cbCae .5s cubic-bezier(.3,1.4,.5,1) both; animation-delay:calc(var(--cb-k) * 70ms + .2s); }
+  @keyframes cbCae { from { opacity:0; transform:translateY(-60px); } }
+  /* Tarjeta de deuda que encoge (simulador de deudas) */
+  .cb-deuda { display:flex; flex-direction:column; align-items:center; gap:22px; }
+  .cb-tarjeta { width:250px; height:156px; border-radius:18px; padding:18px; display:flex; flex-direction:column; justify-content:space-between; color:#fff; background:linear-gradient(135deg, #FDA4AF, #E11D48 55%, #881337); box-shadow:0 30px 50px -20px rgba(225,29,72,.6); transform:rotateX(18deg) rotateZ(-6deg); animation:cbEncoge 5s ease-in-out infinite; }
+  .cb-tarjeta-num { font-size:16px; font-weight:700; letter-spacing:.12em; }
+  .cb-tarjeta-nombre { font-size:13px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; opacity:.85; }
+  .cb-deuda-barra { width:250px; height:12px; border-radius:999px; background:rgba(255,255,255,.12); overflow:hidden; }
+  .cb-deuda-barra > span { display:block; height:100%; border-radius:999px; background:linear-gradient(90deg, #FB7185, #F43F5E); transform-origin:left; animation:cbBaja 5s ease-in-out infinite; }
+  @keyframes cbEncoge { 0%, 100% { scale:1; } 50% { scale:.62; } }
+  @keyframes cbBaja { 0%, 100% { transform:scaleX(1); } 50% { transform:scaleX(.25); } }
+  @media (max-width: 720px) { .cb-abanico, .cb-columnas, .cb-deuda { scale:.7; } }
+  @media (prefers-reduced-motion: reduce) { .cb-carta, .cb-moneda, .cb-tarjeta, .cb-deuda-barra > span { animation:none; } .cb-carta { transform:rotate(var(--cb-giro)) translateX(var(--cb-x)); } }
 </style>
 </head>
 <body>

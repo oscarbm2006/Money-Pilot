@@ -59,3 +59,29 @@ export function ObjetoGrafica({ valores }) {
       el("path", { className: "cb-grafica-linea", d: linea, fill: "none", stroke: "#34D399", strokeWidth: 4, strokeLinecap: "round", vectorEffect: "non-scaling-stroke" })),
     el("span", { className: "cb-grafica-punto", style: { left: ux / 12 + "%", top: uy / 170 * 100 + "%" } }));
 }
+
+// Mis finanzas: tres tarjetas que se abren en abanico, una por pieza de tu patrimonio.
+export function ObjetoAbanico() {
+  return el("div", { className: "cb-abanico" },
+    [["Cuentas", "cb-carta cb-carta-1"], ["Inversiones", "cb-carta cb-carta-2"], ["Patrimonio", "cb-carta cb-carta-3"]].map(([texto, clase]) => el("div", { key: texto, className: clase },
+      el("span", { className: "cb-carta-chip" }),
+      el("span", { className: "cb-carta-texto" }, texto),
+      el("span", { className: "cb-carta-linea" }))));
+}
+
+// Simulador de ahorro: columnas de monedas que crecen de izquierda a derecha, como el ahorro en el tiempo.
+export function ObjetoColumnas() {
+  const alturas = [2, 4, 6, 9, 12];
+  return el("div", { className: "cb-columnas" }, alturas.map((n, c) => el("div", { key: c, className: "cb-columna" },
+    Array.from({ length: n }, (_, k) => el("span", { key: k, className: "cb-moneda", style: { "--cb-k": c * 3 + k } })))));
+}
+
+// Simulador de deudas: una tarjeta de crédito que se encoge mientras la barra de deuda baja.
+export function ObjetoDeuda() {
+  return el("div", { className: "cb-deuda" },
+    el("div", { className: "cb-tarjeta" },
+      el("span", { className: "cb-carta-chip" }),
+      el("span", { className: "cb-tarjeta-num" }, "•••• •••• •••• 2024"),
+      el("span", { className: "cb-tarjeta-nombre" }, "Deuda")),
+    el("div", { className: "cb-deuda-barra" }, el("span", null)));
+}
