@@ -1573,7 +1573,7 @@ export function ObjetivosFinancieros({
   });
   const objetivoTitulo = o => o.nombre || OBJETIVOS_DEF.find(x => x.id === o.tipo)?.label || "Objetivo sin nombre";
   return /*#__PURE__*/React.createElement(Card, {
-    className: "p-5 sm:p-7"
+    className: "p-5 sm:p-7 hr-grande"
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex items-start justify-between gap-4 mb-5"
   }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(Eyebrow, null, "04 · Objetivos"), /*#__PURE__*/React.createElement("h3", {
@@ -2421,16 +2421,15 @@ export function Diagnostico({
       color: C.muted
     }
   }, "Por ejemplo: préstamo de coche, de estudios, tarjeta de crédito u otro préstamo personal."), /*#__PURE__*/React.createElement("div", {
-    className: "flex flex-wrap gap-2"
+    className: "hr-opciones"
   }, /*#__PURE__*/React.createElement("button", {
+    type: "button",
     onClick: () => setSubPasoRedSeguridad("listaDeudas"),
-    className: "px-4 py-2.5 rounded-xl border text-sm font-bold",
-    style: {
-      borderColor: C.border,
-      backgroundColor: C.paper,
-      color: C.ink
-    }
-  }, "Sí, tengo alguna deuda"), /*#__PURE__*/React.createElement("button", {
+    className: "hr-opcion"
+  }, /*#__PURE__*/React.createElement("span", null, /*#__PURE__*/React.createElement("b", null, "Sí, tengo alguna deuda"), /*#__PURE__*/React.createElement("small", null, "Las añadimos en el siguiente paso.")), /*#__PURE__*/React.createElement(I.arrowRight, {
+    size: 20
+  })), /*#__PURE__*/React.createElement("button", {
+    type: "button",
     onClick: () => {
       setDatos({
         ...datos,
@@ -2438,13 +2437,12 @@ export function Diagnostico({
       });
       setSubPasoRedSeguridad("sinDeuda");
     },
-    className: "px-4 py-2.5 rounded-xl border text-sm font-bold",
-    style: {
-      borderColor: C.border,
-      backgroundColor: C.paper,
-      color: C.ink
-    }
-  }, "No tengo deudas"))), subPasoRedSeguridad === "sinDeuda" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("button", {
+    className: "hr-opcion"
+  }, /*#__PURE__*/React.createElement("span", null, /*#__PURE__*/React.createElement("b", null, "No tengo deudas"), /*#__PURE__*/React.createElement("small", null, "Continúas con el diagnóstico.")), /*#__PURE__*/React.createElement(I.arrowRight, {
+    size: 20
+  }))), /*#__PURE__*/React.createElement("p", {
+    className: "hr-opciones-pista"
+  }, "Elige una de las dos opciones para continuar.")), subPasoRedSeguridad === "sinDeuda" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("button", {
     onClick: () => setSubPasoRedSeguridad("preguntaDeuda"),
     className: "inline-flex items-center gap-1.5 text-xs font-bold mb-3",
     style: {
