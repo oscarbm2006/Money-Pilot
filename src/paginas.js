@@ -6,7 +6,7 @@ import { AnimatedNumber, quitarConSalida, Badge, BlogLinkCard, Card, DesgloseBar
 import { Reloj, CapasOrden } from './reloj.js';
 import { AcordeonFase, GastosTabs, VISTAS_MIS_FINANZAS } from './secciones.js';
 import { LIBROS } from './libros-guia.js';
-import { AvisoSinDiagnostico, EstrategiaVisual, PerfilResultado, RecorridoFases, SiguientePaso } from './hoja-ruta.js';
+import { AvisoSinDiagnostico, EstrategiaVisual, PerfilResultado, RecorridoFases, ResumenObjetivos, SiguientePaso, TarjetaObjetivoDiagnostico } from './hoja-ruta.js';
 
 // ISIN: 2 letras de país + 9 caracteres alfanuméricos + 1 dígito de control.
 const ISIN_RE = /^[A-Z]{2}[A-Z0-9]{9}[0-9]$/;
@@ -1793,7 +1793,7 @@ export function ObjetivosFinancieros({
       color: C.ink
     }
   }, "Cancelar"))), /*#__PURE__*/React.createElement("div", {
-    className: "space-y-3 mt-4"
+    className: "hr-obj-lista"
   }, plan.objetivos.map(o => {
     const faltaDatos = [];
     if (!o.nombre && !o.tipo) faltaDatos.push("nombre o categoría");
@@ -1802,261 +1802,23 @@ export function ObjetivosFinancieros({
     if (o.plazoAnios == null || o.plazoAnios <= 0) faltaDatos.push("plazo");
     if (o.prioridad == null) faltaDatos.push("prioridad");
     const deficitObjetivo = o.aportacionMensual != null && plan.capacidadParaObjetivos != null ? Math.max(0, o.aportacionMensual - plan.capacidadParaObjetivos) : null;
-    return /*#__PURE__*/React.createElement("div", {
+    return React.createElement(TarjetaObjetivoDiagnostico, {
       key: o.id,
-      className: "rounded-xl border p-4 fila-entra",
-      style: {
-        borderColor: C.border,
-        backgroundColor: C.paper
-      }
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "flex items-start justify-between gap-3"
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "min-w-0"
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "flex flex-wrap items-center gap-2"
-    }, /*#__PURE__*/React.createElement("b", {
-      className: "text-sm",
-      style: {
-        color: C.ink
-      }
-    }, objetivoTitulo(o)), o.prioridad ? /*#__PURE__*/React.createElement("span", {
-      className: "text-[10px] uppercase font-bold px-2 py-1 rounded-full",
-      style: {
-        backgroundColor: C.sandLight,
-        color: C.navy
-      }
-    }, PRIORIDAD_LABEL[o.prioridad]) : /*#__PURE__*/React.createElement("span", {
-      className: "text-[10px] uppercase font-bold px-2 py-1 rounded-full",
-      style: {
-        backgroundColor: C.critLight,
-        color: C.crit
-      }
-    }, "Prioridad por definir"), /*#__PURE__*/React.createElement("span", {
-      className: "text-[10px] uppercase font-bold",
-      style: {
-        color: C.muted
-      }
-    }, o.horizonteCategoria), o.estadoViabilidad && /*#__PURE__*/React.createElement("span", {
-      className: "text-[10px] uppercase font-bold px-2 py-1 rounded-full",
-      style: {
-        backgroundColor: o.estadoViabilidad === "viable" || o.estadoViabilidad === "completado" ? C.saluLight : o.estadoViabilidad === "ajustado" ? C.mejLight : C.critLight,
-        color: o.estadoViabilidad === "viable" || o.estadoViabilidad === "completado" ? C.salu : o.estadoViabilidad === "ajustado" ? C.mej : C.crit
-      }
-    }, {
-      viable: "Viable",
-      ajustado: "Ajustado",
-      no_viable: "No viable",
-      pendiente: "Pendiente",
-      pendiente_capacidad: "Pendiente",
-      completado: "Completado"
-    }[o.estadoViabilidad])), /*#__PURE__*/React.createElement("div", {
-      className: "text-xs mt-1",
-      style: {
-        color: C.muted
-      }
-    }, o.importeObjetivo != null ? `${euros(o.importeReservadoAplicado)} / ${euros(o.importeObjetivo)}` : "Importe por definir", " · ", o.fechaObjetivo && !isNaN(new Date(o.fechaObjetivo + "T00:00:00").getTime()) ? `fecha ${new Date(o.fechaObjetivo + "T00:00:00").toLocaleDateString("es-ES")}` : o.horizonteAniosCalculado > 0 ? `${dec(o.horizonteAniosCalculado, 1)} años` : "plazo por definir"), faltaDatos.length > 0 && /*#__PURE__*/React.createElement("div", {
-      className: "mt-2 text-xs",
-      style: {
-        color: C.crit
-      }
-    }, "Completa ", faltaDatos.join(", "), " para poder evaluar completamente este objetivo."), /*#__PURE__*/React.createElement("div", {
-      className: "mt-2 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold",
-      style: {
-        backgroundColor: o.recomendacionHorizonte.modo === "invertir" ? C.saluLight : o.recomendacionHorizonte.modo === "ahorrar" ? C.sandLight : "rgba(14,165,233,0.08)",
-        color: C.ink
-      }
-    }, /*#__PURE__*/React.createElement(I.info, {
-      size: 12
-    }), o.recomendacionHorizonte.titulo)), /*#__PURE__*/React.createElement("div", {
-      className: "flex gap-2 shrink-0"
-    }, /*#__PURE__*/React.createElement("button", {
-      onClick: () => abrirEditar(o),
-      style: {
-        color: C.navy
-      }
-    }, /*#__PURE__*/React.createElement(I.edit, {
-      size: 15
-    })), /*#__PURE__*/React.createElement("button", {
-      onClick: () => eliminar(o.id),
-      style: {
-        color: C.crit
-      }
-    }, /*#__PURE__*/React.createElement(I.trash, {
-      size: 15
-    })))), o.importeObjetivo != null && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
-      className: "h-1.5 rounded-full mt-3 overflow-hidden",
-      style: {
-        backgroundColor: C.bgDeepMid
-      }
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "h-full rounded-full",
-      style: {
-        width: o.progreso + "%",
-        backgroundColor: C.salu
-      }
-    })), /*#__PURE__*/React.createElement("div", {
-      className: "grid grid-cols-2 sm:grid-cols-5 gap-3 mt-3 text-xs"
-    }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("span", {
-      style: {
-        color: C.muted
-      }
-    }, "Progreso"), /*#__PURE__*/React.createElement("b", {
-      className: "block",
-      style: {
-        color: C.ink
-      }
-    }, pct(o.progreso, 0))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("span", {
-      style: {
-        color: C.muted
-      }
-    }, "Restante"), /*#__PURE__*/React.createElement("b", {
-      className: "block",
-      style: {
-        color: C.ink
-      }
-    }, o.importeRestante == null ? "—" : euros(o.importeRestante))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("span", {
-      style: {
-        color: C.muted
-      }
-    }, "Necesario"), /*#__PURE__*/React.createElement("b", {
-      className: "block",
-      style: {
-        color: C.ink
-      }
-    }, o.aportacionNecesaria == null ? "—" : euros(o.aportacionNecesaria) + "/mes")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("span", {
-      style: {
-        color: C.muted
-      }
-    }, "Previsto"), /*#__PURE__*/React.createElement("b", {
-      className: "block",
-      style: {
-        color: C.ink
-      }
-    }, o.aportacionMensual == null ? "—" : euros(o.aportacionMensual) + "/mes")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("span", {
-      style: {
-        color: C.muted
-      }
-    }, "Capacidad"), /*#__PURE__*/React.createElement("b", {
-      className: "block",
-      style: {
-        color: C.ink
-      }
-    }, plan.capacidadParaObjetivos == null ? "—" : euros(plan.capacidadParaObjetivos) + "/mes"))), o.aportacionMensual != null && plan.capacidadParaObjetivos != null && deficitObjetivo > 0 && /*#__PURE__*/React.createElement("div", {
-      className: "mt-3 rounded-lg p-3 text-xs",
-      style: {
-        backgroundColor: C.critLight,
-        color: C.crit
-      }
-    }, /*#__PURE__*/React.createElement("b", null, "Déficit de capacidad: ", euros(deficitObjetivo), "/mes."), " La aportación prevista supera la capacidad mensual calculada con tus ingresos, gastos y deudas."), o.aportacionMensual != null && o.aportacionNecesaria != null && /*#__PURE__*/React.createElement("div", {
-      className: "mt-2 text-xs",
-      style: {
-        color: o.aportacionMensual >= o.aportacionNecesaria ? C.salu : C.crit
-      }
-    }, o.aportacionMensual >= o.aportacionNecesaria ? "La aportación indicada cubre el ritmo necesario para el plazo elegido." : `Con la aportación indicada faltan ${euros(o.aportacionNecesaria - o.aportacionMensual)}/mes respecto al ritmo necesario.`), /*#__PURE__*/React.createElement("div", {
-      className: "mt-3 rounded-lg p-3 text-xs",
-      style: {
-        backgroundColor: o.recomendacionHorizonte.modo === "invertir" ? C.saluLight : o.recomendacionHorizonte.modo === "ahorrar" ? C.sandLight : "rgba(14,165,233,0.06)",
-        color: C.ink
-      }
-    }, /*#__PURE__*/React.createElement("b", null, o.recomendacionHorizonte.titulo, "."), " ", o.recomendacionHorizonte.texto)));
-  })), objetivos.length > 0 && /*#__PURE__*/React.createElement("div", {
-    className: "mt-5 grid sm:grid-cols-3 gap-3"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "rounded-xl p-4",
-    style: {
-      backgroundColor: C.saluLight
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "text-[10px] uppercase font-bold",
-    style: {
-      color: C.salu
-    }
-  }, "Capacidad mensual"), /*#__PURE__*/React.createElement("div", {
-    className: "font-serif text-xl font-bold mt-1",
-    style: {
-      color: C.ink
-    }
-  }, plan.capacidadParaObjetivos == null ? "Pendiente" : euros(plan.capacidadParaObjetivos) + "/mes"), /*#__PURE__*/React.createElement("div", {
-    className: "text-xs mt-1",
-    style: {
-      color: C.muted
-    }
-  }, "Ingresos − gastos fijos − discrecionales − deudas.")), /*#__PURE__*/React.createElement("div", {
-    className: "rounded-xl p-4",
-    style: {
-      backgroundColor: plan.deficitMensual > 0 ? C.critLight : C.saluLight
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "text-[10px] uppercase font-bold",
-    style: {
-      color: plan.deficitMensual > 0 ? C.crit : C.salu
-    }
-  }, "Aportaciones previstas"), /*#__PURE__*/React.createElement("div", {
-    className: "font-serif text-xl font-bold mt-1",
-    style: {
-      color: C.ink
-    }
-  }, euros(plan.aportacionComprometida), "/mes"), /*#__PURE__*/React.createElement("div", {
-    className: "text-xs mt-1",
-    style: {
-      color: C.muted
-    }
-  }, plan.deficitMensual == null ? "Completa ingresos y gastos para compararlas." : plan.deficitMensual > 0 ? `Déficit: ${euros(plan.deficitMensual)}/mes.` : `Dentro de la capacidad actual.`)), /*#__PURE__*/React.createElement("div", {
-    className: "rounded-xl p-4",
-    style: {
-      backgroundColor: C.paper,
-      border: "1px solid " + C.border
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "text-[10px] uppercase font-bold",
-    style: {
-      color: C.navy
-    }
-  }, "Ritmo necesario"), /*#__PURE__*/React.createElement("div", {
-    className: "font-serif text-xl font-bold mt-1",
-    style: {
-      color: C.ink
-    }
-  }, euros(plan.aportacionNecesariaTotal), "/mes"), /*#__PURE__*/React.createElement("div", {
-    className: "text-xs mt-1",
-    style: {
-      color: C.muted
-    }
-  }, plan.deficitRitmoElegido > 0 ? `Tus aportaciones quedan ${euros(plan.deficitRitmoElegido)}/mes por debajo del ritmo necesario.` : "Ritmo cubierto con las aportaciones previstas."))), plan.principal && /*#__PURE__*/React.createElement("div", {
-    className: "mt-4 text-xs",
-    style: {
-      color: C.muted
-    }
-  }, /*#__PURE__*/React.createElement("b", {
-    style: {
-      color: C.ink
-    }
-  }, "Objetivo principal:"), " ", objetivoTitulo(plan.principal), ". Se ha determinado por prioridad y, después, por plazo y capital pendiente."), plan.prioridadSinDefinir && objetivos.length > 1 && /*#__PURE__*/React.createElement("div", {
-    className: "mt-3 rounded-lg p-3 text-xs",
-    style: {
-      backgroundColor: C.critLight,
-      color: C.crit
-    }
-  }, /*#__PURE__*/React.createElement("b", null, "Define las prioridades."), " Hay objetivos sin prioridad; hasta que las indiques, la herramienta no asigna silenciosamente preferencia a ninguno."), plan.ejecucion && /*#__PURE__*/React.createElement("div", {
-    className: "mt-3 rounded-lg p-3 text-xs",
-    style: {
-      backgroundColor: "rgba(14,165,233,0.06)",
-      color: C.ink
-    }
-  }, /*#__PURE__*/React.createElement("b", null, "Capacidad de ejecución:"), " ", plan.ejecucion.texto), plan.conflictoObjetivos && /*#__PURE__*/React.createElement("div", {
-    className: "mt-3 rounded-xl p-3 text-xs",
-    style: {
-      backgroundColor: C.critLight,
-      color: C.crit
-    }
-  }, /*#__PURE__*/React.createElement("b", null, "Conflicto entre objetivos:"), " tus aportaciones previstas suman ", euros(plan.aportacionComprometida), "/mes y la capacidad conjunta es ", euros(plan.capacidadParaObjetivos), "/mes. Déficit conjunto: ", euros(plan.deficitMensual), "/mes."), /*#__PURE__*/React.createElement("div", {
-    className: "mt-3 rounded-xl p-3 text-xs",
-    style: {
-      backgroundColor: "rgba(14,165,233,0.06)",
-      color: C.ink
-    }
-  }, /*#__PURE__*/React.createElement("b", null, "Cómo lo calculamos:"), " usamos tus ingresos, gastos, deudas y ahorro actual. Es una orientación educativa, no una garantía de resultados."));
+      o,
+      plan,
+      titulo: objetivoTitulo(o),
+      plazoTexto: o.fechaObjetivo && !isNaN(new Date(o.fechaObjetivo + "T00:00:00").getTime()) ? `fecha ${new Date(o.fechaObjetivo + "T00:00:00").toLocaleDateString("es-ES")}` : o.horizonteAniosCalculado > 0 ? `${dec(o.horizonteAniosCalculado, 1)} años` : "plazo por definir",
+      prioridadTexto: o.prioridad ? "Prioridad " + PRIORIDAD_LABEL[o.prioridad].toLowerCase() : "Prioridad por definir",
+      faltaDatos,
+      deficitObjetivo,
+      onEditar: () => abrirEditar(o),
+      onEliminar: () => eliminar(o.id)
+    });
+  })), objetivos.length > 0 && React.createElement(ResumenObjetivos, {
+    plan,
+    objetivos,
+    tituloPrincipal: plan.principal ? objetivoTitulo(plan.principal) : ""
+  }));
 }
 
 export function Diagnostico({
