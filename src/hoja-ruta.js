@@ -4,6 +4,7 @@ import { ACTIVOS_DEF, ASIGNACION, C, I } from './constantes.js';
 import { dec, euros } from './calculos.js';
 import { AnimatedNumber, SimpleDonut } from './ui-basicos.js';
 import { CapaTransicion } from './secciones.js';
+import { EscenaRuta } from './cabeceras.js';
 import { prefiereMenosMovimiento, useAparicion, useInclinacion } from './movimiento.js';
 
 // Piezas visuales de la hoja de ruta (Estrategia → Plan → Seguimiento).
@@ -208,8 +209,9 @@ export function RecorridoFases({ fases }) {
     retraso: 600,
     lineas: ["Tu ruta,", "fase a fase."],
     frase: "Baja para recorrer cada etapa: dónde estás, cuánto te falta y qué viene después.",
-    // x e y van de -1 a 1 desde el centro: los iconos quedan en los laterales, lejos del titular
-    iconos: [["moneda", -0.86, 0.35, 0.75, 0.4], ["flecha", -0.66, -0.4, 0.7, 0.2], ["barras", 0.66, 0.4, 0.75, -0.3], ["moneda", 0.86, -0.35, 0.6, 1.5]]
+    escena: el(EscenaRuta, null),
+    composicion: "izquierda",
+    acento: "#F59E0B"
   })), el("section", {
     className: "hr-recorrido", "aria-label": "Fases de tu plan"
   }, el("div", {
@@ -588,13 +590,7 @@ export function PerfilResultado({ nombrePerfil, info, resultado, dimensiones, ca
     className: "hr-barra", style: { height: 8 }
   }, el("div", { className: "hr-barra-relleno", style: { width: valor + "%", background: info.color } }))))))),
 
-  el("section", { className: "hr-bloque-est" }, el(Aparece, null, el("h3", { className: "hr-subtitular" }, "¿Por qué tienes este perfil?")), el("div", {
-    className: "hr-diag-rejilla"
-  }, el("div", { className: "hr-diag-columna" }, el("p", { className: "hr-etiqueta", style: { color: "#047857" } }, "Lo que lo impulsa"), resultado.factoresPositivos.map((f, i) => el(TarjetaDiagnostico, {
-    key: i, item: { titulo: f }, tipo: "bien", retraso: 0.1 + i * 0.1
-  }))), el("div", { className: "hr-diag-columna" }, el("p", { className: "hr-etiqueta", style: { color: "#B91C1C" } }, "Lo que lo limita"), resultado.factoresNegativos.map((f, i) => el(TarjetaDiagnostico, {
-    key: i, item: { titulo: f }, tipo: "mal", retraso: 0.1 + i * 0.1
-  }))))),
+  el(PorQuePerfil, { resultado }),
 
   el("section", { className: "hr-bloque-est" }, el(Aparece, null, el("h3", { className: "hr-subtitular" }, "Lo que hemos tenido en cuenta"), el("p", {
     className: "hr-texto", style: { marginTop: -8, marginBottom: 16, maxWidth: 680 }
@@ -641,4 +637,22 @@ function RadarPerfil({ dimensiones }) {
     const [x, y] = punto(i, 1.2);
     return el("text", { key: e, x, y, textAnchor: Math.abs(x - cx) < 10 ? "middle" : x > cx ? "start" : "end", dominantBaseline: "middle", fill: "#E0E7FF", fontSize: 15, fontWeight: 700 }, cortas[e] || e);
   }));
+}
+
+// "¿Por qué tienes este perfil?": cerrado de entrada; al pulsar se abren los factores y el aviso.
+function PorQuePerfil({ resultado }) {
+  const [abierto, setAbierto] = useState(false);
+  return el("section", { className: "hr-bloque-est" }, el(Aparece, null, el("button", {
+    type: "button", className: "hr-card hr-desplegable", "aria-expanded": abierto, "aria-controls": "hr-porque", onClick: () => setAbierto(v => !v)
+  }, el("span", { className: "hr-icono", style: { backgroundColor: C.primaryLight, color: C.primary } }, el(I.info, { size: 20 })), el("span", { style: { flex: 1, minWidth: 0 } }, el("span", {
+    className: "hr-titulo", style: { display: "block", fontSize: 20 }
+  }, "¿Por qué tienes este perfil?"), el("span", { className: "hr-texto", style: { display: "block", marginTop: 2 } }, abierto ? "Ocultar los factores" : "Ver qué lo impulsa y qué lo limita")), el(I.chevronDown, {
+    size: 22, className: "hr-desplegable-flecha" + (abierto ? " hr-desplegable-abierta" : "")
+  }))), abierto && el("div", { id: "hr-porque", className: "hr-desplegable-cuerpo" }, el("div", {
+    className: "hr-diag-rejilla"
+  }, el("div", { className: "hr-diag-columna" }, el("p", { className: "hr-etiqueta", style: { color: "#047857" } }, "Lo que lo impulsa"), resultado.factoresPositivos.map((f, i) => el(TarjetaDiagnostico, {
+    key: i, item: { titulo: f }, tipo: "bien", retraso: 0.05 + i * 0.08
+  }))), el("div", { className: "hr-diag-columna" }, el("p", { className: "hr-etiqueta", style: { color: "#B91C1C" } }, "Lo que lo limita"), resultado.factoresNegativos.map((f, i) => el(TarjetaDiagnostico, {
+    key: i, item: { titulo: f }, tipo: "mal", retraso: 0.05 + i * 0.08
+  })))), el("p", { className: "hr-aviso-legal" }, el(I.info, { size: 16, className: "shrink-0" }), el("span", null, el("b", null, "Análisis orientativo. "), "Este perfil es una estimación educativa a partir de tus respuestas y no constituye asesoramiento financiero. Antes de tomar decisiones de inversión, te recomendamos consultar con un asesor financiero profesional."))));
 }

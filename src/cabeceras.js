@@ -85,3 +85,55 @@ export function ObjetoDeuda() {
       el("span", { className: "cb-tarjeta-nombre" }, "Deuda")),
     el("div", { className: "cb-deuda-barra" }, el("span", null)));
 }
+
+/* ---------- Escenas de las bandas de titular grandes ---------- */
+// Cada banda ilustra su propia frase en lugar de repetir monedas, flechas y barras.
+
+// "Lo que no se mueve, se encoge": un billete que pierde tamaño frente a su silueta de hoy.
+export function EscenaInflacion() {
+  return el("div", { className: "cbt-inflacion" },
+    el("div", { className: "cbt-inflacion-silueta" }, el("span", null, "Hoy · 1.000 €")),
+    el("div", { className: "cbt-inflacion-billete" },
+      el("span", { className: "cb-billete-marco" }),
+      el("span", { className: "cbt-inflacion-cifra" }, "50"),
+      el("span", { className: "cb-billete-euro" }, "€")),
+    el("span", { className: "cbt-inflacion-etiqueta" }, "En 10 años · ≈ 780 € de poder de compra"));
+}
+
+// "El tiempo trabaja para quien empieza antes": una línea de años en la que la bola de ahorro crece.
+export function EscenaTiempo() {
+  const hitos = [["Año 1", 18], ["Año 5", 30], ["Año 10", 48], ["Año 20", 78], ["Año 30", 120]];
+  return el("div", { className: "cbt-tiempo" },
+    el("span", { className: "cbt-tiempo-linea" }),
+    hitos.map(([anio, d], i) => el("div", { key: anio, className: "cbt-tiempo-hito", style: { "--cbt-i": i } },
+      el("span", { className: "cbt-tiempo-bola", style: { width: d, height: d } }),
+      el("span", { className: "cbt-tiempo-anio" }, anio))));
+}
+
+// "Del dinero que guardas al dinero que trabaja": una pila quieta y un engranaje que gira con monedas.
+export function EscenaTrabaja() {
+  return el("div", { className: "cbt-trabaja" },
+    el("div", { className: "cbt-trabaja-lado" },
+      el("div", { className: "cbt-pila" }, Array.from({ length: 6 }, (_, k) => el("span", { key: k, className: "cbt-pila-moneda" }))),
+      el("span", { className: "cbt-trabaja-etiqueta" }, "Guardado")),
+    el("span", { className: "cbt-trabaja-flecha" }, el(I.arrowRight, { size: 34 })),
+    el("div", { className: "cbt-trabaja-lado" },
+      el("div", { className: "cbt-engranaje" },
+        el("span", { className: "cbt-engranaje-rueda" }),
+        el("span", { className: "cbt-orbita" }, el("span", null), el("span", null), el("span", null))),
+      el("span", { className: "cbt-trabaja-etiqueta" }, "Trabajando")));
+}
+
+// "Tu ruta, fase a fase": un camino que se dibuja y va encendiendo sus cinco hitos.
+export function EscenaRuta() {
+  const hitos = [[40, 250], [140, 190], [250, 210], [340, 120], [440, 60]];
+  const d = "M40 250 C 90 240, 100 190, 140 190 S 220 220, 250 210 S 310 130, 340 120 S 410 70, 440 60";
+  return el("div", { className: "cbt-ruta" },
+    el("svg", { viewBox: "0 0 480 300", width: "100%", height: "100%" },
+      el("path", { d, fill: "none", stroke: "rgba(255,255,255,.12)", strokeWidth: 14, strokeLinecap: "round" }),
+      el("path", { className: "cbt-ruta-camino", d, fill: "none", stroke: "#FBBF24", strokeWidth: 4, strokeLinecap: "round", strokeDasharray: "10 12" }),
+      hitos.map(([x, y], i) => el("g", { key: i, className: "cbt-ruta-hito", style: { "--cbt-i": i } },
+        el("circle", { cx: x, cy: y, r: 16, fill: "#1E1B4B", stroke: "#FBBF24", strokeWidth: 3 }),
+        el("text", { x, y: y + 5, textAnchor: "middle", fill: "#fff", fontSize: 14, fontWeight: 800 }, i + 1))),
+      el("g", { className: "cbt-ruta-meta" }, el("path", { d: "M440 60 V 14", stroke: "#fff", strokeWidth: 3 }), el("path", { d: "M440 14 L 470 24 L 440 34 Z", fill: "#F59E0B" }))));
+}

@@ -6,6 +6,7 @@ import { euros, numEs, proyeccionInteres, totalMensual } from './calculos.js';
 import { useAparicion, useInclinacion, contarHasta, prefiereMenosMovimiento, esPantallaPequena } from './movimiento.js';
 import { SeccionReloj, SeccionCapas } from './reloj.js';
 import { montarPortada3D, montarCapa3D } from './efectos-3d.js';
+import { EscenaInflacion, EscenaTiempo, EscenaTrabaja } from './cabeceras.js';
 
 // Longitud de una polilínea (en unidades del viewBox) a partir de su atributo points; sirve para trazarla al aparecer
 const longitudPolilinea = pts => {
@@ -172,15 +173,19 @@ function Aparece({ as = "div", retraso = 0, className = "", style = {}, children
 }
 
 // Capa de transición: titular + iconos 3D que llegan girando
-export function CapaTransicion({ id, lineas, frase, iconos, retraso }) {
-  const { lienzo, caja } = useEscena3D((c, b, fallar) => esPantallaPequena() ? Promise.resolve(() => {}) : montarCapa3D(c, b, iconos, { alFallar: fallar }), retraso);
+// escena: ilustración propia de la banda (ver cabeceras.js) en lugar de los iconos 3D; composicion: "centro",
+// "izquierda" (texto a la izquierda), "derecha" (escena a la izquierda) o "ancho" (escena debajo del texto).
+export function CapaTransicion({ id, lineas, frase, iconos, retraso, escena, composicion = "centro", acento }) {
+  const { lienzo, caja } = useEscena3D((c, b, fallar) => escena || esPantallaPequena() ? Promise.resolve(() => {}) : montarCapa3D(c, b, iconos, { alFallar: fallar }), retraso);
   const visible = useAparicion();
-  return ce("section", { ref: el => { caja.current = el; visible.current = el; }, className: "mp-capa", "aria-labelledby": id },
-    ce("canvas", { ref: lienzo, className: "mp-lienzo", "aria-hidden": "true" }),
-    ce("div", { className: "mp-capa-luz", "aria-hidden": "true" }),
+  const variante = escena ? " cbt " + ({ izquierda: "cbt-izquierda", derecha: "cbt-derecha", ancho: "cbt-ancho" }[composicion] || "cbt-centro") : "";
+  return ce("section", { ref: el => { caja.current = el; visible.current = el; }, className: "mp-capa" + variante, "aria-labelledby": id, style: acento ? { "--cb-acento": acento } : undefined },
+    !escena && ce("canvas", { ref: lienzo, className: "mp-lienzo", "aria-hidden": "true" }),
+    escena ? ce("div", { className: "cbt-tinte", "aria-hidden": "true" }) : ce("div", { className: "mp-capa-luz", "aria-hidden": "true" }),
     ce("div", { className: "mp-capa-texto" },
       ce("h2", { id, className: "mp-capa-titulo" }, lineas.map((l, i) => ce("span", { key: i, className: "mp-capa-linea" }, ce("span", null, l)))),
-      ce("p", { className: "mp-capa-frase" }, frase)));
+      ce("p", { className: "mp-capa-frase" }, frase)),
+    escena && ce("div", { className: "cbt-escena", "aria-hidden": "true" }, escena));
 }
 
 /* ---------- Cabecera de las herramientas ---------- */
@@ -544,10 +549,15 @@ export function MisFinanzas({ seccion, cuentas, inversiones, patrimonio }) {
   const [activa, setActiva] = useState("cuentas");
   const comportamiento = () => prefiereMenosMovimiento() ? "auto" : "smooth";
   const ir = id => { const el = refs[id] && refs[id].current; if (el) el.scrollIntoView({ behavior: comportamiento(), block: "start" }); };
-  // Al entrar (o al pulsar un enlace a Cuentas, Inversiones o Patrimonio) baja hasta esa parte.
-  // Se espera un instante para no chocar con la subida al principio que hace la app al cambiar de pantalla.
+  // Al entrar desde otra pantalla se empieza arriba del todo, en la cabecera; también al llegar a "cuentas",
+  // que es la primera parte (p. ej. al terminar el diagnóstico). Inversiones y Patrimonio, y cualquier cambio
+  // de parte ya dentro de la página, bajan hasta esa parte. Se espera un instante para no chocar con la subida
+  // al principio que hace la app al cambiar de pantalla.
+  const montada = useRef(false);
   useEffect(() => {
-    const t = setTimeout(() => { if (seccion === "mis-finanzas") window.scrollTo({ top: 0, behavior: comportamiento() }); else ir(seccion); }, 80);
+    const alEntrar = !montada.current;
+    montada.current = true;
+    const t = setTimeout(() => { if (seccion === "mis-finanzas" || (alEntrar && seccion === "cuentas")) window.scrollTo({ top: 0, behavior: alEntrar ? "auto" : comportamiento() }); else ir(seccion); }, 80);
     return () => clearTimeout(t);
   }, [seccion]);
   // El índice de arriba marca la parte que estás leyendo
@@ -572,7 +582,7 @@ export function MisFinanzas({ seccion, cuentas, inversiones, patrimonio }) {
         ce("div", { className: "mp-herr-rejilla" }, PIEZAS_MF.map(([n, k, t, desc, Icon], i) => ce(TarjetaHerramienta, { key: n, n, k, t, desc, Icon, i }))))),
     BLOQUES_MF.map(([id, n, ante, titulo, texto, consejo], i) => ce(React.Fragment, { key: id },
       i === 1 && ce(CapaTransicion, { id: "mp-capa-mf", retraso: 3000, lineas: ["Del dinero que guardas", "al dinero que trabaja."], frase: "Lo que tienes en tus cuentas y lo que has puesto a crecer forman, juntos, tu patrimonio.",
-        iconos: [["moneda", -0.82, 0.42, 0.9, 0.3], ["flecha", 0.8, 0.46, 0.9, -0.4], ["barras", 0.68, -0.5, 0.8, 0.6], ["moneda", -0.64, -0.5, 0.75, 1.4], ["billete", -0.94, 0, 0.7, 0.9], ["flecha", 0.94, 0, 0.65, 2.2]] }),
+        escena: ce(EscenaTrabaja, null), composicion: "derecha", acento: "#14B8A6" }),
       ce("div", { ref: refs[id], "data-bloque": id, id: "mf-" + id, className: "mp-mf-bloque mp-sans" },
         ce("div", { className: "max-w-4xl mx-auto px-4 sm:px-6" },
           ce(Aparece, { className: "mp-mf-cabeza" },
@@ -725,7 +735,7 @@ export function HeroSection({
 
     /* 3 · Capa de transición hacia la inflación */
     ce(CapaTransicion, { id: "mp-capa-1", retraso: 3000, lineas: ["Lo que no se mueve,", "se encoge."], frase: "Así actúa la inflación sobre el dinero que tienes parado.",
-      iconos: [["billete", -0.82, 0.42, 1, 0.3], ["tarjeta", 0.8, 0.5, 0.9, -0.5], ["billete", 0.66, -0.48, 0.8, 1.2], ["billete", -0.62, -0.52, 0.75, 2.1], ["tarjeta", -0.92, -0.02, 0.7, 0.9], ["billete", 0.94, 0.02, 0.7, -1.1]] }),
+      escena: ce(EscenaInflacion, null), composicion: "izquierda", acento: "#F59E0B" }),
     ce(PoderAdquisitivoSection, null),
 
     /* 4 · Qué vas a conseguir */
@@ -735,7 +745,7 @@ export function HeroSection({
 
     /* 5 · Capa de transición hacia el experimento del gasto hormiga */
     ce(CapaTransicion, { id: "mp-capa-2", retraso: 4500, lineas: ["El tiempo trabaja", "para quien empieza antes."], frase: "Mira cómo crece un ahorro constante, mes a mes.",
-      iconos: [["flecha", -0.8, 0.4, 1, 0.2], ["barras", 0.8, 0.46, 0.9, -0.4], ["flecha", 0.7, -0.5, 0.8, -0.9], ["barras", -0.66, -0.5, 0.8, 0.6], ["moneda", -0.94, 0, 0.7, 1.4], ["flecha", 0.94, 0, 0.7, 2.2]] }),
+      escena: ce(EscenaTiempo, null), composicion: "ancho", acento: "#A78BFA" }),
     ce(GastoHormigaSection, null),
 
     /* 6 · Llamada final */
