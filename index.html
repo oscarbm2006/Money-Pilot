@@ -869,6 +869,24 @@ header .export-menu button[style*="0.08"]{ color:#FFFFFF !important; background-
   .hr-obj-consejo { display:flex; gap:14px; align-items:flex-start; padding-top:18px; border-top:1px solid #E4E7EF; }
   .hr-obj-resumen { margin-top:24px; display:flex; flex-direction:column; gap:16px; }
   @media (prefers-reduced-motion: reduce) { .hr-obj-barra > span, .hr-obj-fila-barra > span { animation:none; } }
+  /* ===== Barra lateral de progreso (src/progreso-lateral.js) ===== */
+  .pl-lateral { position:fixed; right:18px; top:50%; translate:0 -50%; z-index:45; display:flex; flex-direction:column; align-items:center; gap:10px; pointer-events:none; }
+  .pl-pista { position:relative; width:4px; height:min(52vh, 420px); border-radius:999px; background:rgba(148,163,184,.3); pointer-events:auto; }
+  .pl-relleno { position:absolute; inset:0; border-radius:999px; background:linear-gradient(180deg, #818CF8, #4F46E5); transform-origin:top; transition:transform .12s linear; }
+  .pl-punto { position:absolute; left:50%; width:14px; height:14px; margin:-7px 0 0 -7px; padding:0; border-radius:50%; border:2px solid #C7D2FE; background:#fff; cursor:pointer; transition:transform var(--mp-rapido), background var(--mp-rapido), border-color var(--mp-rapido); }
+  .pl-punto::before { content:""; position:absolute; inset:-10px; }
+  .pl-punto-pasado { background:#818CF8; border-color:#818CF8; }
+  .pl-punto-actual { background:#4F46E5; border-color:#fff; transform:scale(1.35); box-shadow:0 0 0 4px rgba(79,70,229,.25); }
+  .pl-punto:hover, .pl-punto:focus-visible { transform:scale(1.35); outline:none; border-color:#4F46E5; }
+  .pl-etiqueta { position:absolute; right:calc(100% + 14px); top:50%; translate:0 -50%; white-space:nowrap; max-width:260px; overflow:hidden; text-overflow:ellipsis; padding:6px 12px; border-radius:999px; background:#1E1B4B; color:#fff; font:700 13px var(--mp-fuente, sans-serif); box-shadow:0 10px 24px rgba(30,27,75,.3); opacity:0; pointer-events:none; transition:opacity var(--mp-rapido); }
+  .pl-punto:hover .pl-etiqueta, .pl-punto:focus-visible .pl-etiqueta { opacity:1; }
+  .pl-pct, .pl-resto { font:800 11px var(--mp-fuente, sans-serif); color:#4F46E5; background:rgba(255,255,255,.92); padding:3px 7px; border-radius:999px; box-shadow:0 2px 8px rgba(30,27,75,.12); }
+  .pl-resto { color:#6B7280; font-weight:700; }
+  @media (min-width: 1440px) { .pl-punto-actual .pl-etiqueta { opacity:1; } }
+  .pl-movil { display:none; position:fixed; left:0; right:0; top:0; height:3px; z-index:60; pointer-events:none; }
+  .pl-movil > span { display:block; height:100%; background:linear-gradient(90deg, #818CF8, #4F46E5); transform-origin:left; transition:transform .12s linear; }
+  @media (max-width: 960px) { .pl-lateral { display:none; } .pl-movil { display:block; } }
+  @media (prefers-reduced-motion: reduce) { .pl-relleno, .pl-movil > span, .pl-punto { transition:none; } }
 </style>
 </head>
 <body>
