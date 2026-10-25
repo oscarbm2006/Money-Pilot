@@ -592,11 +592,11 @@ export function PerfilResultado({ nombrePerfil, info, resultado, dimensiones, ca
 
   el(PorQuePerfil, { resultado }),
 
-  el("section", { className: "hr-bloque-est" }, el(Aparece, null, el("h3", { className: "hr-subtitular" }, "Lo que hemos tenido en cuenta"), el("p", {
-    className: "hr-texto", style: { marginTop: -8, marginBottom: 16, maxWidth: 680 }
-  }, "El perfil no sale de una única puntuación: la capacidad financiera incluye ahorro, fondo de emergencia, deuda, estabilidad de ingresos, patrimonio y objetivos; los conocimientos se evalúan aparte.")), el("ul", {
+  el("section", { className: "hr-bloque-est" }, el(Aparece, null, el(Desplegable, {
+    titulo: "Lo que hemos tenido en cuenta", abrir: "Ver los factores que usa el test", cerrar: "Ocultar los factores", Icono: I.clipboard
+  }, el("p", { className: "hr-texto", style: { maxWidth: 680 } }, "El perfil no sale de una única puntuación: la capacidad financiera incluye ahorro, fondo de emergencia, deuda, estabilidad de ingresos, patrimonio y objetivos; los conocimientos se evalúan aparte."), el("ul", {
     className: "hr-pastillas"
-  }, resultado.factoresTenidosEnCuenta.map((f, i) => el(Aparece, { key: i, retraso: i * 0.05 }, el("li", null, el(I.check, { size: 14, color: C.primary }), f))))),
+  }, resultado.factoresTenidosEnCuenta.map((f, i) => el("li", { key: i }, el(I.check, { size: 14, color: C.primary }), f)))))),
 
   el(Aparece, null, el("div", {
     className: "hr-card hr-sin-datos"
@@ -641,18 +641,105 @@ function RadarPerfil({ dimensiones }) {
 
 // "¿Por qué tienes este perfil?": cerrado de entrada; al pulsar se abren los factores y el aviso.
 function PorQuePerfil({ resultado }) {
-  const [abierto, setAbierto] = useState(false);
-  return el("section", { className: "hr-bloque-est" }, el(Aparece, null, el("button", {
-    type: "button", className: "hr-card hr-desplegable", "aria-expanded": abierto, "aria-controls": "hr-porque", onClick: () => setAbierto(v => !v)
-  }, el("span", { className: "hr-icono", style: { backgroundColor: C.primaryLight, color: C.primary } }, el(I.info, { size: 20 })), el("span", { style: { flex: 1, minWidth: 0 } }, el("span", {
-    className: "hr-titulo", style: { display: "block", fontSize: 20 }
-  }, "¿Por qué tienes este perfil?"), el("span", { className: "hr-texto", style: { display: "block", marginTop: 2 } }, abierto ? "Ocultar los factores" : "Ver qué lo impulsa y qué lo limita")), el(I.chevronDown, {
-    size: 22, className: "hr-desplegable-flecha" + (abierto ? " hr-desplegable-abierta" : "")
-  }))), abierto && el("div", { id: "hr-porque", className: "hr-desplegable-cuerpo" }, el("div", {
-    className: "hr-diag-rejilla"
-  }, el("div", { className: "hr-diag-columna" }, el("p", { className: "hr-etiqueta", style: { color: "#047857" } }, "Lo que lo impulsa"), resultado.factoresPositivos.map((f, i) => el(TarjetaDiagnostico, {
+  return el("section", { className: "hr-bloque-est" }, el(Aparece, null, el(Desplegable, {
+    titulo: "¿Por qué tienes este perfil?", abrir: "Ver qué lo impulsa y qué lo limita", cerrar: "Ocultar los factores"
+  }, el("div", { className: "hr-diag-rejilla" }, el("div", { className: "hr-diag-columna" }, el("p", { className: "hr-etiqueta", style: { color: "#047857" } }, "Lo que lo impulsa"), resultado.factoresPositivos.map((f, i) => el(TarjetaDiagnostico, {
     key: i, item: { titulo: f }, tipo: "bien", retraso: 0.05 + i * 0.08
   }))), el("div", { className: "hr-diag-columna" }, el("p", { className: "hr-etiqueta", style: { color: "#B91C1C" } }, "Lo que lo limita"), resultado.factoresNegativos.map((f, i) => el(TarjetaDiagnostico, {
     key: i, item: { titulo: f }, tipo: "mal", retraso: 0.05 + i * 0.08
-  })))), el("p", { className: "hr-aviso-legal" }, el(I.info, { size: 16, className: "shrink-0" }), el("span", null, el("b", null, "Análisis orientativo. "), "Este perfil es una estimación educativa a partir de tus respuestas y no constituye asesoramiento financiero. Antes de tomar decisiones de inversión, te recomendamos consultar con un asesor financiero profesional."))));
+  })))), el("p", { className: "hr-aviso-legal" }, el(I.info, { size: 16, className: "shrink-0" }), el("span", null, el("b", null, "Análisis orientativo. "), "Este perfil es una estimación educativa a partir de tus respuestas y no constituye asesoramiento financiero. Antes de tomar decisiones de inversión, te recomendamos consultar con un asesor financiero profesional.")))));
+}
+
+// Bloque plegable reutilizable: una fila con icono y flecha; el contenido solo aparece si el usuario lo abre.
+let contadorDesplegable = 0;
+export function Desplegable({ titulo, abrir = "Ver más", cerrar = "Ocultar", Icono = I.info, children }) {
+  const [abierto, setAbierto] = useState(false);
+  const [id] = useState(() => "hr-despl-" + ++contadorDesplegable);
+  return el("div", null, el("button", {
+    type: "button", className: "hr-card hr-desplegable", "aria-expanded": abierto, "aria-controls": id, onClick: () => setAbierto(v => !v)
+  }, el("span", { className: "hr-icono", style: { backgroundColor: C.primaryLight, color: C.primary } }, el(Icono, { size: 20 })), el("span", { style: { flex: 1, minWidth: 0 } }, el("span", {
+    className: "hr-titulo", style: { display: "block", fontSize: 19 }
+  }, titulo), el("span", { className: "hr-texto", style: { display: "block", marginTop: 2 } }, abierto ? cerrar : abrir)), el(I.chevronDown, {
+    size: 22, className: "hr-desplegable-flecha" + (abierto ? " hr-desplegable-abierta" : "")
+  })), abierto && el("div", { id, className: "hr-desplegable-cuerpo" }, children));
+}
+
+// Diagnóstico → Objetivos: una tarjeta grande por objetivo. A la izquierda lo que llevas y lo que falta;
+// a la derecha, lo que necesitas aportar frente a lo que prevés y a tu capacidad.
+const ESTADO_OBJ_ETIQUETA = { viable: "Viable", ajustado: "Ajustado", no_viable: "No viable", pendiente: "Pendiente", pendiente_capacidad: "Pendiente", completado: "Completado" };
+export function TarjetaObjetivoDiagnostico({ o, plan, titulo, plazoTexto, prioridadTexto, faltaDatos, deficitObjetivo, onEditar, onEliminar }) {
+  const tono = ESTADO_OBJETIVO[o.estadoViabilidad] || { fondo: C.bgDeepMid, color: C.muted };
+  const progreso = Math.max(0, Math.min(100, Math.round(o.progreso || 0)));
+  const filas = [
+    ["Necesitas aportar", o.aportacionNecesaria, "#F59E0B"],
+    ["Prevés aportar", o.aportacionMensual, "#4F46E5"],
+    ["Tu capacidad", plan.capacidadParaObjetivos, "#10B981"]
+  ];
+  const tope = Math.max(1, ...filas.map(([, v]) => v || 0));
+  const cubre = o.aportacionMensual != null && o.aportacionNecesaria != null ? o.aportacionMensual >= o.aportacionNecesaria : null;
+  return el("article", {
+    className: "hr-card hr-obj", style: { "--hr-tono": tono.color }
+  }, el("div", { className: "hr-obj-cabeza" }, el("div", { style: { minWidth: 0, flex: 1 } }, el("h3", { className: "hr-obj-titulo" }, titulo), el("div", {
+    className: "hr-obj-chips"
+  }, el("span", { className: "hr-chip", style: { backgroundColor: o.prioridad ? C.primaryLight : C.critLight, color: o.prioridad ? "#3730A3" : "#B91C1C" } }, prioridadTexto), o.horizonteCategoria && el("span", {
+    className: "hr-chip", style: { backgroundColor: C.bgDeepMid, color: "#4B5563" }
+  }, "Plazo " + o.horizonteCategoria), o.estadoViabilidad && el("span", {
+    className: "hr-chip", style: { backgroundColor: tono.fondo, color: tono.color }
+  }, ESTADO_OBJ_ETIQUETA[o.estadoViabilidad]))), el("div", { className: "hr-obj-acciones" }, el("button", {
+    type: "button", onClick: onEditar, className: "hr-obj-boton", "aria-label": "Editar " + titulo
+  }, el(I.edit, { size: 18 }), el("span", null, "Editar")), el("button", {
+    type: "button", onClick: onEliminar, className: "hr-obj-boton hr-obj-boton-borrar", "aria-label": "Eliminar " + titulo
+  }, el(I.trash, { size: 18 })))),
+
+  o.importeObjetivo != null ? el("div", { className: "hr-obj-cuerpo" }, el("div", { className: "hr-obj-col" }, el("span", { className: "hr-mini", style: { margin: 0 } }, "Llevas ahorrado"), el("div", {
+    style: { display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }
+  }, el("span", { className: "hr-cifra", style: { fontSize: 52 } }, euros(o.importeReservadoAplicado || 0)), el("span", {
+    style: { fontSize: 17, color: C.muted }
+  }, "de " + euros(o.importeObjetivo))), el("div", { className: "hr-obj-barra" }, el("span", { style: { width: Math.max(progreso, 2) + "%" } })), el("div", {
+    style: { display: "flex", justifyContent: "space-between", gap: 12, fontSize: 15, color: "#4B5563", flexWrap: "wrap" }
+  }, el("span", null, el("b", { style: { color: "#1E1B4B" } }, progreso + " %"), " completado"), el("span", null, "Faltan ", el("b", { style: { color: "#1E1B4B" } }, o.importeRestante == null ? "—" : euros(o.importeRestante)), " · " + plazoTexto))), el("div", {
+    className: "hr-obj-col"
+  }, el("span", { className: "hr-mini", style: { margin: 0 } }, "Cada mes"), filas.map(([etiqueta, valor, color]) => el("div", { key: etiqueta, className: "hr-obj-fila" }, el("div", {
+    style: { display: "flex", justifyContent: "space-between", gap: 8, fontSize: 15 }
+  }, el("span", { style: { color: "#4B5563" } }, etiqueta), el("b", { style: { color: "#1E1B4B" } }, valor == null ? "—" : euros(valor) + "/mes")), el("div", {
+    className: "hr-obj-fila-barra"
+  }, el("span", { style: { width: (valor == null ? 0 : Math.max(3, valor / tope * 100)) + "%", background: color } })))), cubre != null && el("p", {
+    className: "hr-obj-veredicto", style: { backgroundColor: cubre ? C.saluLight : C.critLight, color: cubre ? "#065F46" : "#991B1B" }
+  }, el(cubre ? I.checkCircle : I.alertTriangle, { size: 18, className: "shrink-0" }), cubre ? "Tu aportación cubre el ritmo necesario para el plazo elegido." : "Te faltan " + euros(o.aportacionNecesaria - o.aportacionMensual) + "/mes para llegar a tiempo."))) : el("p", {
+    className: "hr-texto", style: { fontSize: 15 }
+  }, "Importe por definir · " + plazoTexto),
+
+  deficitObjetivo > 0 && el("p", { className: "hr-obj-veredicto", style: { backgroundColor: C.critLight, color: "#991B1B" } }, el(I.alertTriangle, { size: 18, className: "shrink-0" }), el("span", null, el("b", null, "Déficit de capacidad: " + euros(deficitObjetivo) + "/mes. "), "La aportación prevista supera lo que te queda libre cada mes.")),
+  faltaDatos.length > 0 && el("p", { className: "hr-obj-veredicto", style: { backgroundColor: C.mejLight, color: "#92400E" } }, el(I.info, { size: 18, className: "shrink-0" }), "Completa " + faltaDatos.join(", ") + " para evaluar del todo este objetivo."),
+  el("div", { className: "hr-obj-consejo" }, el("span", {
+    className: "hr-icono", style: { width: 36, height: 36, borderRadius: 10, backgroundColor: o.recomendacionHorizonte.modo === "invertir" ? C.saluLight : C.primaryLight, color: o.recomendacionHorizonte.modo === "invertir" ? "#047857" : C.primary }
+  }, el(I.compass, { size: 18 })), el("p", { className: "hr-texto", style: { fontSize: 15 } }, el("b", { style: { color: "#1E1B4B" } }, o.recomendacionHorizonte.titulo + ". "), o.recomendacionHorizonte.texto)));
+}
+
+// Resumen de todos los objetivos: tres cifras grandes, avisos que importan y los detalles plegados.
+export function ResumenObjetivos({ plan, objetivos, tituloPrincipal }) {
+  const deficit = plan.deficitMensual > 0;
+  const ritmoCorto = plan.deficitRitmoElegido > 0;
+  const kpis = [
+    ["Te queda libre cada mes", plan.capacidadParaObjetivos == null ? "Pendiente" : euros(plan.capacidadParaObjetivos) + "/mes", "Ingresos menos gastos y deudas.", "#10B981"],
+    ["Prevés aportar", euros(plan.aportacionComprometida) + "/mes", plan.deficitMensual == null ? "Completa ingresos y gastos para compararlo." : deficit ? "Supera tu capacidad en " + euros(plan.deficitMensual) + "/mes." : "Dentro de tu capacidad.", deficit ? "#EF4444" : "#4F46E5"],
+    ["Necesitarías aportar", euros(plan.aportacionNecesariaTotal) + "/mes", ritmoCorto ? "Te quedas " + euros(plan.deficitRitmoElegido) + "/mes por debajo." : "Ritmo cubierto con lo previsto.", ritmoCorto ? "#F59E0B" : "#10B981"]
+  ];
+  return el("div", { className: "hr-obj-resumen" }, el("div", { className: "hr-kpis" }, kpis.map(([etiqueta, valor, nota, color]) => el("div", {
+    key: etiqueta, className: "hr-card hr-kpi-tarjeta", style: { borderTop: "4px solid " + color }
+  }, el("span", { className: "hr-mini", style: { margin: 0 } }, etiqueta), el("span", { className: "hr-cifra", style: { fontSize: 36 } }, valor), el("span", {
+    className: "hr-texto", style: { fontSize: 14 }
+  }, nota)))), plan.prioridadSinDefinir && objetivos.length > 1 && el("p", {
+    className: "hr-obj-veredicto", style: { backgroundColor: C.critLight, color: "#991B1B" }
+  }, el(I.alertTriangle, { size: 18, className: "shrink-0" }), el("span", null, el("b", null, "Define las prioridades. "), "Hay objetivos sin prioridad; hasta que las indiques, no damos preferencia a ninguno.")), plan.conflictoObjetivos && el("p", {
+    className: "hr-obj-veredicto", style: { backgroundColor: C.critLight, color: "#991B1B" }
+  }, el(I.alertTriangle, { size: 18, className: "shrink-0" }), el("span", null, el("b", null, "Conflicto entre objetivos: "), "tus aportaciones previstas suman " + euros(plan.aportacionComprometida) + "/mes y te quedan " + euros(plan.capacidadParaObjetivos) + "/mes libres. Usa la prioridad para decidir cuál cubrir primero.")), el(Desplegable, {
+    titulo: "Cómo lo calculamos", abrir: "Ver el objetivo principal y cómo hacemos las cuentas", cerrar: "Ocultar los detalles"
+  }, el("div", { className: "hr-card", style: { display: "flex", flexDirection: "column", gap: 12 } }, plan.principal && el("p", {
+    className: "hr-texto", style: { fontSize: 15 }
+  }, el("b", { style: { color: "#1E1B4B" } }, "Objetivo principal: "), tituloPrincipal + ". Se elige por prioridad y, después, por plazo y capital pendiente."), plan.ejecucion && el("p", {
+    className: "hr-texto", style: { fontSize: 15 }
+  }, el("b", { style: { color: "#1E1B4B" } }, "Capacidad de ejecución: "), plan.ejecucion.texto), el("p", {
+    className: "hr-texto", style: { fontSize: 15 }
+  }, el("b", { style: { color: "#1E1B4B" } }, "Cómo lo calculamos: "), "usamos tus ingresos, gastos, deudas y ahorro actual. Es una orientación educativa, no una garantía de resultados."))));
 }
