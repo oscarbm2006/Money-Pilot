@@ -8,6 +8,7 @@ import { AmortizacionDeuda, SimuladorDeudas, Contacto, Cuentas, Dashboard, Diagn
 const Blog = React.lazy(() => import('./blog.js'));
 import { CabeceraHerramienta, ConfianzaPrivacidad, HeroSection, MisFinanzas, QuienesSomos, VISTAS_MIS_FINANZAS, VISTAS_REDISENADAS } from './secciones.js';
 import { MiCuentaModal } from './cuenta.js';
+import { ProgresoLateral } from './progreso-lateral.js';
 import { ObjetoAbanico, ObjetoBrujula, ObjetoColumnas, ObjetoDeuda, ObjetoEscalera, ObjetoGrafica, ObjetoLupa } from './cabeceras.js';
 import { AvisoSinDiagnostico, PanelDiagnosticoVisual, PanelPrioridadVisual, PasosHojaRuta, ResumenAccion, SeguimientoVistaPrevia } from './hoja-ruta.js';
 import { ReiniciarTodoModal } from './cuenta.js';
@@ -575,7 +576,9 @@ export function App() {
     return [React.createElement("div", { key: "p", className: "cb-dato" }, React.createElement("small", null, "Patrimonio neto"), React.createElement("b", null, euros(ultimo), React.createElement("span", null, (diferencia >= 0 ? "+" : "") + euros(diferencia)))),
       React.createElement("div", { key: "r", className: "cb-dato" }, React.createElement("small", null, "Registros guardados"), React.createElement("b", null, historialSeguimiento.length))];
   })() : null;
-  return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+  return /*#__PURE__*/React.createElement(React.Fragment, null, React.createElement(ProgresoLateral, {
+    vista: vistaActual
+  }), /*#__PURE__*/React.createElement("div", {
     className: "min-h-screen w-full relative no-print" + (fondoLimpio ? " mp-fondo-limpio" : ""),
     style: {
       backgroundColor: fondoLimpio ? "#FAFAFA" : C.bgDeep
