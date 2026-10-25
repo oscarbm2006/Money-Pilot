@@ -1,13 +1,14 @@
 const { useState, useEffect, useRef, useCallback, useMemo, useId } = React;
 
 import { BLOG_ADMIN_EMAIL, C, I, OBJETIVOS_DEF, PATTERN_URI_STATIC, PERFILES_INFO } from './constantes.js';
-import { dec, calcularCapacidadFinanciera, calcularDiagnosticoAmpliado, calcularPerfilMultidimensional, calcularPlanFinanciero, calcularPlanObjetivos, calcularPrioridades, datosVacios, normalizarObjetivos, objetivoLegadoDesdeColeccion, reconstruirEstadoQuiz, totalMensual } from './calculos.js';
+import { dec, euros, calcularCapacidadFinanciera, calcularDiagnosticoAmpliado, calcularPerfilMultidimensional, calcularPlanFinanciero, calcularPlanObjetivos, calcularPrioridades, datosVacios, normalizarObjetivos, objetivoLegadoDesdeColeccion, reconstruirEstadoQuiz, totalMensual } from './calculos.js';
 import { useActivosPersistidos, useActivosSync, useAuth, useCloudSync, useCuentasPersistidas, useCuentasSync, useDatosPersistidos, useDebouncedEffect, useDeudasMirrorSync, useGuiaProgresoSync, useInversionesPersistidas, useInversionesSync, useSeguimiento, useToast } from './hooks-datos.js';
 import { AuthModal, ConflictoDatosModal, ContinuarBar, ErrorBoundary, Eyebrow, FeedbackModal, Toast } from './ui-basicos.js';
 import { AmortizacionDeuda, SimuladorDeudas, Contacto, Cuentas, Dashboard, Diagnostico, Estrategia, Inversiones, NavDesktop, PaginaLegal, Patrimonio, PerfilRiesgo, PlanFinanciero, PrintSummary, Seguimiento, Simulador } from './paginas.js';
 const Blog = React.lazy(() => import('./blog.js'));
 import { CabeceraHerramienta, ConfianzaPrivacidad, HeroSection, MisFinanzas, QuienesSomos, VISTAS_MIS_FINANZAS, VISTAS_REDISENADAS } from './secciones.js';
 import { MiCuentaModal } from './cuenta.js';
+import { ObjetoBrujula, ObjetoEscalera, ObjetoGrafica, ObjetoLupa } from './cabeceras.js';
 import { AvisoSinDiagnostico, PanelDiagnosticoVisual, PanelPrioridadVisual, PasosHojaRuta, ResumenAccion, SeguimientoVistaPrevia } from './hoja-ruta.js';
 import { ReiniciarTodoModal } from './cuenta.js';
 
@@ -563,6 +564,17 @@ export function App() {
   }
   // Las páginas rediseñadas llevan el fondo blanco del prototipo (sin el tono gris azulado ni el dibujo de líneas)
   const fondoLimpio = VISTAS_REDISENADAS.includes(vistaActual);
+  // Cabeceras de la hoja de ruta: la escalera y el título del Plan reflejan la fase real;
+  // sin diagnóstico todas las fases salen pendientes para no dar ninguna por superada.
+  const faseActualPlan = diagnosticoHecho ? planFinanciero.fases.findIndex(f => f.estado === "en_curso") : -1;
+  const fasesCabecera = diagnosticoHecho ? planFinanciero.fases : planFinanciero.fases.map(f => ({ ...f, estado: "pendiente" }));
+  const resumenSeguimiento = historialSeguimiento.length >= 2 ? (() => {
+    const primero = Number(historialSeguimiento[0].patrimonio_neto) || 0;
+    const ultimo = Number(historialSeguimiento[historialSeguimiento.length - 1].patrimonio_neto) || 0;
+    const diferencia = ultimo - primero;
+    return [React.createElement("div", { key: "p", className: "cb-dato" }, React.createElement("small", null, "Patrimonio neto"), React.createElement("b", null, euros(ultimo), React.createElement("span", null, (diferencia >= 0 ? "+" : "") + euros(diferencia)))),
+      React.createElement("div", { key: "r", className: "cb-dato" }, React.createElement("small", null, "Registros guardados"), React.createElement("b", null, historialSeguimiento.length))];
+  })() : null;
   return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     className: "min-h-screen w-full relative no-print" + (fondoLimpio ? " mp-fondo-limpio" : ""),
     style: {
@@ -711,7 +723,9 @@ export function App() {
     antetitulo: "Diagnóstico financiero",
     titulo: "Construye tu foto financiera, paso a paso",
     frase: "Empezamos por lo esencial y añadimos detalle solo cuando lo necesitas. Tus cálculos se actualizan en cada paso.",
-    iconos: [["moneda", 0.32, 0.3, 0.8, 0.3], ["barras", 0.55, -0.25, 0.85, -0.3], ["billete", 0.76, 0.35, 0.75, 0.6], ["moneda", 0.96, -0.2, 0.6, 1.1]]
+    objeto: React.createElement(ObjetoLupa, null),
+    composicion: "izquierda",
+    acento: "#22D3EE"
   }), /*#__PURE__*/React.createElement(Diagnostico, {
     key: irADeudas ? 'diag-deudas' : 'diag',
     irADeudas: irADeudas,
@@ -781,9 +795,11 @@ export function App() {
   }, /*#__PURE__*/React.createElement(CabeceraHerramienta, {
     id: "mp-cab-est",
     antetitulo: "Resultados y estrategia",
-    titulo: "Tu salud financiera, en una sola vista",
+    titulo: "Encuentra tu norte",
     frase: "Aquí se concentran las métricas clave, el perfil de riesgo y las decisiones que puedes tomar a continuación.",
-    iconos: [["barras", 0.34, 0.2, 0.9, -0.3], ["moneda", 0.58, -0.25, 0.75, 0.8], ["flecha", 0.8, 0.3, 0.8, 0.3], ["moneda", 0.97, -0.2, 0.55, 1.6]]
+    objeto: React.createElement(ObjetoBrujula, null),
+    composicion: "centro",
+    acento: "#6366F1"
   }), /*#__PURE__*/React.createElement("section", {
     className: "py-16 sm:py-24 section-tinted"
   }, /*#__PURE__*/React.createElement("div", {
@@ -908,9 +924,11 @@ export function App() {
   }, /*#__PURE__*/React.createElement(CabeceraHerramienta, {
     id: "mp-cab-plan",
     antetitulo: "Tu plan",
-    titulo: "Tu plan financiero, paso a paso",
-    frase: "Prioridad actual, siguiente acción y las fases que vendrán después, calculado con todos tus datos.",
-    iconos: [["flecha", 0.34, 0.25, 0.85, 0.2], ["barras", 0.58, -0.22, 0.8, -0.3], ["moneda", 0.8, 0.3, 0.75, 0.9], ["moneda", 0.97, -0.25, 0.55, 1.8]]
+    titulo: faseActualPlan >= 0 ? "Vas por la fase " + (faseActualPlan + 1) + " de " + planFinanciero.fases.length : "Tu plan financiero, paso a paso",
+    frase: faseActualPlan >= 0 ? "Ahora toca: " + planFinanciero.fases[faseActualPlan].titulo.toLowerCase() + ". Las fases siguientes se desbloquean al superarla." : "Prioridad actual, siguiente acción y las fases que vendrán después, calculado con todos tus datos.",
+    objeto: React.createElement(ObjetoEscalera, { fases: fasesCabecera }),
+    composicion: "derecha",
+    acento: "#F59E0B"
   }), /*#__PURE__*/React.createElement("section", {
     className: "py-16 sm:py-24 section-tinted"
   }, /*#__PURE__*/React.createElement("div", {
@@ -942,7 +960,10 @@ export function App() {
     antetitulo: "Tu evolución",
     titulo: "¿Estás avanzando?",
     frase: "Guarda una foto de tu situación cada vez que quieras, y compárala con las anteriores.",
-    iconos: [["barras", 0.34, 0.2, 0.9, -0.3], ["flecha", 0.58, -0.22, 0.8, 0.3], ["moneda", 0.8, 0.3, 0.75, 1.1], ["tarjeta", 0.97, -0.2, 0.6, -0.5]]
+    objeto: React.createElement(ObjetoGrafica, { valores: historialSeguimiento.map(h => Number(h.patrimonio_neto) || 0) }),
+    composicion: "ancho",
+    acento: "#10B981",
+    extra: resumenSeguimiento
   }), /*#__PURE__*/React.createElement("section", {
     className: "py-16 sm:py-24 section-tinted"
   }, /*#__PURE__*/React.createElement("div", {
@@ -1027,7 +1048,7 @@ export function App() {
     antetitulo: "Educación financiera",
     titulo: "Blog de finanzas personales",
     frase: "Guías claras sobre ahorro, inversión y presupuesto, además de noticias financieras y análisis de empresas cotizadas.",
-    iconos: [["billete", 0.34, 0.2, 0.85, 0.4], ["barras", 0.58, -0.22, 0.8, -0.3], ["flecha", 0.8, 0.3, 0.8, 0.3], ["moneda", 0.97, -0.25, 0.55, 1.4]]
+    clara: true
   }), /*#__PURE__*/React.createElement(React.Suspense, {
     fallback: /*#__PURE__*/React.createElement("div", {
       className: "py-20 text-center text-sm",
@@ -1043,7 +1064,7 @@ export function App() {
     antetitulo: "Información legal",
     titulo: "Aviso Legal y Términos de Uso",
     frase: "Última actualización: 1 de septiembre de 2026",
-    iconos: [["moneda", 0.4, 0.2, 0.75, 0.3], ["tarjeta", 0.7, -0.2, 0.8, -0.4], ["moneda", 0.95, 0.25, 0.55, 1.4]]
+    clara: true
   }), /*#__PURE__*/React.createElement(PaginaLegal, {
     titulo: "Aviso Legal y Términos de Uso",
     sinCabecera: true
@@ -1055,7 +1076,7 @@ export function App() {
     antetitulo: "Quiénes somos",
     titulo: "Educación financiera con un plan detrás",
     frase: "Un proyecto nacido de una realidad muy común: la falta de educación financiera genera estrés crónico y decisiones equivocadas.",
-    iconos: [["moneda", 0.34, 0.25, 0.85, 0.3], ["flecha", 0.58, -0.22, 0.8, 0.3], ["tarjeta", 0.8, 0.3, 0.8, -0.4], ["moneda", 0.97, -0.25, 0.55, 1.6]]
+    clara: true
   }), /*#__PURE__*/React.createElement(QuienesSomos, null)), vistaActual === 'contacto' && /*#__PURE__*/React.createElement("div", {
     key: "contacto",
     className: "fade-switch-enter mp-piel"
@@ -1064,7 +1085,7 @@ export function App() {
     antetitulo: "Estamos para ayudarte",
     titulo: "Contacta con nosotros",
     frase: "¿Tienes dudas sobre algún concepto financiero, quieres comentarnos algo sobre tus objetivos o simplemente hablar con alguien sobre cómo usar mejor la herramienta? Escríbenos y te respondemos personalmente.",
-    iconos: [["billete", 0.4, 0.22, 0.8, 0.4], ["moneda", 0.68, -0.22, 0.75, 0.9], ["tarjeta", 0.94, 0.25, 0.7, -0.4]]
+    clara: true
   }), /*#__PURE__*/React.createElement(Contacto, null))), showFooterNotice && /*#__PURE__*/React.createElement("footer", {
     className: "relative z-10 border-t no-print",
     style: {

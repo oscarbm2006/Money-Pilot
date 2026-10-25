@@ -187,8 +187,27 @@ export function CapaTransicion({ id, lineas, frase, iconos, retraso }) {
 // Banda oscura con el título de la herramienta y unos iconos 3D a la derecha. Sustituye a la tarjeta de introducción
 // de cada herramienta. En móvil no monta el 3D (más ligero) y deja solo el texto.
 // iconos: lista de [tipo, x, y, escala, giroInicial], igual que en las capas de transición.
-export function CabeceraHerramienta({ id, antetitulo, titulo, frase, iconos }) {
-  const { lienzo, caja } = useEscena3D((c, b, fallar) => esPantallaPequena() ? Promise.resolve(() => {}) : montarCapa3D(c, b, iconos, { alFallar: fallar }), 250);
+// objeto: protagonista propio de la herramienta (ver cabeceras.js); sustituye a los iconos 3D.
+// composicion: "izquierda" (texto a la izquierda), "derecha" (objeto a la izquierda), "centro" o "ancho".
+// clara: cabecera blanca, solo tipografía, para las páginas secundarias (blog, legal, contacto…).
+export function CabeceraHerramienta({ id, antetitulo, titulo, frase, iconos, objeto, composicion = "izquierda", acento, extra, clara }) {
+  const sin3D = !!(objeto || clara);
+  const { lienzo, caja } = useEscena3D((c, b, fallar) => sin3D || esPantallaPequena() ? Promise.resolve(() => {}) : montarCapa3D(c, b, iconos, { alFallar: fallar }), 250);
+  if (clara) return ce("header", { className: "cb-clara mp-sans", "aria-labelledby": id },
+    ce("div", { className: "max-w-6xl mx-auto px-4 sm:px-6 cb-clara-cuerpo" },
+      ce("div", { className: "cb-clara-texto" },
+        ce("p", { className: "cb-ante mp-sube", style: { "--mp-retraso": ".05s" } }, antetitulo),
+        ce("h1", { id, className: "cb-clara-titulo mp-sube", style: { "--mp-retraso": ".12s" } }, titulo)),
+      frase && ce("p", { className: "cb-clara-frase mp-sube", style: { "--mp-retraso": ".22s" } }, frase)));
+  if (objeto) return ce("header", { className: "mp-cab mp-sans cb-cab " + ({ izquierda: "cb-izquierda", derecha: "cb-derecha", centro: "cb-centro", ancho: "cb-ancho" }[composicion] || "cb-izquierda"), "aria-labelledby": id, style: { "--cb-acento": acento } },
+    ce("div", { className: "cb-luz", "aria-hidden": "true" }),
+    ce("div", { className: "max-w-6xl mx-auto px-4 sm:px-6 cb-cuerpo" },
+      ce("div", { className: "cb-texto" },
+        ce("p", { className: "mp-cab-ante cb-ante mp-sube", style: { "--mp-retraso": ".05s" } }, antetitulo),
+        ce("h1", { id, className: "mp-cab-titulo mp-sube", style: { "--mp-retraso": ".12s" } }, titulo),
+        frase && ce("p", { className: "mp-cab-frase mp-sube", style: { "--mp-retraso": ".22s" } }, frase),
+        extra && ce("div", { className: "cb-extra mp-sube", style: { "--mp-retraso": ".3s" } }, extra)),
+      ce("div", { className: "cb-objeto", "aria-hidden": "true" }, objeto)));
   return ce("header", { ref: caja, className: "mp-cab mp-sans", "aria-labelledby": id },
     ce("canvas", { ref: lienzo, className: "mp-lienzo", "aria-hidden": "true" }),
     ce("div", { className: "mp-cab-luz", "aria-hidden": "true" }),

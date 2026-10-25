@@ -644,6 +644,81 @@ header .export-menu button[style*="0.08"]{ color:#FFFFFF !important; background-
     .hr-lamina, .hr-bloque { transition:none; }
     .hr-card-hover:hover, .hr-boton:hover { transform:none; }
   }
+  /* ===== Cabeceras con objeto protagonista (src/cabeceras.js) ===== */
+  .cb-cab { --cb-acento:#6366F1; min-height:340px; }
+  .cb-luz { position:absolute; inset:0; pointer-events:none; background:radial-gradient(60% 110% at 82% 45%, color-mix(in srgb, var(--cb-acento) 38%, transparent), transparent 62%); }
+  .cb-derecha .cb-luz { background:radial-gradient(60% 110% at 18% 55%, color-mix(in srgb, var(--cb-acento) 32%, transparent), transparent 62%); }
+  .cb-centro .cb-luz { background:radial-gradient(48% 75% at 50% 48%, color-mix(in srgb, var(--cb-acento) 45%, transparent), transparent 70%); }
+  .cb-ancho .cb-luz { background:radial-gradient(80% 90% at 70% 100%, color-mix(in srgb, var(--cb-acento) 32%, transparent), transparent 65%); }
+  .cb-cuerpo { position:relative; z-index:1; width:100%; display:flex; flex-wrap:wrap; align-items:center; gap:24px; padding-top:48px; padding-bottom:44px; }
+  .cb-texto { flex:1 1 420px; min-width:0; }
+  .cb-ante.mp-cab-ante { color:color-mix(in srgb, var(--cb-acento) 55%, #fff); }
+  .cb-objeto { flex:1 1 340px; height:260px; position:relative; display:flex; align-items:center; justify-content:center; perspective:900px; }
+  .cb-izquierda .cb-cuerpo { flex-direction:row; }
+  .cb-derecha .cb-cuerpo { flex-direction:row-reverse; }
+  .cb-centro .cb-cuerpo { justify-content:center; text-align:center; min-height:380px; }
+  .cb-centro .cb-texto { flex:0 1 620px; display:flex; flex-direction:column; align-items:center; padding:24px 32px; border-radius:24px; background:rgba(30,27,75,.55); backdrop-filter:blur(6px); }
+  .cb-centro .mp-cab-titulo, .cb-centro .mp-cab-frase { margin-left:auto; margin-right:auto; }
+  .cb-centro .cb-objeto { position:absolute; inset:0; height:auto; opacity:.9; }
+  .cb-ancho .cb-cuerpo { padding-bottom:0; align-items:flex-end; }
+  .cb-ancho .cb-objeto { flex:1 1 100%; height:170px; margin:0 -24px; }
+  .cb-extra { margin-top:20px; display:flex; flex-wrap:wrap; gap:28px; }
+  .cb-dato { display:flex; flex-direction:column; gap:2px; }
+  .cb-dato small { font-size:13px; color:#A7F3D0; }
+  .cb-dato b { font-family:var(--mp-fuente-cifras, Georgia, serif); font-weight:400; font-size:40px; line-height:1; color:#fff; }
+  .cb-dato b span { font-size:18px; color:#34D399; margin-left:6px; }
+  /* Lupa sobre billete */
+  .cb-lupa-escena { position:relative; width:320px; height:240px; }
+  .cb-billete { position:absolute; left:10px; top:40px; width:300px; height:160px; border-radius:16px; overflow:hidden; background:linear-gradient(135deg, #A5F3FC, #22D3EE 55%, #0891B2); transform:rotateX(28deg) rotateZ(-12deg); box-shadow:0 30px 60px -20px rgba(8,145,178,.7); animation:cbFlota 5s ease-in-out infinite; }
+  .cb-billete-marco { position:absolute; inset:12px; border:3px solid rgba(30,27,75,.25); border-radius:10px; }
+  .cb-billete-cifra { position:absolute; left:26px; top:34px; font:400 76px var(--mp-fuente-cifras, Georgia, serif); color:#164E63; }
+  .cb-billete-euro { position:absolute; right:42px; top:42px; width:74px; height:74px; border-radius:50%; background:rgba(255,255,255,.4); display:flex; align-items:center; justify-content:center; font:400 52px var(--mp-fuente-cifras, Georgia, serif); color:#164E63; }
+  .cb-escaner { position:absolute; left:0; right:0; top:8%; height:3px; background:#fff; box-shadow:0 0 18px 4px #67E8F9; animation:cbEscanea 3.2s ease-in-out infinite; }
+  .cb-lupa { position:absolute; left:110px; top:0; animation:cbLupa 6s ease-in-out infinite; }
+  .cb-lupa-cristal { display:block; width:118px; height:118px; border-radius:50%; border:12px solid #E0F2FE; background:radial-gradient(circle at 35% 30%, rgba(255,255,255,.55), rgba(165,243,252,.15) 60%); box-shadow:0 20px 40px rgba(0,0,0,.35), inset 0 0 20px rgba(255,255,255,.4); }
+  .cb-lupa-mango { display:block; width:20px; height:84px; border-radius:10px; margin:-12px 0 0 112px; background:linear-gradient(90deg, #6366F1, #312E81); transform:rotate(-45deg); transform-origin:top; }
+  @keyframes cbFlota { 50% { translate:0 -12px; } }
+  @keyframes cbEscanea { 0%, 100% { top:8%; } 50% { top:82%; } }
+  @keyframes cbLupa { 0%, 100% { transform:translate(-40px, 10px); } 50% { transform:translate(60px, -20px); } }
+  /* Brújula */
+  .cb-brujula { position:relative; width:340px; height:340px; }
+  .cb-brujula-anillo { position:absolute; inset:0; border-radius:50%; border:2px dashed rgba(165,180,252,.35); animation:cbGira 40s linear infinite; }
+  .cb-brujula-esfera { position:absolute; inset:34px; border-radius:50%; border:2px solid rgba(165,180,252,.4); background:radial-gradient(circle at 40% 35%, rgba(129,140,248,.35), rgba(30,27,75,.2)); box-shadow:inset 0 0 40px rgba(79,70,229,.5); }
+  .cb-brujula-punto { position:absolute; font-size:13px; font-weight:800; color:#6366F1; }
+  .cb-p-N { top:44px; left:50%; translate:-50% 0; color:#A5B4FC; } .cb-p-S { bottom:44px; left:50%; translate:-50% 0; } .cb-p-O { left:46px; top:50%; translate:0 -50%; } .cb-p-E { right:46px; top:50%; translate:0 -50%; }
+  .cb-brujula-aguja { position:absolute; left:50%; top:50%; width:14px; height:220px; margin:-110px 0 0 -7px; display:flex; flex-direction:column; animation:cbAguja 3.5s cubic-bezier(.3,1.4,.4,1) .4s both; }
+  .cb-brujula-aguja > span { flex:1; }
+  .cb-brujula-aguja > span:first-child { background:linear-gradient(#FBBF24, #F59E0B); clip-path:polygon(50% 0, 100% 100%, 0 100%); filter:drop-shadow(0 0 10px rgba(245,158,11,.8)); }
+  .cb-brujula-aguja > span:last-child { background:linear-gradient(#C7D2FE, #818CF8); clip-path:polygon(0 0, 100% 0, 50% 100%); }
+  .cb-brujula-eje { position:absolute; left:50%; top:50%; width:22px; height:22px; margin:-11px 0 0 -11px; border-radius:50%; background:#fff; box-shadow:0 0 0 5px #4F46E5; }
+  @keyframes cbGira { to { transform:rotate(360deg); } }
+  @keyframes cbAguja { 0% { transform:rotate(-140deg); } 55% { transform:rotate(38deg); } 75% { transform:rotate(16deg); } 100% { transform:rotate(24deg); } }
+  /* Escalera y gráfica */
+  .cb-escalera { --hr-esc-y:44px; }
+  .cb-grafica { position:relative; width:100%; height:100%; }
+  .cb-grafica-linea { stroke-dasharray:3000; animation:cbDibuja 2.4s cubic-bezier(.3,.7,.3,1) .3s both; }
+  .cb-grafica-punto { position:absolute; width:18px; height:18px; margin:-9px 0 0 -9px; border-radius:50%; background:#fff; border:4px solid #34D399; animation:cbPunto 2s 2.6s infinite; }
+  @keyframes cbDibuja { from { stroke-dashoffset:3000; } to { stroke-dashoffset:0; } }
+  @keyframes cbPunto { 0%, 100% { box-shadow:0 0 0 0 rgba(52,211,153,.6); } 60% { box-shadow:0 0 0 18px rgba(52,211,153,0); } }
+  /* Cabecera clara de las páginas secundarias */
+  .cb-clara { background:#fff; border-bottom:1px solid #E4E7EF; }
+  .cb-clara-cuerpo { display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:24px; padding-top:56px; padding-bottom:48px; }
+  .cb-clara-texto { flex:1 1 480px; min-width:0; }
+  .cb-clara .cb-ante { margin:0 0 12px; font-size:13px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:#4F46E5; }
+  .cb-clara-titulo { margin:0; font-size:clamp(34px, 5vw, 56px); line-height:1.02; font-weight:800; letter-spacing:-.04em; color:#1E1B4B; }
+  .cb-clara-frase { flex:0 1 380px; margin:0; padding-left:20px; border-left:3px solid #C7D2FE; font-size:17px; line-height:1.6; color:#4B5563; }
+  @media (max-width: 720px) {
+    .cb-cab { min-height:0; }
+    .cb-objeto { flex-basis:100%; height:170px; }
+    .cb-lupa-escena, .cb-brujula { scale:.55; }
+    .cb-centro .cb-objeto { position:relative; inset:auto; order:-1; height:190px; }
+    .cb-ancho .cb-objeto { height:120px; }
+    .cb-escalera { --hr-esc:.6; --hr-esc-y:24px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .cb-billete, .cb-escaner, .cb-lupa, .cb-brujula-anillo, .cb-brujula-aguja, .cb-grafica-linea, .cb-grafica-punto { animation:none; }
+    .cb-brujula-aguja { transform:rotate(24deg); }
+  }
 </style>
 </head>
 <body>

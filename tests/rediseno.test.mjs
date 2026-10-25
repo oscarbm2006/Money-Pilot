@@ -194,7 +194,7 @@ describe('Rediseño 3D: Estrategia y fin del diagnóstico (Fase 3)', () => {
   });
   test('Estrategia usa la cabecera nueva, la piel y conserva sus textos y paneles', () => {
     assert.ok(app.includes('id: "mp-cab-est"'));
-    for (const t of ['Tu salud financiera, en una sola vista', 'Aquí se concentran las métricas clave, el perfil de riesgo y las decisiones que puedes tomar a continuación.']) assert.ok(app.includes(t));
+    for (const t of ['Encuentra tu norte', 'Aquí se concentran las métricas clave, el perfil de riesgo y las decisiones que puedes tomar a continuación.']) assert.ok(app.includes(t));
     assert.ok(!app.includes('Eyebrow, null, "Resultados y estrategia"'), 'queda la introducción antigua');
     const est = app.slice(app.indexOf("vistaActual === 'estrategia' &&"), app.indexOf("vistaActual === 'plan' &&"));
     assert.ok(est.includes('className: "fade-switch-enter mp-piel"'));
