@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Cómo calculamos tu nota de salud financiera – MoneyPilot</title>
+<meta name="description" content="Descubre cómo se calcula la nota de salud financiera de MoneyPilot (0 a 100): ahorro, fondo de emergencia, deuda y perfil, con umbrales y ejemplos." />
+<meta name="robots" content="index, follow" />
+<link rel="canonical" href="https://moneypilot.es/como-calculamos-tu-nota-financiera.html" />
+<meta property="og:title" content="Cómo calculamos tu nota de salud financiera – MoneyPilot" />
+<meta property="og:description" content="Descubre cómo se calcula la nota de salud financiera de MoneyPilot (0 a 100): ahorro, fondo de emergencia, deuda y perfil, con umbrales y ejemplos." />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://moneypilot.es/como-calculamos-tu-nota-financiera.html" />
+<meta property="og:image" content="https://moneypilot.es/og-image.png" />
+<meta property="og:locale" content="es_ES" />
+<meta name="twitter:card" content="summary_large_image" />
+<link rel="icon" type="image/x-icon" href="/favicon.ico" />
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+<style>
+  :root{--navy:#312E81;--primary:#4F46E5;--primary-light:rgba(79,70,229,.10);--paper:#FAFAFA;--ink:#1E1E2E;--muted:#6B7280;--border:#E5E7EB;}
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:ui-sans-serif,system-ui,sans-serif;background:var(--paper);color:var(--ink);line-height:1.6;}
+  header{background:var(--navy);padding:18px 24px;}
+  header a{color:#fff;text-decoration:none;font-weight:800;font-size:1.1rem;}
+  main{max-width:760px;margin:0 auto;padding:48px 24px 80px;}
+  h1{font-size:1.9rem;font-weight:800;color:var(--ink);margin-bottom:24px;}
+  p{margin:0 0 18px;}
+  b{color:var(--ink);}
+  ul{padding-left:1.4rem;margin:0 0 18px;}
+  li{margin-bottom:8px;}
+  a.inline{color:var(--primary);text-decoration:underline;}
+  a.back{display:inline-block;margin-top:40px;color:var(--primary);font-weight:700;text-decoration:none;}
+  a.back:hover{text-decoration:underline;}
+  footer{border-top:1px solid var(--border);padding:24px;text-align:center;color:var(--muted);font-size:.8rem;}
+  /* Fundido suave entre páginas (misma regla que la app y el blog) */
+  @media (prefers-reduced-motion: no-preference) { @view-transition { navigation: auto; } }
+</style>
+<link rel="stylesheet" href="/estatico.css" />
+<script src="/estatico.js" defer></script>
+<style>
+  .mp-texto{max-width:46rem;margin:0 auto;font-size:17px;line-height:1.75;color:var(--e-suave)}
+  .mp-texto h2{margin:52px 0 14px;font:800 clamp(24px,3vw,32px)/1.15 var(--e-fuente);letter-spacing:-.02em;color:var(--e-noche)}
+  .mp-texto h2:first-child{margin-top:0}
+  .mp-texto h3{margin:30px 0 8px;font:700 19px/1.3 var(--e-fuente);color:var(--e-tinta)}
+  .mp-texto p{margin:0 0 16px}
+  .mp-texto strong,.mp-texto b{color:var(--e-tinta)}
+  .mp-texto a{color:var(--e-indigo)}
+  .mp-texto ul,.mp-texto ol{margin:0 0 18px;padding-left:1.4rem}
+  .mp-texto li{margin-bottom:8px}
+  .mp-scroll{overflow-x:auto;margin:18px 0 26px;border:1px solid var(--e-linea);border-radius:16px;background:var(--e-superficie)}
+  .mp-texto table{width:100%;border-collapse:collapse;font-size:15px;line-height:1.5}
+  .mp-texto th,.mp-texto td{padding:12px 14px;text-align:left;vertical-align:top;border-bottom:1px solid var(--e-linea)}
+  .mp-texto th{color:var(--e-tinta);font-weight:700;background:var(--e-tinte);white-space:nowrap}
+  .mp-texto tr:last-child td{border-bottom:0}
+  .mp-caja{margin:22px 0;padding:18px 20px;border:1px solid var(--e-linea);border-radius:18px;background:var(--e-tinte);color:var(--e-tinta)}
+  .mp-caja p:last-child{margin-bottom:0}
+  .mp-pasos{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px;margin:22px 0 8px;padding:0;list-style:none}
+  .mp-pasos li{margin:0;padding:20px;border:1px solid var(--e-linea);border-radius:20px;background:var(--e-superficie)}
+  .mp-pasos b{display:block;margin-bottom:6px;font-size:17px}
+  .mp-pasos span{display:block;font-size:15px;line-height:1.6}
+  .mp-btn{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:0 22px;border-radius:999px;background:var(--e-indigo);color:#fff!important;font:700 15px/1 var(--e-fuente);text-decoration:none!important}
+  .mp-acciones{display:flex;flex-wrap:wrap;gap:12px;margin:26px 0 8px}
+  .mp-btn.mp-sec{background:transparent;color:var(--e-indigo)!important;border:1px solid var(--e-indigo)}
+  .mp-meta{margin:0 0 28px;font-size:14px;color:var(--e-suave)}
+  @media (max-width:640px){
+    .mp-texto{font-size:16px}
+    .mp-texto table{font-size:12.5px;line-height:1.45}
+    .mp-texto th,.mp-texto td{padding:9px 6px;white-space:normal;overflow-wrap:break-word;word-break:normal}
+    .mp-texto th{font-size:12px}
+    .mp-pasos{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body class="e-pagina">
+<header class="e-menu">
+  <div class="e-menu-fila">
+    <a href="/" class="e-logo" data-vista="inicio" aria-label="MoneyPilot, ir al inicio"><img src="/logo-moneypilot.png" alt="MoneyPilot" width="113" height="20"></a>
+    <nav class="e-nav" aria-label="Navegación principal">
+      <a href="/" data-vista="inicio">Introducción</a>
+      <a href="/blog/guia/index.html">Blog</a>
+      <a href="/recursos-y-libros.html">Recursos y libros</a>
+      <a href="/" data-vista="diagnostico" class="e-cta">Hacer mi diagnóstico</a>
+    </nav>
+  </div>
+</header>
+<header class="e-cab">
+  <div class="e-cab-luz" aria-hidden="true"></div>
+  <div class="e-cab-3d" aria-hidden="true">
+    <span class="e-obj e-moneda" style="--x:66%;--y:24%;--t:92px;--r:-8deg">€</span>
+    <span class="e-obj e-libro" style="--x:80%;--y:46%;--t:70px;--r:10deg;--c:#6366F1;--d:-2.5s"></span>
+    <span class="e-obj e-moneda" style="--x:90%;--y:14%;--t:56px;--r:14deg;--d:-4s">€</span>
+  </div>
+  <div class="e-cab-texto">
+    <p class="e-cab-ante">Metodología</p>
+    <h1>Cómo calculamos tu nota de salud financiera</h1>
+    <p class="e-cab-frase">Sin cajas negras: estos son los cuatro componentes, los umbrales y los límites de la nota de 0 a 100.</p>
+  </div>
+</header>
+<main>
+  <section class="e-seccion">
+    <div class="e-ancho">
+      <article class="mp-texto">
+
+<h2>Qué es la nota de salud financiera</h2>
+<p>Es un número de 0 a 100 que resume tu situación en cuatro aspectos: cuánto ahorras, cuánto aguantarías sin ingresos, cuánto pesan tus deudas y si has completado tu perfil de riesgo. No es una puntuación de crédito ni una valoración que use ningún banco: es una forma sencilla y transparente de saber <strong>por dónde empezar</strong>.</p>
+<p>Aquí explicamos exactamente cómo se calcula, para que puedas comprobarla con tus propios números.</p>
+
+<h2>Los cuatro componentes</h2>
+<div class="mp-scroll"><table>
+  <thead><tr><th>Componente</th><th>Qué mide</th><th>Puntos</th><th>Cómo se reparte</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Ahorro</strong></td><td>Qué parte de tus ingresos te sobra cada mes, después de gastos y cuotas de deuda</td><td>40</td><td>Proporcional hasta el 25 % de tus ingresos. Con un 25 % o más, obtienes los 40 puntos</td></tr>
+    <tr><td><strong>Fondo de emergencia</strong></td><td>Cuántos meses de gastos esenciales cubre tu ahorro</td><td>30</td><td>Proporcional hasta 6 meses. Con 6 meses o más, obtienes los 30 puntos</td></tr>
+    <tr><td><strong>Deuda</strong></td><td>Qué parte de tus ingresos se va en cuotas de deuda</td><td>20</td><td>20 puntos sin deudas; baja de forma proporcional hasta 0 puntos cuando las cuotas llegan al 30 % de tus ingresos</td></tr>
+    <tr><td><strong>Perfil</strong></td><td>Si tienes un perfil de riesgo calculado</td><td>10</td><td>10 puntos si has completado el cuestionario de perfil</td></tr>
+  </tbody>
+</table></div>
+
+<h3>1. Ahorro (40 puntos)</h3>
+<p>El ahorro mensual disponible es lo que queda de tus ingresos (incluidos otros ingresos) después de restar los gastos fijos, los gastos de ocio y las cuotas de deuda. La herramienta lo divide entre tus ingresos para obtener la tasa de ahorro. Cada punto porcentual que ahorras suma puntos hasta llegar al 25 %.</p>
+<p>Además, tu tasa de ahorro recibe una etiqueta para entenderla de un vistazo:</p>
+<ul>
+  <li><strong>Ahorro por construir:</strong> si gastas más de lo que ingresas.</li>
+  <li><strong>Ahorro mejorable:</strong> menos del 10 % de tus ingresos.</li>
+  <li><strong>Ahorro saludable:</strong> entre el 10 % y el 20 %.</li>
+  <li><strong>Ahorro muy bueno:</strong> el 20 % o más.</li>
+</ul>
+
+<h3>2. Fondo de emergencia (30 puntos)</h3>
+<p>El objetivo de referencia es de <strong>6 meses de gastos esenciales</strong>, entendidos como tus gastos fijos más las cuotas de tus deudas. La cobertura es tu ahorro disponible dividido entre esos gastos mensuales.</p>
+<div class="mp-caja"><p><strong>Ejemplo.</strong> Si tus gastos fijos son 800 € y pagas 200 € al mes en cuotas, tus gastos esenciales son 1.000 € y tu objetivo es de 6.000 €. Con 2.500 € ahorrados, tu cobertura es de 2,5 meses (12,5 puntos de 30) y te faltan 3.500 € para el objetivo.</p></div>
+<p>Seis meses es una referencia general. La cifra adecuada depende de tu situación (estabilidad laboral, personas a tu cargo, si eres autónomo). La guía sobre el <a href="/blog/guia/fondo-de-emergencia.html">fondo de emergencia</a> explica cómo ajustarla.</p>
+
+<h3>3. Deuda (20 puntos)</h3>
+<p>La carga de deuda es la suma de tus cuotas mensuales dividida entre tus ingresos. Sin deudas obtienes los 20 puntos. Si las cuotas llegan al 30 % de tus ingresos, esa parte de la nota es cero. Entre ambos extremos, la puntuación baja de forma proporcional.</p>
+
+<h3>4. Perfil (10 puntos)</h3>
+<p>Estos puntos premian haber completado el cuestionario de perfil, porque conocer tu tolerancia al riesgo es parte de una buena base financiera. El perfil <strong>no</strong> cambia el resto de la nota.</p>
+
+<h2>Cómo se interpreta el resultado</h2>
+<div class="mp-scroll"><table>
+  <thead><tr><th>Nota</th><th>Nivel</th><th>Qué significa</th></tr></thead>
+  <tbody>
+    <tr><td>0 a 34</td><td><strong>Construyendo tu base</strong></td><td>Hay aspectos básicos por trabajar: ahorro, colchón o deuda</td></tr>
+    <tr><td>35 a 59</td><td><strong>Margen de mejora</strong></td><td>Tienes una parte hecha y varias palancas claras para mejorar</td></tr>
+    <tr><td>60 a 79</td><td><strong>Base saludable</strong></td><td>Tu situación es sólida; toca afinar y fijar objetivos</td></tr>
+    <tr><td>80 a 100</td><td><strong>Muy buena salud</strong></td><td>Tienes una base muy completa; lo importante es mantenerla</td></tr>
+  </tbody>
+</table></div>
+
+<h2>Tres ejemplos con cifras reales</h2>
+<p>Estos ejemplos están calculados con el mismo código que usa la aplicación.</p>
+<div class="mp-scroll"><table>
+  <thead><tr><th>Situación</th><th>Ahorro</th><th>Fondo</th><th>Deuda</th><th>Perfil</th><th>Nota</th></tr></thead>
+  <tbody>
+    <tr><td>Ahorra el 5 %, cubre 1 mes y destina el 30 % a deudas</td><td>8</td><td>5</td><td>0</td><td>10</td><td><strong>23</strong> · Construyendo tu base</td></tr>
+    <tr><td>Ahorra el 12 %, cubre 2 meses y destina el 15 % a deudas</td><td>19,2</td><td>10</td><td>10</td><td>10</td><td><strong>49</strong> · Margen de mejora</td></tr>
+    <tr><td>Ahorra el 22 %, cubre 6 meses y destina el 5 % a deudas</td><td>35,2</td><td>30</td><td>16,7</td><td>10</td><td><strong>92</strong> · Muy buena salud</td></tr>
+  </tbody>
+</table></div>
+<p>En todos los ejemplos el perfil está completado. Fíjate en el primero: aunque ahorra algo, destinar el 30 % de los ingresos a deudas le deja sin puntos en esa parte, y un solo mes de colchón le da poco margen ante un imprevisto.</p>
+
+<h2>Cómo mejorar tu nota</h2>
+<ul>
+  <li><strong>Ahorro:</strong> automatiza una transferencia el día que cobras, en vez de ahorrar lo que sobre. La guía <a href="/blog/guia/pagate-a-ti-primero.html">«Págate a ti mismo primero»</a> explica cómo.</li>
+  <li><strong>Fondo de emergencia:</strong> si todavía no lo tienes, es la prioridad: cada mes de gastos cubierto suma 5 puntos.</li>
+  <li><strong>Deuda:</strong> empieza por las que tengan mayor interés. Puedes comparar métodos en el <a href="/simulador-de-deudas-bola-de-nieve-avalancha.html">simulador de deudas</a>.</li>
+  <li><strong>Perfil:</strong> completa el cuestionario en el diagnóstico.</li>
+</ul>
+
+<h2>Límites de la nota</h2>
+<ul>
+  <li>Es una simplificación. No valora tu patrimonio total, tu estabilidad laboral, los gastos futuros previstos ni tu situación familiar.</li>
+  <li>Los umbrales (25 % de ahorro, 6 meses de colchón, 30 % de carga de deuda) son referencias orientativas y prudentes. No son una norma universal y pueden no encajar en tu caso.</li>
+  <li>Depende de lo que introduces. Si los datos son aproximados, la nota también lo será.</li>
+</ul>
+
+<h2>Preguntas frecuentes</h2>
+<h3>¿Una nota baja significa que lo hago mal?</h3>
+<p>No. Una nota baja describe tu punto de partida, no tu valor. Lo útil es saber qué componente te resta más puntos y empezar por ahí.</p>
+<h3>¿Se puede llegar a 100?</h3>
+<p>Sí, ahorrando al menos el 25 % de tus ingresos, con 6 meses o más de colchón, sin cuotas de deuda y con el perfil completado.</p>
+<h3>¿Cada cuánto conviene recalcularla?</h3>
+<p>Cada vez que cambie algo importante (un ascenso, una deuda nueva, un gasto fijo) y, si no, cada pocos meses. En «Tu evolución» puedes guardar una foto y compararla con las anteriores.</p>
+<div class="mp-acciones">
+  <a class="mp-btn" href="/" data-vista="diagnostico">Hacer mi diagnóstico</a>
+  <a class="mp-btn mp-sec" href="/herramientas.html">Ver todas las herramientas</a>
+</div>
+<p class="mp-meta">Contenido educativo. No es asesoramiento financiero personalizado ni una recomendación de inversión (<a href="/aviso-legal.html">aviso legal</a>). Última revisión: noviembre de 2026.</p>
+      </article>
+    </div>
+  </section>
+</main>
+<footer class="e-pie">
+  <a href="/blog/guia/index.html">Blog</a> ·
+  <a href="/herramientas.html">Herramientas</a> ·
+  <a href="/privacidad.html">Privacidad</a> ·
+  <a href="/aviso-legal.html">Aviso Legal</a> ·
+  <a href="/quienes-somos.html">Quiénes somos</a> ·
+  <a href="/contacto.html">Contacto</a>
+</footer>
+</body>
+</html>

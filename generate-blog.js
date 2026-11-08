@@ -268,6 +268,7 @@ const STYLE = `
 `;
 
 const FOOTER = `<footer>
+  <a href="/herramientas.html">Herramientas</a> ·
   <a href="/privacidad.html">Privacidad</a> ·
   <a href="/aviso-legal.html">Aviso Legal</a> ·
   <a href="/quienes-somos.html">Quiénes somos</a> ·
@@ -653,6 +654,10 @@ function generarSeccion(posts, seccion) {
 const PAGINAS_FIJAS = [
   { loc: '/', changefreq: 'weekly', priority: '1.0' },
   { loc: '/recursos-y-libros.html', changefreq: 'monthly', priority: '0.7' },
+  { loc: '/herramientas.html', changefreq: 'monthly', priority: '0.8' },
+  { loc: '/como-calculamos-tu-nota-financiera.html', changefreq: 'monthly', priority: '0.7' },
+  { loc: '/simulador-de-ahorro-interes-compuesto.html', changefreq: 'monthly', priority: '0.7' },
+  { loc: '/simulador-de-deudas-bola-de-nieve-avalancha.html', changefreq: 'monthly', priority: '0.7' },
   { loc: '/quienes-somos.html', changefreq: 'monthly', priority: '0.6' },
   { loc: '/contacto.html', changefreq: 'monthly', priority: '0.5' },
   { loc: '/privacidad.html', changefreq: 'yearly', priority: '0.3' },
